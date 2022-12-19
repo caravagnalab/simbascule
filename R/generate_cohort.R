@@ -27,20 +27,20 @@ generate.cohort <- function(
     seed = NULL,
     num_data
 ) {
-  
-  reference_denovo <- basilica:::split.reference(reference_path=reference_path, ratio=ratio, seed=seed)
-  
+
+  reference_denovo <- simbasilica:::split.reference(reference_path=reference_path, ratio=ratio, seed=seed)
+
   reference_catalogue <- reference_denovo$reference
   denovo_catalogue <- reference_denovo$denovo
-  
-  reference_cosine <- basilica:::cosine.matrix(reference_catalogue, reference_catalogue)
-  denovo_cosine <- basilica:::cosine.matrix(denovo_catalogue, denovo_catalogue)
-  
+
+  reference_cosine <- simbasilica:::cosine.matrix(reference_catalogue, reference_catalogue)
+  denovo_cosine <- simbasilica:::cosine.matrix(denovo_catalogue, denovo_catalogue)
+
   data <- NULL
-  
+
   if (is.null(seed)) {
     for (i in 1:num_data) {
-      xx <- basilica:::generate.data(
+      xx <- simbasilica:::generate.data(
         reference_catalogue = reference_catalogue,
         denovo_catalogue = denovo_catalogue,
         reference_cosine = reference_cosine,
@@ -56,7 +56,7 @@ generate.cohort <- function(
     }
   } else {
     for (i in 1:num_data) {
-      xx <- basilica:::generate.data(
+      xx <- simbasilica:::generate.data(
         reference_catalogue = reference_catalogue,
         denovo_catalogue = denovo_catalogue,
         reference_cosine = reference_cosine,
@@ -72,6 +72,6 @@ generate.cohort <- function(
       seed <- seed + 1
     }
   }
-  
+
   return(data)
 }
