@@ -2,7 +2,7 @@
 Generating and Running synthetic data
 
 
-Simulated date in the package:
+Simulated date in the package (each comibnation has 30 datasets):
 
 * 6 cohorts, number of patiets = [10,50,100,500,1000,5000], 3 de-novo + 5 from reference (Salvatore)
   * Simulatation, no refence catalogue (all de novo) vs reference catalogue
