@@ -44,6 +44,9 @@ generate.data <- function(
     alpha <- subset(alpha, select = -c(group))
   }
 
+  # apply exposure limit (<0.05) to one fixed and one de-novo signature
+  alpha <- simbasilica:::edit.exposure(alpha = alpha)
+
   # THETA ------------------------------------
   num_samples <- length(groups)
   theta <- generate.theta(mut_range=mut_range, num_samples=num_samples, seed=seed)
