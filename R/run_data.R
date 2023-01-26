@@ -1,42 +1,72 @@
-#----------------------------------------------------------------------QC:PASSED
+#----------------------------------------------------------------------QC:
+
 run.data <- function(
     data,
     k,
-    lr,
-    steps,
-    phi,
-    delta,
-    input=TRUE
-) {
-  
+    #reference_catalogue = basilica::COSMIC_catalogue,
+    #input_catalogue = basilica::COSMIC_catalogue["SBS1", ],
+    cohort = "MyCohort",
+    use_reference = TRUE,
+    input = FALSE,
+    lr = 0.01,
+    steps = 500,
+    max_iterations = 20,
+    blacklist = NULL,
+    phi = 0.05,
+    delta = 0.9,
+    filt_pi =0.1,
+    groups = NULL,
+    lambda_rate = NULL,
+    sigma = FALSE,
+    CUDA = FALSE,
+    compile = TRUE,
+    enforce_sparsity = FALSE
+    ) {
+
+  #data$x[[1]]
+  #data$ref_cat[[1]]
+  #data$input_cat[[1]]
   x <- data$x[[1]]
-  reference <- data$ref_cat[[1]]
-  if (input) {
-    input <- data$input_cat[[1]]
+
+  if (use_reference) {
+    reference <- data$ref_cat[[1]]
   } else {
-    input = NULL
+    reference <- NULL
   }
-  
+
+  if (input) {
+    input_catalogue <- data$ref_cat[[1]]
+  } else {
+    input_catalogue = NULL #basilica::COSMIC_catalogue["SBS1", ]
+  }
+
+
+  # RUN START ------------------------------------------------------------------
   obj <- basilica::fit(
     x=x,
-    reference_catalogue = reference,
-    k = k,
-    lr = lr,
-    steps = steps,
-    phi = phi,
-    delta = delta,
-    groups = NULL,
-    input_catalogue = input
+    k,
+    reference_catalogue=reference,
+    input_catalogue=input_catalogue,
+    cohort,
+    lr,
+    steps,
+    max_iterations,
+    blacklist,
+    phi,
+    delta,
+    filt_pi,
+    groups,
+    lambda_rate,
+    sigma,
+    CUDA,
+    compile,
+    enforce_sparsity
   )
-  
-  simulation.fit.obj <- tibble::add_column(
+  # RUN END --------------------------------------------------------------------
+
+  fit.obj <- tibble::add_column(
     data,
-    #inf_exposure = list(obj$exposure),
-    #inf_denovo = list(obj$denovo_signatures),
-    #inf_fixed = list(obj$catalogue_signatures),
-    #bic = obj$bic,
-    #losses = list(obj$losses),
     fit = list(obj)
   )
-  return(simulation.fit.obj)
+  return(fit.obj)
 }
