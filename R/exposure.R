@@ -35,12 +35,24 @@ generate.exposure <- function(beta, groups, seed=NULL) {
 
     #print(paste("group", group, "has", sigNums+1, "signatures, and", num_samples, "samples"))
 
-    x <- matrix( runif(num_samples * (sigNums+1), 0, 1), ncol = sigNums+1 )
-    alpha <- x / rowSums(x)
-    alpha <- as.data.frame(alpha)
+    # TEST - start
+    alpha <- data.frame(matrix(ncol = sigNums+1, nrow = 0))
+    for (i in 1:num_samples) {
+      s <- rdirichlet(1, alpha = sample(1:100, sigNums+1, replace=FALSE))
+      alpha <- rbind(alpha, c(s))
+    }
     colnames(alpha) <- sigNames
     alpha$group <- rep(group, num_samples)
+    # TEST - end
+
+
+    #x <- matrix( runif(num_samples * (sigNums+1), 0, 1), ncol = sigNums+1 )
+    #alpha <- x / rowSums(x)
+    #alpha <- as.data.frame(alpha)
+    #colnames(alpha) <- sigNames
+    #alpha$group <- rep(group, num_samples)
     #print(alpha)
+
 
     df_list[length(df_list)+1] <- list(alpha)
   }
