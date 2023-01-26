@@ -56,7 +56,7 @@ edit.exposure <- function(alpha) {
     exp[, 7] <- newDenovo
     exp[, 6] <- exp[, 6] + denovo_diff
 
-    if ( sum(rowSums(exp))==n ) {
+    if ( sum(rowSums(exp))==n & all(apply(exp, 1, function(x) all(x > 0))) ) {
       return(exp)
     }
   }
