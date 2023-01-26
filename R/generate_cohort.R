@@ -17,7 +17,7 @@
 #'
 #' @examples
 generate.cohort <- function(
-    reference_path,
+    reference,
     ratio,
     targetX,
     inputX,
@@ -28,7 +28,7 @@ generate.cohort <- function(
     num_data
 ) {
 
-  reference_denovo <- simbasilica:::split.reference(reference_path=reference_path, ratio=ratio, seed=seed)
+  reference_denovo <- simbasilica:::split.reference(reference=reference, ratio=ratio, seed=seed)
 
   reference_catalogue <- reference_denovo$reference
   denovo_catalogue <- reference_denovo$denovo
