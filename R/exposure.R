@@ -1,4 +1,4 @@
-#----------------------------------------------------------------------QC:PASSED
+library(gtools)
 
 generate.exposure <- function(beta, groups, seed=NULL) {
 
