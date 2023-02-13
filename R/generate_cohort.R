@@ -15,7 +15,6 @@
 #' @return a cohort includes several data
 #' @export
 #'
-#' @examples
 generate.cohort <- function(
     reference,
     ratio,

@@ -3,11 +3,9 @@
 run.data <- function(
     data,
     k,
-    #reference_catalogue = basilica::COSMIC_catalogue,
-    #input_catalogue = basilica::COSMIC_catalogue["SBS1", ],
     cohort = "MyCohort",
     use_reference = TRUE,
-    input = FALSE,
+    use_input = FALSE,
     lr = 0.01,
     steps = 500,
     max_iterations = 20,
@@ -23,30 +21,29 @@ run.data <- function(
     enforce_sparsity = FALSE
     ) {
 
-  #data$x[[1]]
-  #data$ref_cat[[1]]
-  #data$input_cat[[1]]
+  # catalogue data
   x <- data$x[[1]]
 
+  # reference catalogue
   if (use_reference) {
     reference <- data$ref_cat[[1]]
   } else {
     reference <- NULL
   }
 
-  if (input) {
+  # input catalogue
+  if (use_input) {
     input_catalogue <- data$ref_cat[[1]]
   } else {
     input_catalogue = NULL #basilica::COSMIC_catalogue["SBS1", ]
   }
 
-
   # RUN START ------------------------------------------------------------------
   obj <- basilica::fit(
     x=x,
     k,
-    reference_catalogue=reference,
-    input_catalogue=input_catalogue,
+    reference_catalogue = reference,
+    input_catalogue = input_catalogue,
     cohort,
     lr,
     steps,
