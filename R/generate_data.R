@@ -9,6 +9,8 @@ generate.data <- function(
     similarity_limit,
     groups,
     mut_range,
+    private_sigs=list("rare"=c(), "common"=c()),
+    private_fracs=list("rare"=1., "common"=0),
     seed=NULL
 ) {
 
@@ -37,26 +39,42 @@ generate.data <- function(
   )
 
   # EXPOSURE ---------------------------------
-  alpha <- generate.exposure(beta=beta, groups=groups, seed=seed) # include group column
+  alpha <- generate.exposure(beta=beta,
+                             groups=groups,
+                             private_sigs=private_sigs,
+                             private_fracs=private_fracs,
+                             seed=seed) # include group column
 
   # removing group column
   if (!is.null(alpha$group)) {
+    groups = alpha$group
     alpha <- subset(alpha, select = -c(group))
   }
 
   # apply exposure limit (<0.05) to one fixed and one de-novo signature
-  alpha <- simbasilica:::edit.exposure(alpha = alpha)
+  # alpha <- simbasilica:::edit.exposure(alpha = alpha)
+
+  cat("ALPHA DONE\n")
 
   # THETA ------------------------------------
   num_samples <- length(groups)
   theta <- generate.theta(mut_range=mut_range, num_samples=num_samples, seed=seed)
 
-  # COUNT MATRIX -----------------------------
-  #m <- generate.counts(alpha=alpha, beta=beta, theta=theta, seed=seed)
+  cat("THETA DONE\n")
 
-  M <- as.data.frame(round(as.matrix(alpha*theta) %*% as.matrix(beta), digits = 0))
+  # COUNT MATRIX -----------------------------
+  # m <- generate.counts(alpha=alpha, beta=beta, theta=theta, seed=seed)
+
+  # M <- as.data.frame(round(as.matrix(alpha*theta) %*% as.matrix(beta), digits = 0))
+  rate = round(as.matrix(alpha*theta) %*% as.matrix(beta), digits = 0)
+  M = sapply(colnames(beta), function(s)
+    sapply(1:num_samples, function(n)
+      rpois(1, rate[n, s]))) %>% as.data.frame()
+
   rownames(M) <- rownames(alpha)
   colnames(M) <- colnames(beta)
+
+  cat("COUNTS DONE\n")
 
   # MODIFY COMPLEXITY VALUES -----------------
   if (is.numeric(targetX)) {
@@ -76,6 +94,7 @@ generate.data <- function(
     exp_denovo = list(signatures$denovo),
     targetX = targetX,
     inputX = inputX,
+    groups = list(groups)
   )
   return(obj)
 }

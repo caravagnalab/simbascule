@@ -14,11 +14,14 @@ generate.signatures <- function(
     similarity_limit,
     seed=NULL
 ) {
-  
+
+  if (complexity == -1)
+    return(list(fixed = reference_catalogue, denovo = denovo_catalogue))
+
   if (!is.null(seed)) {
     set.seed(seed = seed)
   }
-  
+
   if (is.numeric(complexity) & length(complexity)==2) {
     fixed_num <- complexity[1]
     denovo_num <- complexity[2]
@@ -41,14 +44,14 @@ generate.signatures <- function(
   } else {
     stop("wrong complexity argument!")
   }
-  
+
   SBS1 <- reference_catalogue['SBS1', ] # save SBS1 (data.frame)
   reference <- reference_catalogue[!(rownames(reference_catalogue) %in% c("SBS1")), ] # excludes SBS1
-  
+
   # catalogue signatures -------------------------------------------------------
-  
+
   if (fixed_num > 1) {
-    
+
     while (TRUE) {
       shuffled_reference = reference[sample(1:nrow(reference)), ]
       signatures <- rownames(shuffled_reference[1:(fixed_num-1), ])
@@ -66,11 +69,11 @@ generate.signatures <- function(
   else {
     fixed_df <- SBS1
   }
-  
+
   # denovo signatures ----------------------------------------------------------
-  
+
   if (denovo_num > 1) {
-    
+
     while (TRUE) {
       shuffled_denovo = denovo_catalogue[sample(1:nrow(denovo_catalogue)), ]
       signatures <- rownames(shuffled_denovo[1:denovo_num, ])
@@ -94,7 +97,7 @@ generate.signatures <- function(
   else {
     denovo_df <- NULL
   }
-  
+
   obj <- list(fixed = fixed_df, denovo = denovo_df)
   return(obj)
 }
