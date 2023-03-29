@@ -1,6 +1,7 @@
 library(gtools)
+library(fdrtool)
 
-generate.exposure <- function(beta, groups, seed=NULL) {
+generate.exposure <- function(beta, groups, private_sigs, private_fracs, seed=NULL) {
 
   signatures <- rownames(beta)
   if (!('SBS1' %in% signatures)) {
@@ -17,48 +18,68 @@ generate.exposure <- function(beta, groups, seed=NULL) {
 
   df_list <- list()
 
-  signatures <- signatures[! signatures %in% c('SBS1')] # excludes SBS1
+  private_sigs.all = c(private_sigs$common, private_sigs$rare)
+  shared_sigs = setdiff(signatures, private_sigs.all)
 
-  for (group in unique(groups)) {
+  unq = unique(groups)
+
+  data = data.frame(matrix(ncol=length(signatures)+1, nrow=0))
+  colnames(data) = c(signatures, "group")
+
+  for (i in 1:length(unq)) {
+    group = unq[i]
 
     if (length(unique(groups))==1) {
       sigNums <- length(signatures)
-      sigNames <- c('SBS1', signatures)
+      sigNames <- signatures
     } else {
-      sigNums <- sample(1:length(signatures), 1)
-      sigNames <- c('SBS1', sample(signatures, sigNums))
+
+      sigNames_priv = c()
+
+      # number of sigs to assign to "group"
+      if (length(private_sigs.all)>0) {
+        if (i == length(unq))
+          sigNums_priv = length(private_sigs.all) else
+          sigNums_priv = base::sample(1:round(length(private_sigs.all)/2), 1)
+
+        sigNames_priv = base::sample(private_sigs.all, sigNums_priv)
+        private_sigs.all = setdiff(private_sigs.all, sigNames_priv)
+
+      sigNames = c(shared_sigs, sigNames_priv)
+      sigNums = length(sigNames)
+      }
     }
-    #sigNums <- sample(1:length(signatures), 1)
-    #sigNames <- c('SBS1', sample(signatures, sigNums))
 
     num_samples <- length(groups[groups==group])
 
-    #print(paste("group", group, "has", sigNums+1, "signatures, and", num_samples, "samples"))
-
     # TEST - start
-    alpha <- data.frame(matrix(ncol = sigNums+1, nrow = 0))
-    for (i in 1:num_samples) {
-      s <- rdirichlet(1, alpha = sample(1:100, sigNums+1, replace=FALSE))
-      alpha <- rbind(alpha, c(s))
-    }
+    mean_prior = fdrtool::rhalfnorm(sigNums, 1) %>% setNames(sigNames)
+    alpha = sapply(1:sigNums, function(s)
+      sapply(1:num_samples, function(x) sample_positive_norm(mean=mean_prior[s], sd=1))
+      )
+    alpha = apply(alpha, 1, function(x) x/sum(x)) %>% t() %>% as.data.frame()
     colnames(alpha) <- sigNames
-    alpha$group <- rep(group, num_samples)
     # TEST - end
 
+    ## change values for rare/common
 
-    #x <- matrix( runif(num_samples * (sigNums+1), 0, 1), ncol = sigNums+1 )
-    #alpha <- x / rowSums(x)
-    #alpha <- as.data.frame(alpha)
-    #colnames(alpha) <- sigNames
-    #alpha$group <- rep(group, num_samples)
-    #print(alpha)
+    alpha = adjust_frequency(alpha,
+                     columns=intersect(private_sigs$rare, colnames(alpha)),
+                     frac=private_fracs$rare, check=">=", mean=rep(0,length.out=sigNums) %>% setNames(sigNames), sd=0)
+    alpha = adjust_frequency(alpha,
+                     columns=intersect(private_sigs$common, colnames(alpha)),
+                     frac=private_fracs$common, check="<=", mean=mean_prior, sd=1)
 
+    # alpha = alpha / rowSums(alpha). ## check if it works
+    alpha$group <- rep(group, num_samples)
 
-    df_list[length(df_list)+1] <- list(alpha)
+    data = data %>%
+      dplyr::add_row(alpha)
+
   }
 
   # merge all different group exposure matrices
-  data <- Reduce(function(x, y) merge(x, y, all=TRUE), df_list)
+  # data <- Reduce(function(x, y) { print(c(x,y)); merge(x, y, all=TRUE) }, df_list)
 
   # sort columns
   column_names <- colnames(data)
@@ -71,4 +92,25 @@ generate.exposure <- function(beta, groups, seed=NULL) {
   data[order(data$group), ] # sort rows by group column
 
   return(data)
+  }
+
+
+adjust_frequency = function(alpha, columns, frac, check, mean, sd) {
+  nn = round(nrow(alpha) * frac)
+  for (colname in columns) {
+    if (!match.fun(check)(sum(alpha[,colname]>0), nn) ) next
+    samples.tmp = sample(1:nrow(alpha), size=nn)
+    alpha[-samples.tmp, colname] = sample_positive_norm(mean[colname], sd)
+  }
+
+  return(alpha)
+}
+
+
+sample_positive_norm = function(mean, sd) {
+  while(TRUE) {
+    n = rnorm(1, mean, sd)
+    if (n >= 0)
+      return(n)
+  }
 }
