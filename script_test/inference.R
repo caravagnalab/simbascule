@@ -1,19 +1,59 @@
-reticulate::use_condaenv("base")
-pyb = reticulate::import("pybasilica")
-pd = reticulate::import("pandas")
+## Using the R basilica package ####
+reticulate::use_condaenv("basilica-env")
 
 x = readRDS("./script_test/simulations/simul.N100.G5.s23.Rds")
 
-counts = x$x[[1]]
-groups_true = x$groups[[1]] -1
-k_denovo_true = 9
-k_fixed_true = 4
-beta_fixed = pd$DataFrame(x$exp_fixed[[1]], index=rownames(x$exp_fixed[[1]]), columns=colnames(x$exp_fixed[[1]]))
+# py_path = ... PYTHON PACKAGE PATH (pybasilicah)
+py = reticulate::import_from_path(module="pybasilica", path=py_path)
 
-# run.fit(data, k_list=k_denovo_true+k_fixed_true, groups=groups_true)
-x.fit = pyb$fit(counts, k_list=as.integer(k_denovo_true+k_fixed_true), groups=groups_true)
-x.fit = pyb$fit(counts, k_list=as.integer(k_denovo_true), groups=groups_true,
-                 beta_fixed=beta_fixed)
+reference = COSMIC_catalogue
+
+## list of signatures we might remove
+rm_sigs = list(
+  ## signatures NOT validated
+  not_validated = paste0("SBS", c("7c", "7d", 8, 9, "10c", "10d", 12, 16, "17a",
+                                  19, 23, 25, 29, 32, 33, 34, 37, 38, 39, 40,
+                                  41, 84, 85, 86, 89, 91, 92, 93, 94)),
+  ## signatures with UNKNOWN aetiology
+  unk_aetiology = paste0("SBS", c(8, 12, 16, "17a", "17b", 19, 23, 28, 33, 34,
+                                  37, 39, 40, 41, 89, 91, 93, 94)),
+  ## possible sequencing ARTIFACTS
+  seq_artifacts = paste0("SBS", c(27,43:60,95))
+)
+
+counts = x$x[[1]]
+# groups_true = x$groups[[1]] -1
+
+x.fit = fit(counts, py=py, k=1:5,
+            input_catalogue=COSMIC_catalogue[c("SBS1","SBS5"),],
+            reference_catalogue=reference,
+            cosine_by_subs=FALSE)
+
+
+
+
+
+
+## Using directly the Python functions ####
+# reticulate::use_condaenv("base")
+# pyb = reticulate::import("pybasilica")
+# pd = reticulate::import("pandas")
+#
+# x = readRDS("./script_test/simulations/simul.N100.G5.s23.Rds")
+#
+# counts = x$x[[1]]
+# groups_true = x$groups[[1]] -1
+# k_denovo_true = 9
+# k_fixed_true = 4
+# beta_fixed = pd$DataFrame(x$exp_fixed[[1]], index=rownames(x$exp_fixed[[1]]), columns=colnames(x$exp_fixed[[1]]))
+#
+# # run.fit(data, k_list=k_denovo_true+k_fixed_true, groups=groups_true)
+# x.fit = pyb$fit(counts, k_list=as.integer(k_denovo_true+k_fixed_true), groups=groups_true)
+# x.fit = pyb$fit(counts, k_list=as.integer(k_denovo_true), groups=groups_true,
+#                  beta_fixed=beta_fixed)
+
+
+## Visualizations ####
 
 N = x.fit$x %>% nrow()
 
@@ -24,8 +64,6 @@ beta_true = x$exp_fixed[[1]] %>% rbind(x$exp_denovo[[1]]) %>% as.data.frame()
 alpha = x.fit$alpha$numpy() %>% as.data.frame(); colnames(alpha) = c(rownames(x.fit$beta_fixed), rownames(x.fit$beta_denovo))
 alpha$group = groups_true +1
 alpha_true = x$exp_exposure[[1]] %>% dplyr::mutate(group=x$groups[[1]])
-
-
 
 
 
