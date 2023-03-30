@@ -1,13 +1,19 @@
 library(lsa)
+library(dplyr)
 library(ggplot2)
 source("./script_test/helper_fns.R")
+source("./R/generate_data.R")
+source("./R/signatures.R")
+source("./R/input.R")
+source("./R/exposure.R")
+source("./R/theta.R")
 
 # Generate inputs ####
 
 cosmic = read.csv("./script_test/COSMIC_v3.3.1_SBS_GRCh38.txt", sep="\t") %>%
   tibble::column_to_rownames(var="Type") %>% t()
 
-cosine_limit = .5
+cosine_limit = .8
 n_fixed = 4 # n of fixed signatures
 
 ## De Novo signatures ####
@@ -41,10 +47,13 @@ reference_cosine = lsa::cosine(reference_cat %>% t())
 
 ## Generate dataset ####
 
-x = single_dataset(100, 5, 15:100, reference_cat, denovo_cat, reference_cosine, denovo_cosine,
+x = single_dataset(1000, 5, 150:1000, reference_cat, denovo_cat, reference_cosine, denovo_cosine,
                    private_sigs=list("rare"=private_rare,"common"=private_common),
                    private_fracs=list("rare"=0.05,"common"=0.3),
                    cosine_limit, seed=23, out_path="./script_test/simulations/")
+
+
+saveRDS(x, file = "./script_test/simulations/simul.N1000.G5.s23.Rds")
 
 
 x$x[[1]] %>%
@@ -61,7 +70,6 @@ x$exp_fixed[[1]] %>% as.data.frame() %>%
 
 x$exp_denovo[[1]] %>% as.data.frame() %>%
   plot_beta()
-
 
 x$exp_exposure[[1]] %>% dplyr::mutate(group=x$groups[[1]]) %>%
   plot_alpha()

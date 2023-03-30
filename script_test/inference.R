@@ -1,9 +1,13 @@
 ## Using the R basilica package ####
 reticulate::use_condaenv("basilica-env")
+devtools::load_all("/Users/ariannatasciotti/Documents/GDA/basilicah")
 
-x = readRDS("./script_test/simulations/simul.N100.G5.s23.Rds")
+
+x = readRDS("./script_test/simulations/simul.N1000.G5.s23.Rds")
 
 # py_path = ... PYTHON PACKAGE PATH (pybasilicah)
+path=paste0("/Users/ariannatasciotti/Documents/GDA/")
+py_path = paste0(path, "pybasilicah")
 py = reticulate::import_from_path(module="pybasilica", path=py_path)
 
 reference = COSMIC_catalogue
@@ -30,8 +34,11 @@ x.fit = fit(counts, py=py, k=1:5,
             cosine_by_subs=FALSE)
 
 
+saveRDS(x.fit, "./script_test/fits/fit.sim.nogroups.Rds")
 
-
+plot_signatures(x.fit)
+plot_exposure(x.fit)
+plot_similarity_reference(x.fit)
 
 
 ## Using directly the Python functions ####
