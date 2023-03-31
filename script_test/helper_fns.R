@@ -57,11 +57,27 @@ single_dataset = function(N, n_groups, samples_per_group,
 }
 
 
+plot_muts = function(x) {
+  return(
+    x$x[[1]] %>%
+      dplyr::mutate(group=x$groups[[1]]) %>%
+      reshape2::melt(id="group", variable.name="context", value.name="n_muts") %>%
+      dplyr::group_by(group) %>%
+      dplyr::mutate(n_muts_d=n_muts/sum(n_muts)) %>%
+      ggplot() +
+      geom_bar(aes(x=context, y=n_muts_d), stat="identity") +
+      facet_grid(group~.)
+  )
+}
 
 
-plot_alpha = function(alpha)
+
+plot_alpha = function(x) {
+  alpha = x$exp_exposure[[1]]
+  if (!"group" %in% colnames(x)) alpha$group = x$groups[[1]]
   return(
     alpha %>%
+      as.data.frame() %>%
       reshape2::melt(id="group", variable.name="sbs", value.name="alpha") %>%
       # dplyr::mutate(type=dplyr::case_when(
       #   sbs %in% private_rare ~ "private_rare",
@@ -72,14 +88,20 @@ plot_alpha = function(alpha)
       facet_grid(group~.) + ylim(0,1) +
       theme_bw() + theme(legend.position="bottom")
   )
+}
 
 
-plot_beta = function(beta)
+
+plot_beta = function(x) {
+  beta = rbind(x$exp_fixed[[1]],
+               x$exp_denovo[[1]])
   return(
     beta %>%
+      as.data.frame() %>%
       tibble::rownames_to_column(var="sbs") %>%
       reshape2::melt(id="sbs", variable.name="context", value.name="beta") %>%
       ggplot() +
       geom_bar(aes(x=context, y=beta), stat="identity") +
       facet_grid(sbs~.)
   )
+}
