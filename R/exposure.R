@@ -71,7 +71,7 @@ generate.exposure <- function(beta, groups, private_sigs, private_fracs, seed=NU
                      frac=private_fracs$common, check="<=", mean=mean_prior, sd=1)
 
     # alpha = alpha / rowSums(alpha). ## check if it works
-    alpha$group <- rep(group, num_samples)
+    alpha$group <- group
 
     data = data %>%
       dplyr::add_row(alpha)
