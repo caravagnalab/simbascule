@@ -56,12 +56,15 @@ x.fit.noreg %>% basilica::plot_exposure()
 x.fit.noreg %>% basilica::plot_similarity_reference()
 
 
-x.fit.reg = basilica::fit(x=x$x[[1]], k=1:7, py=py,
+x.fit.reg = basilica::fit(x=x$x[[1]], k=1:7, py=py, groups = x$groups[[1]]-1,
                           reference_catalogue=basilica::COSMIC_catalogue[c(shared, private_common),],
                           input_catalogue=basilica::COSMIC_catalogue[c("SBS1","SBS5"),],
                           reg_weight=1.)
 
-x.fit.reg %>% plot_signatures()
-x.fit.reg %>% plot_exposure(sort_by = "D3")
-x.fit.reg %>% plot_similarity_reference()
+x.fit.reg %>% basilica::plot_signatures()
+x.fit.reg %>% basilica::plot_exposure()
+x.fit.reg %>% basilica::plot_similarity_reference()
+
+saveRDS(x.fit.reg, "./script_test/simulations/fit_reg_groups_subcosmic.N100.G5.s23.Rds")
+
 
