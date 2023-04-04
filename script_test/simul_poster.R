@@ -8,24 +8,41 @@ devtools::load_all("~/GitHub/basilica/")
 # cosmic = read.csv("./script_test/COSMIC_v3.3.1_SBS_GRCh38.txt", sep="\t") %>%
 #   tibble::column_to_rownames(var="Type") %>% t()
 
-cosmic = COSMIC_filtered
+# cosmic = COSMIC_filtered
+#
+# # cosine_limit = .8
+# # n_fixed = 4 # n of fixed signatures
+#
+# ## De Novo signatures ####
+#
+# shared = c("SBS1","SBS5","SBS17b")
+#
+# private_common = c("SBS4", "SBS6", "SBS10a")
+#
+# private_rare = c()
+#
+# denovo_cat = cosmic[c(private_common, private_rare),]
+#
+# ## Refrence signatures ####
+# reference_cat = cosmic[shared,]
 
-# cosine_limit = .8
-# n_fixed = 4 # n of fixed signatures
 
-## De Novo signatures ####
-
-shared = c("SBS1","SBS5","SBS17b")
-
-private_common = c("SBS4", "SBS6", "SBS10a")
-
+shared = c("SBS1","SBS5", "SBS17b")
+sbs.names = c("SBS1","SBS5",
+            "SBS2","SBS6","SBS10a","SBS10b","SBS21",  # CRC
+            "SBS2","SBS3","SBS4","SBS8","SBS13","SBS15","SBS17a", "SBS17b", "SBS18",  # Lung
+              "SBS3","SBS8","SBS10","SBS13","SBS17","SBS18","SBS20","SBS26")  # Breast
+sbs.names = unique(sbs.names)
+catalogue = COSMIC_filtered[intersect(sbs.names, rownames(COSMIC_filtered)),]
+reference_cat = catalogue[shared,]
+# 2 -> sbs private to a group and with high frequency (common)
+## apobec -> SBS2; tobacco smoking -> SBS4; chemotherapy -> SBS25
+private_common = setdiff(rownames(catalogue), shared)
+# 3 -> sbs private to a group and with low frequency (rare)
+## defective DNA mmr -> SBS26; defective DNA mmr breast cancer -> SBS44; apobec -> SBS13;
+## somatic hypermutation in lymphoid cells -> SBS9; exposure to e. coli in CRC -> SBS88
 private_rare = c()
-
-denovo_cat = cosmic[c(private_common, private_rare),]
-
-## Refrence signatures ####
-reference_cat = cosmic[shared,]
-
+denovo_cat = catalogue[c(private_common, private_rare),]
 
 
 ## Cosine similarity ####
@@ -35,11 +52,11 @@ ref_cosine = lsa::cosine(reference_cat %>% t())
 
 ## Generate dataset ####
 
-# x = single_dataset(100, 2, 50:100, reference_cat, denovo_cat, reference_cosine, denovo_cosine,
+# x = single_dataset(1000, 5, 100:1000, reference_cat, denovo_cat, reference_cosine, denovo_cosine,
 #                    private_sigs=list("rare"=private_rare,"common"=private_common),
 #                    private_fracs=list("rare"=0.05,"common"=0.3), cosine_limit=cosine_limit,
 #                    seed=23, out_path="./script_test/simulations/")
-#
+# plot_alpha(x)
 
 
 ## Load Data ####
