@@ -63,10 +63,13 @@ single_dataset = function(N, n_groups, samples_per_group,
 ## Visualization functions ####
 my_plot_exposure = function(x, cls=RColorBrewer::brewer.pal(n=9, name="Set1")) {
   alpha = x$exp_exposure[[1]]
+  n = ncol(alpha)
+  qual_col_pals = RColorBrewer::brewer.pal.info[RColorBrewer::brewer.pal.info$category == 'qual',]
+  cls = unlist(mapply(RColorBrewer::brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
 
   return(
     alpha %>% as.data.frame() %>%
-      dplyr::mutate(sample=paste0(1:100)) %>%
+      dplyr::mutate(sample=paste0(1:nrow(alpha))) %>%
       reshape2::melt(id="sample") %>%
       dplyr::rename(Signature=variable) %>%
       ggplot(aes(x=sample, y=value, fill=Signature)) +
@@ -80,6 +83,10 @@ my_plot_exposure = function(x, cls=RColorBrewer::brewer.pal(n=9, name="Set1")) {
 
 my_plot_signatures = function(x, cls=RColorBrewer::brewer.pal(n=9, name="Set1")) {
   beta = rbind(x$exp_fixed[[1]], x$exp_denovo[[1]])
+  n = ncol(beta)
+  qual_col_pals = RColorBrewer::brewer.pal.info[RColorBrewer::brewer.pal.info$category == 'qual',]
+  cls = unlist(mapply(RColorBrewer::brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+
   return(
     beta %>%
       as.data.frame() %>%
@@ -135,19 +142,19 @@ plot_simulated_data = function(x, cls=RColorBrewer::brewer.pal(n=9, name="Set1")
 #   )
 # }
 
-# plot_alpha = function(x) {
-#   alpha = x$exp_exposure[[1]]
-#   if (!"group" %in% colnames(x)) alpha$group = x$groups[[1]]
-#   return(
-#     alpha %>%
-#       as.data.frame() %>%
-#       reshape2::melt(id="group", variable.name="sbs", value.name="alpha") %>%
-#       ggplot() +
-#       geom_point(aes(x=sbs, y=alpha), size=.5) +
-#       facet_grid(group~.) + ylim(0,1) +
-#       theme_bw() + theme(legend.position="bottom")
-#   )
-# }
+plot_alpha = function(x) {
+  alpha = x$exp_exposure[[1]]
+  if (!"group" %in% colnames(x)) alpha$group = x$groups[[1]]
+  return(
+    alpha %>%
+      as.data.frame() %>%
+      reshape2::melt(id="group", variable.name="sbs", value.name="alpha") %>%
+      ggplot() +
+      geom_point(aes(x=sbs, y=alpha), size=.5) +
+      facet_grid(group~.) + ylim(0,1) +
+      theme_bw() + theme(legend.position="bottom")
+  )
+}
 
 # plot_beta = function(x) {
 #   beta = rbind(x$exp_fixed[[1]],
