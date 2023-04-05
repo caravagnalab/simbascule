@@ -52,7 +52,7 @@ ref_cosine = lsa::cosine(reference_cat %>% t())
 
 ## Generate dataset ####
 
-<<<<<<< HEAD
+
 x = single_dataset(100, 2, 50:100, reference_cat, denovo_cat, reference_cosine, denovo_cosine,
                    private_sigs=list("rare"=private_rare,"common"=private_common),
                    private_fracs=list("rare"=0.05,"common"=0.3), cosine_limit=cosine_limit,
@@ -83,7 +83,7 @@ x.fit.reg = basilica::fit(x=x$x[[1]], k=1:7, py=py, groups = x$groups[[1]]-1,
                           reference_catalogue=basilica::COSMIC_catalogue[c(shared, private_common),],
                           input_catalogue=basilica::COSMIC_catalogue[c("SBS1","SBS5"),],
                           reg_weight=1.)
-=======
+
 # x = single_dataset(1000, 5, 100:1000, reference_cat, denovo_cat, reference_cosine, denovo_cosine,
 #                    private_sigs=list("rare"=private_rare,"common"=private_common),
 #                    private_fracs=list("rare"=0.05,"common"=0.3), cosine_limit=cosine_limit,
@@ -93,7 +93,7 @@ x.fit.reg = basilica::fit(x=x$x[[1]], k=1:7, py=py, groups = x$groups[[1]]-1,
 
 ## Load Data ####
 x = readRDS("~/GitHub/simbasilica/script_test/simulations/simul.N100.G2.s23.Rds"); N=100; G=2
->>>>>>> 9b7bbab784c29c91e4fef4da145b625e1f0248b5
+
 
 dn_c = ggsci::pal_nejm()(x$exp_denovo[[1]] %>% nrow)
 names(dn_c) = x$exp_denovo[[1]] %>% rownames()
