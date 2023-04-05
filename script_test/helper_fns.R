@@ -57,20 +57,90 @@ single_dataset = function(N, n_groups, samples_per_group,
 }
 
 
-plot_muts = function(x) {
+
+
+
+## Visualization functions ####
+my_plot_exposure = function(x, cls=RColorBrewer::brewer.pal(n=9, name="Set1")) {
+  alpha = x$exp_exposure[[1]]
+  n = ncol(alpha)
+  qual_col_pals = RColorBrewer::brewer.pal.info[RColorBrewer::brewer.pal.info$category == 'qual',]
+  cls = unlist(mapply(RColorBrewer::brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+
   return(
-    x$x[[1]] %>%
-      dplyr::mutate(group=x$groups[[1]]) %>%
-      reshape2::melt(id="group", variable.name="context", value.name="n_muts") %>%
-      dplyr::group_by(group) %>%
-      dplyr::mutate(n_muts_d=n_muts/sum(n_muts)) %>%
-      ggplot() +
-      geom_bar(aes(x=context, y=n_muts_d), stat="identity") +
-      facet_grid(group~.)
+    alpha %>% as.data.frame() %>%
+      dplyr::mutate(sample=paste0(1:nrow(alpha))) %>%
+      reshape2::melt(id="sample") %>%
+      dplyr::rename(Signature=variable) %>%
+      ggplot(aes(x=sample, y=value, fill=Signature)) +
+      geom_bar(stat="identity") +
+      scale_fill_manual(values=cls) +
+      labs(title="Exposure") +
+      theme(axis.ticks.x=element_blank(),axis.text.x=element_blank()) + ylab("")
   )
 }
 
 
+my_plot_signatures = function(x, cls=RColorBrewer::brewer.pal(n=9, name="Set1")) {
+  beta = rbind(x$exp_fixed[[1]], x$exp_denovo[[1]])
+  n = ncol(beta)
+  qual_col_pals = RColorBrewer::brewer.pal.info[RColorBrewer::brewer.pal.info$category == 'qual',]
+  cls = unlist(mapply(RColorBrewer::brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+
+  return(
+    beta %>%
+      as.data.frame() %>%
+      tibble::rownames_to_column(var="sbs") %>%
+      reshape2::melt(id="sbs") %>%
+      dplyr::rename(Var1=sbs, Var2=variable) %>%
+      dplyr::mutate(substitution=paste0(substr(start=3, stop=3, Var2),">",substr(start=5, stop=5, Var2)),
+             context=paste0(substr(start=1, stop=1, Var2), "_", substr(start=7, stop=7, Var2))) %>%
+      ggplot() +
+      geom_bar(aes(value, x=context, fill=Var1), stat="identity") +
+      facet_grid(Var1 ~ substitution, scales="free") +
+      my_ggplot_theme() +
+      theme(axis.ticks.x=element_blank(),axis.text.x=element_blank()) +
+      scale_fill_manual(values=cls) +
+      guides(fill="none")  +
+      labs(x="Context", y="", title="Signatures")
+  )
+}
+
+
+plot_simulated_data = function(x, cls=RColorBrewer::brewer.pal(n=9, name="Set1")) {
+  x$x[[1]] %>%
+    dplyr::mutate(group=paste0(x$groups[[1]])) %>%
+    reshape2::melt(id="group") %>%
+    dplyr::mutate(substitution=substr(start=3, stop=5, variable),
+                  context = paste0(substr(start=1, stop=1, variable), "_", substr(start=7, stop=7, variable))) %>%
+    dplyr::group_by(group) %>%
+    dplyr::mutate(n_muts=value/sum(value)) %>%
+
+    ggplot() +
+    geom_bar(aes(y=n_muts, x=context, fill=group), stat="identity") +
+    my_ggplot_theme()  +
+    facet_grid(group~ substitution, scales="free") +
+    scale_fill_manual(values=cls) +
+    theme(strip.text.y=element_text(angle=0), axis.text.x=element_text(angle=90, size=4)) +
+    labs(x="Context", y="Mutation count") + labs(title="Data")
+}
+
+
+
+## OLD PLOTS ####
+
+# plot_muts = function(x) {
+#   return(
+#     x$x[[1]] %>%
+#       dplyr::mutate(group=x$groups[[1]]) %>%
+#       reshape2::melt(id="group", variable.name="context", value.name="n_muts") %>%
+#       dplyr::group_by(group) %>%
+#       dplyr::mutate(n_muts_d=n_muts/sum(n_muts)) %>%
+#       ggplot() +
+#       geom_bar(aes(x=context, y=n_muts_d), stat="identity") +
+#       facet_grid(group~.)
+#   )
+# }
 
 plot_alpha = function(x) {
   alpha = x$exp_exposure[[1]]
@@ -79,10 +149,6 @@ plot_alpha = function(x) {
     alpha %>%
       as.data.frame() %>%
       reshape2::melt(id="group", variable.name="sbs", value.name="alpha") %>%
-      # dplyr::mutate(type=dplyr::case_when(
-      #   sbs %in% private_rare ~ "private_rare",
-      #   sbs %in% private_common ~ "private_common",
-      #   sbs %in% shared ~ "shared")) %>%
       ggplot() +
       geom_point(aes(x=sbs, y=alpha), size=.5) +
       facet_grid(group~.) + ylim(0,1) +
@@ -90,18 +156,16 @@ plot_alpha = function(x) {
   )
 }
 
-
-
-plot_beta = function(x) {
-  beta = rbind(x$exp_fixed[[1]],
-               x$exp_denovo[[1]])
-  return(
-    beta %>%
-      as.data.frame() %>%
-      tibble::rownames_to_column(var="sbs") %>%
-      reshape2::melt(id="sbs", variable.name="context", value.name="beta") %>%
-      ggplot() +
-      geom_bar(aes(x=context, y=beta), stat="identity") +
-      facet_grid(sbs~.)
-  )
-}
+# plot_beta = function(x) {
+#   beta = rbind(x$exp_fixed[[1]],
+#                x$exp_denovo[[1]])
+#   return(
+#     beta %>%
+#       as.data.frame() %>%
+#       tibble::rownames_to_column(var="sbs") %>%
+#       reshape2::melt(id="sbs", variable.name="context", value.name="beta") %>%
+#       ggplot() +
+#       geom_bar(aes(x=context, y=beta), stat="identity") +
+#       facet_grid(sbs~.)
+#   )
+# }
