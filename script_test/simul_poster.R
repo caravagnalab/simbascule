@@ -44,17 +44,19 @@ plot_muts(x)
 if (Sys.getenv("GITHUB_PATH") == "") path=paste0("~/dati_elenab/signatures/") else path=Sys.getenv("GITHUB_PATH")
 py_path = paste0(path, "pybasilica")
 py = reticulate::import_from_path(module="pybasilica", path=py_path)
-x.fit.noreg = basilica::fit(x=x$x[[1]], k=1:7, py=py, # groups = x$groups[[1]]-1,
-                            reference_catalogue=basilica::COSMIC_catalogue[c(shared, private_common),],
-                            input_catalogue=basilica::COSMIC_catalogue[c("SBS1","SBS5"),],
-                            reg_weight=0.)
 
-saveRDS(x.fit.noreg, "./script_test/simulations/fit_noreg_nogroups_subcosmic.N100.G5.s23.Rds")
+x.fit.noreg = basilica::fit(x=x$x[[1]], k=0:7, py=py, # groups = x$groups[[1]]-1,
+                            # reference_catalogue=basilica::COSMIC_catalogue[c(shared, private_common),],
+                            reference_catalogue=basilica::COSMIC_catalogue[shared,],
+                            input_catalogue=basilica::COSMIC_catalogue[c("SBS1","SBS5"),])
 
-x.fit.noreg %>% basilica::plot_signatures()
-x.fit.noreg %>% basilica::plot_exposure()
-x.fit.noreg %>% basilica::plot_similarity_reference()
 
+
+saveRDS(x.fit.noreg, "./script_test/simulations/fit_noreg_nogroups_no_private.Rds")
+
+x.fit.noreg %>% plot_signatures()
+x.fit.noreg %>% plot_exposure()
+x.fit.noreg %>% plot_similarity_reference(reference = cosmic[c(shared,private_common, private_rare),])
 
 x.fit.reg = basilica::fit(x=x$x[[1]], k=1:7, py=py, groups = x$groups[[1]]-1,
                           reference_catalogue=basilica::COSMIC_catalogue[c(shared, private_common),],
