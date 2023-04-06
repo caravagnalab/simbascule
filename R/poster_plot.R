@@ -479,19 +479,32 @@ ggsave(exp,filename = "cnv_exp.png",height = 4.5,width = 8.5)
 
 # lung and colorectal
 
-x <- readRDS("~/Desktop/processed_data/test_fit.Rds")
+x <- readRDS("~/Documents/GitHub/basilica/nobuild/test_fit.hier2.Rds")
 
-exposure_lung = read.table("~/Desktop/processed_data/SBS_v2.03/organSpecificExposures/GEL/GEL-Lung_SBS_exposures_finalT.tsv",row.names = 1) %>%
+setwd("~/Documents/GitHub/simbasilica/processed_data")
+
+exposure_lung = read.table("./SBS_v2.03/organSpecificExposures/GEL/GEL-Lung_SBS_exposures_finalT.tsv",row.names = 1) %>%
   dplyr::select(-unassigned)
-exposure_colorectal = read.table("~/Desktop/processed_data/SBS_v2.03/organSpecificExposures/GEL/GEL-Colorectal_SBS_exposures_finalT.tsv",
+
+exposure_colorectal = read.table("./SBS_v2.03/organSpecificExposures/GEL/GEL-Colorectal_SBS_exposures_finalT.tsv",
                                  row.names = 1)  %>% dplyr::select(-unassigned)
 
-serena_signatures = read.table("~/Desktop/processed_data/SBS_v2.03/OrganSpecificSigs_GEL_SBS_v2.03.tsv",row.names = 1)
+serena_signatures = read.table("./SBS_v2.03/OrganSpecificSigs_GEL_SBS_v2.03.tsv",row.names = 1)
 
 serena_signatures = serena_signatures[,c(colnames(exposure_lung),colnames(exposure_colorectal))] %>% t
 
+colnames(exposure_lung) = stringr::str_remove(colnames(exposure_lung),pattern = paste0("GEL.Lung_common_"))
+colnames(exposure_lung) = stringr::str_remove(colnames(exposure_lung),pattern = paste0("GEL.Lung_rare_"))
+colnames(exposure_colorectal) = stringr::str_remove(colnames(exposure_colorectal),pattern = paste0("GEL.Colorectal_common_"))
+colnames(exposure_colorectal) = stringr::str_remove(colnames(exposure_colorectal),pattern = paste0("GEL.Colorectal_rare_"))
+
+common = intersect(colnames(exposure_lung),colnames(exposure_colorectal))
+
+exposure_colorectal = exposure_colorectal/rowSums(exposure_colorectal)
+exposure_lung = exposure_lung/rowSums(exposure_lung)
+
 exposure_serena = exposure_colorectal %>% mutate(id = rownames(exposure_colorectal),organ = "Colorectal") %>%
-  full_join(exposure_lung %>% mutate(id = rownames(exposure_lung),organ = "Lung"), by = c("id","organ"))
+  full_join(exposure_lung %>% mutate(id = rownames(exposure_lung),organ = "Lung"), by = c("id","organ",common))
 
 exposure_serena[is.na(exposure_serena)] = 0
 
@@ -502,10 +515,9 @@ exposure_serena = exposure_serena %>% dplyr::select(-id)
 exposure_serena = exposure_serena[rownames(x$input$counts),]
 
 
-# data reconstruction
+organs = exposure_serena %>% dplyr::select(organ) %>% mutate(Sample = rownames(exposure_serena)) %>% rename(groups = organ) %>%
+  mutate(a = ifelse(groups =="Colorectal",0,1)) %>% as_tibble() %>% arrange(a) %>% dplyr::select(-a)
 
-# organs = exposure_serena %>% dplyr::select(organ) %>% mutate(id = rownames(exposure_serena))
-#
 # exposure_serena =  exposure_serena %>% dplyr::select(-organ)
 #
 # serena_rec = as.matrix(exposure_serena*rowSums(x$input$counts)) %*%
@@ -527,15 +539,43 @@ exposure_serena = exposure_serena[rownames(x$input$counts),]
 
 
 # plot_group_exposure
+samples_order = organs$Sample
 
-exposure_serena %>% mutate(id = rownames(exposure_serena)) %>% full_join(organs, by = "id")
+common = intersect(x$fit$catalogue_signatures %>% rownames(),exposure_serena %>% colnames())
+
+cls_shared= c(get_signature_colors(x)[common])
+colnames(exposure_serena)
+
+cls_pr = c(RColorBrewer::brewer.pal(12,"Paired"),RColorBrewer::brewer.pal(12,"Set3"),RColorBrewer::brewer.pal(7,"Accent"),
+           RColorBrewer::brewer.pal(3,"Dark2"))
+
+names(cls_pr) = colnames(exposure_serena)[!colnames(exposure_serena) %in% c(common,"organ")]
+
+pl_exp_serena = exposure_serena %>% mutate(Sample = rownames(exposure_serena)) %>% reshape2::melt() %>% rename(Exposure = value,Signature = variable) %>%
+  ggplot(aes(x=factor(Sample,levels = samples_order), y=Exposure, fill=Signature)) +
+  ggplot2::geom_bar(stat = "identity") +
+  my_ggplot_theme() +
+  ggplot2::scale_y_continuous(labels=scales::percent) +
+  ggplot2::scale_fill_manual(values = c(cls_shared,cls_pr)) +
+  ggplot2::theme(
+    axis.text.x = ggplot2::element_text(angle = 90, hjust = 1)
+  ) +
+  ggplot2::labs(
+    title = paste0(x$cohort, ' (n = ', x$n_samples, ')'),
+    caption = 'Sorted by sample'
+  ) + ggplot2::facet_grid(organ~., scales="free_x") +
+  theme(axis.ticks.x = element_blank(),axis.text.x = element_blank()) + labs(x = "",title = "GEL.crcr_lung 200 (Degasperi et al, Science, 2022)")
+
+ggsave(pl_exp_serena,filename = "pl_exp_serena.png",height = 4,width = 7)
 
 
+x$fit$exposure[x$fit$exposure < 0.05] = 0
+x$fit$exposure = x$fit$exposure/rowSums(x$fit$exposure)
 
+pl_exp_bas = plot_exposure(x,labels = organs,thr = 0) + labs(x = "", title = "GEL.crcr_lung 200 (Basilica)") +
+  theme(axis.ticks.x = element_blank(),axis.text.x = element_blank())
 
-
-plot_exposure(x)
-
+ggsave(pl_exp_bas,filename = "exp_bas_gel.png",height = 4,width = 7)
 
 
 # plot cosines
@@ -559,27 +599,30 @@ plot_exposure(x)
 
 # basilica signatures
 
-basilica_sign = plot_signatures(x)
+basilica_sign = plot_signatures(x) + labs(x = "", title = "Inferred Signature (basilica)") +
+  theme(axis.ticks.x = element_blank(),axis.text.x = element_blank(), legend.position = "none")
+
+ggsave(basilica_sign,filename = "basilica_sign_gel.png",height = 8,width = 10)
 
 # serena signatures
 # lung
 
-plot_serena_sign = function(type,cls){
-
-lung_sign = serena_signatures[grepl(rownames(serena_signatures),pattern = type),]
-
-rownames(lung_sign) = stringr::str_remove(rownames(lung_sign),pattern = paste0("GEL.",type,"_common_"))
-rownames(lung_sign) = stringr::str_remove(rownames(lung_sign),pattern = paste0("GEL.",type,"_rare_"))
-
-names(cls) = rownames(lung_sign)
-plot_data_signatures(lung_sign %>% as.data.frame(),cls = cls,context = F) + labs(title = paste0(type," Cancer"))
-
-}
-
-lung = plot_serena_sign("Lung", cls = c(ggsci::pal_simpsons()(16),ggsci::pal_jama()(4)))
-
-col = plot_serena_sign("Colorectal",cls = c(ggsci::pal_simpsons()(16),ggsci::pal_nejm()(8),ggsci::pal_lancet()(4)) )
-
+# plot_serena_sign = function(type,cls){
+#
+# lung_sign = serena_signatures[grepl(rownames(serena_signatures),pattern = type),]
+#
+# rownames(lung_sign) = stringr::str_remove(rownames(lung_sign),pattern = paste0("GEL.",type,"_common_"))
+# rownames(lung_sign) = stringr::str_remove(rownames(lung_sign),pattern = paste0("GEL.",type,"_rare_"))
+#
+# names(cls) = rownames(lung_sign)
+# plot_data_signatures(lung_sign %>% as.data.frame(),cls = cls,context = F) + labs(title = paste0(type," Cancer"))
+#
+# }
+#
+# lung = plot_serena_sign("Lung", cls = c(ggsci::pal_simpsons()(16),ggsci::pal_jama()(4)))
+#
+# col = plot_serena_sign("Colorectal",cls = c(ggsci::pal_simpsons()(16),ggsci::pal_nejm()(8),ggsci::pal_lancet()(4)) )
+#
 
 
 
