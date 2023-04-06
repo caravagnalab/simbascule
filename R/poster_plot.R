@@ -108,7 +108,7 @@ x.fit.noreg <- readRDS("~/Documents/GitHub/simbasilica/script_test/simulations/f
 p1 = plot_signatures(x.fit.noreg, Type = 'Catalogue') + labs(title = 'Inferred Catalogue Signatures', x = "", y = "") +
 theme(axis.ticks.x = element_blank(),axis.text.x = element_blank(),legend.position = "none")
 
-ggsave(p1,filename = "inferred_catalogue_example.png",width = 7,height = 4)
+ggsave(p1,filename = "inferred_catalogue_example.png",width = 7,height = 3)
 
 names(cls) = c("SBS1","SBS5","SBS17b","D2","D3","D1")
 
@@ -155,7 +155,7 @@ cosmic = read.csv("./script_test/COSMIC_v3.3.1_SBS_GRCh38.txt", sep="\t") %>%
 
 input_list = c("SBS1","SBS5","SBS6","SBS7d","SBS33","SBS22","SBS10a","SBS4")
 
-sim_ref = x.fit.noreg %>% plot_similarity_reference(reference = cosmic[input_list,],context = F)
+sim_ref = x.fit.noreg %>% plot_similarity_reference(reference = cosmic[input_list,],context = F) +  plot_annotation(title = "De Novo discovery")
 
 reconstr_data =  as.matrix(exp*tmb) %*%  as.matrix(signatures) %>%  as.data.frame()
 
@@ -178,7 +178,7 @@ ggsave(sig,filename = paste0("input_sign.png"),height = 4,width = 6)
 ggsave(expos,filename = paste0("input_expos.png"),height = 3,width = 6)
 ggsave(data + plot_annotation("Example of simulated data"),filename = paste0("input_data.png"),height = 4,width = 6)
 
-ggsave(inf_sign,filename = paste0("inf_sign.png"),height = 4,width = 6)
+ggsave(inf_sign,filename = paste0("inf_sign.png"),height = 3,width = 6)
 ggsave(inf_exp,filename = paste0("inf_expos.png"),height = 3,width = 6)
 ggsave(rec_data,filename = paste0("rec_data.png"),height = 4,width = 6)
 
