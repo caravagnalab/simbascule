@@ -97,11 +97,18 @@ expos = my_plot_exposure(b,cls)
 
 sig = my_plot_signatures(a,cls,levels = c("SBS1","SBS10a","SBS17b","SBS4","SBS5","SBS6"))
 
-data = plot_simulated_data(x)
+data = plot_simulated_data(x) +
+  theme(legend.position = "none")
 
 # plot_inference
 
 x.fit.noreg <- readRDS("~/Documents/GitHub/simbasilica/script_test/simulations/fit_noreg_nogroups_no_private.Rds")
+
+
+p1 = plot_signatures(x.fit.noreg, Type = 'Catalogue') + labs(title = 'Inferred Catalogue Signatures', x = "", y = "") +
+theme(axis.ticks.x = element_blank(),axis.text.x = element_blank(),legend.position = "none")
+
+ggsave(p1,filename = "inferred_catalogue_example.png",width = 7,height = 4)
 
 names(cls) = c("SBS1","SBS5","SBS17b","D2","D3","D1")
 
@@ -148,7 +155,7 @@ cosmic = read.csv("./script_test/COSMIC_v3.3.1_SBS_GRCh38.txt", sep="\t") %>%
 
 input_list = c("SBS1","SBS5","SBS6","SBS7d","SBS33","SBS22","SBS10a","SBS4")
 
-sim_ref = x.fit.noreg %>% plot_similarity_reference(reference = cosmic[input_list,],context = F,add_pheatmap = F)
+sim_ref = x.fit.noreg %>% plot_similarity_reference(reference = cosmic[input_list,],context = F)
 
 reconstr_data =  as.matrix(exp*tmb) %*%  as.matrix(signatures) %>%  as.data.frame()
 
@@ -175,7 +182,7 @@ ggsave(inf_sign,filename = paste0("inf_sign.png"),height = 4,width = 6)
 ggsave(inf_exp,filename = paste0("inf_expos.png"),height = 3,width = 6)
 ggsave(rec_data,filename = paste0("rec_data.png"),height = 4,width = 6)
 
-ggsave(sim_ref ,filename = paste0("sim_ref.png"),height = 7,width = 5)
+ggsave(sim_ref ,filename = paste0("sim_ref.png"),height = 7,width = 8)
 
 
 
@@ -379,29 +386,36 @@ a =  data %>% dplyr::mutate(sbs = rownames(data)) %>% as_tibble() %>%
 
 # x = cnv fit
 
-load("~/Desktop/processed_data/cna_counts.RData")
-load("~/Desktop/processed_data/metadata.RData")
+load("~/Documents/GitHub/simbasilica/processed_data/cna_counts.RData")
+load("~/Documents/GitHub/simbasilica/processed_data/metadata.RData")
 library(tidyr)
 
-cnv_cosmic_catalogue = readRDS("~/Dropbox/Organoids_Accelerator/data/dbs-indel-cnv-Matrices/catalogues/CNA_cosmic_catalogue.rds")
+cnv_cosmic_catalogue = readRDS("~/Dropbox/Organoids_Accelerator/data/dbs-indel-cnv-Matrices/catalogues/CNA_cosmic_catalogue.rds")  %>%
+  as.data.frame()
 
 cna_data = cna_counts %>% t %>% as.data.frame() %>% mutate(PATIENT_ID = colnames(cna_counts)) %>%
-  full_join(as.data.frame((metadata)), by = "PATIENT_ID") %>% filter(CANCER_TYPE %in% c("Colorectal Cancer","Non-Small Cell Lung Cancer")) %>%
+  full_join(as.data.frame((metadata)), by = "PATIENT_ID") %>% filter(CANCER_TYPE %in% c("Breast Cancer","Glioblastoma" )) %>%
   drop_na()
 
 rownames(cna_data) = cna_data$PATIENT_ID
 
-cna_data = cna_data[sample(1:nrow(cna_data),replace = F,size = 100),]
+b =   cna_data %>% filter(CANCER_TYPE == "Breast Cancer")
+c =   cna_data %>% filter(CANCER_TYPE == "Glioblastoma" )
 
-cancer_type = (cna_data$CANCER_TYPE == "Colorectal Cancer")*1
+cna_data = rbind(b[1:50,],c[1:50,])
+
+cancer_type = (cna_data$CANCER_TYPE == "Breast Cancer")*1
+
+labels = cna_data %>% dplyr::select(c("PATIENT_ID","CANCER_TYPE")) %>% as_tibble() %>% rename(Sample = PATIENT_ID, groups = CANCER_TYPE)
 
 cna_data = cna_data %>% dplyr::select(-c("PATIENT_ID","SAMPLE_ID","CANCER_TYPE")) %>% as.data.frame()
 
 
 
 x = basilica::fit(x= cna_data, k=0:6, py=NULL,
-                    reference_catalogue = cnv_cosmic_catalogue  %>% as.data.frame(),
-                    input_catalogue=NULL,lr = 0.01,steps = 500,groups = cancer_type)
+                    reference_catalogue = cnv_cosmic_catalogue + 1e-18,
+                    input_catalogue= cnv_cosmic_catalogue["CN17",] + 1e-18,lr = 0.01,steps = 500,groups = cancer_type,
+                    reg_weight = 0)
 
 
 saveRDS(x,"cnv_fit.rds")
@@ -410,13 +424,15 @@ saveRDS(x,"cnv_fit.rds")
 cls_data = ggsci::pal_nejm()(nrow(x$fit$catalogue_signatures))
 names(cls_data) = rownames(x$fit$catalogue_signatures)
 
-cnv_sign = plot_data_signatures(x$fit$catalogue_signatures,what = "CNV",context = F,cls = cls_data)
-ggsave(cnv_sign,filename = "cnv_sign.png",height = 8,width = 9)
+cnv_sign = plot_data_signatures(x$fit$catalogue_signatures,what = "CNV",context = F,cls = cls_data) + labs(title = 'Copy Number Signatures')
+ggsave(cnv_sign,filename = "cnv_sign.png",height = 4,width = 7)
 
 # plot exp
 
-exp = plot_exposure(x)+ labs(title = "Relative Exposure")
-ggsave(exp,filename = "cnv_exp.png",height = 8,width = 10)
+exp = plot_exposure(x,labels = labels) + labs(title = "Relative Exposure", x = "") +
+  theme(axis.ticks.x = element_blank(),axis.text.x = element_blank())
+
+ggsave(exp,filename = "cnv_exp.png",height = 4.5,width = 8.5)
 
 # plot_exposure_data(x$fit$exposure,sample_name = F)
 #
