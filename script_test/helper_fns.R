@@ -63,6 +63,7 @@ single_dataset = function(N, n_groups, samples_per_group,
 ## Visualization functions ####
 my_plot_exposure = function(x, cls=RColorBrewer::brewer.pal(n=9, name="Set1")) {
   alpha = x$exp_exposure[[1]]
+  alpha$groups = x$groups[[1]]
   n = ncol(alpha)
   qual_col_pals = RColorBrewer::brewer.pal.info[RColorBrewer::brewer.pal.info$category == 'qual',]
   cls = unlist(mapply(RColorBrewer::brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
@@ -70,13 +71,14 @@ my_plot_exposure = function(x, cls=RColorBrewer::brewer.pal(n=9, name="Set1")) {
   return(
     alpha %>% as.data.frame() %>%
       dplyr::mutate(sample=paste0(1:nrow(alpha))) %>%
-      reshape2::melt(id="sample") %>%
+      reshape2::melt(id=c("sample","groups")) %>%
       dplyr::rename(Signature=variable) %>%
       ggplot(aes(x=sample, y=value, fill=Signature)) +
       geom_bar(stat="identity") +
       scale_fill_manual(values=cls) +
       labs(title="Exposure") +
-      theme(axis.ticks.x=element_blank(),axis.text.x=element_blank()) + ylab("")
+      theme(axis.ticks.x=element_blank(),axis.text.x=element_blank()) + ylab("") +
+      facet_grid(~groups, scales="free_x")
   )
 }
 
@@ -98,7 +100,7 @@ my_plot_signatures = function(x, cls=RColorBrewer::brewer.pal(n=9, name="Set1"))
       ggplot() +
       geom_bar(aes(value, x=context, fill=Var1), stat="identity") +
       facet_grid(Var1 ~ substitution, scales="free") +
-      my_ggplot_theme() +
+      theme_bw() +
       theme(axis.ticks.x=element_blank(),axis.text.x=element_blank()) +
       scale_fill_manual(values=cls) +
       guides(fill="none")  +
@@ -118,10 +120,12 @@ plot_simulated_data = function(x, cls=RColorBrewer::brewer.pal(n=9, name="Set1")
 
     ggplot() +
     geom_bar(aes(y=n_muts, x=context, fill=group), stat="identity") +
-    my_ggplot_theme()  +
+    theme_bw()  +
     facet_grid(group~ substitution, scales="free") +
     scale_fill_manual(values=cls) +
-    theme(strip.text.y=element_text(angle=0), axis.text.x=element_text(angle=90, size=4)) +
+    theme(strip.text.y=element_text(angle=0),
+          axis.text.x=element_text(angle=90, size=4),
+          legend.position="none") +
     labs(x="Context", y="Mutation count") + labs(title="Data")
 }
 
