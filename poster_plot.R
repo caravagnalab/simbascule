@@ -2,7 +2,7 @@
 # Sys.unsetenv("GITHUB_PAT")
 
 library(reticulate)
-reticulate::use_condaenv("/opt/anaconda3/envs/basilica-env/bin/python")
+# reticulate::use_condaenv("/opt/anaconda3/envs/basilica-env/bin/python")
 devtools::load_all("~/Documents/GitHub/basilica")
 
 
@@ -11,8 +11,7 @@ library(ggplot2)
 library(patchwork)
 library(ggpubr)
 library(reshape2)
-
-
+library(stringr)
 library(ggplot2)
 
 
@@ -73,7 +72,8 @@ ggsave(p1,filename = "inferred_catalogue_example.png",width = 7,height = 3)
 
 names(cls) = c("SBS1","SBS5","SBS17b","D2","D3","D1")
 
-inf_sign = rbind(as.data.frame(x.fit.noreg$fit$denovo_signatures),as.data.frame(x.fit.noreg$fit$catalogue_signatures)) %>%
+inf_sign = rbind(as.data.frame(x.fit.noreg$fit$denovo_signatures),
+                 as.data.frame(x.fit.noreg$fit$catalogue_signatures)) %>%
   my_plot_signatures(cls,levels = c("SBS1","D1","SBS17b","D2","SBS5","D3")) +
   labs(title = "Inferred Signatures", x= "")
 
@@ -116,7 +116,8 @@ cosmic = read.csv("./script_test/COSMIC_v3.3.1_SBS_GRCh38.txt", sep="\t") %>%
 
 input_list = c("SBS1","SBS5","SBS6","SBS7d","SBS33","SBS22","SBS10a","SBS4")
 
-sim_ref = x.fit.noreg %>% plot_similarity_reference(reference = cosmic[input_list,],context = F) +  plot_annotation(title = "De Novo discovery")
+sim_ref = x.fit.noreg %>% plot_similarity_reference(reference = cosmic[input_list,],context = F) +
+  plot_annotation(title = "De Novo discovery")
 
 reconstr_data =  as.matrix(exp*tmb) %*%  as.matrix(signatures) %>%  as.data.frame()
 
@@ -259,13 +260,14 @@ plot_exposure_data = function(b,sample_name = T){
 get_similarity_scores = function(reconstr_data,real_data){
 
 reconstr_data = reconstr_data[rownames(real_data),]
-cosines = lapply(1:nrow(reconstr_data),function(i){
+cosines = lapply(1:nrow(reconstr_data),function(j){
 
-  tibble(id = rownames(real_data)[i], cos =  cosine.vector(reconstr_data[i,],real_data[i,]))
+  tibble(id = rownames(real_data)[j], cos =  cosine.vector(reconstr_data[j,],real_data[j,]))
 
 }) %>% bind_rows()
 
 cosines
+
 }
 
 
@@ -277,7 +279,8 @@ get_reconstructed_data = function(x){
 
   signatures = signatures[colnames(x$fit$exposure),]
 
-  as.matrix(x$fit$exposure[rownames(x$input$counts),]*rowSums(x$input$counts)) %*%  as.matrix(signatures) %>%  as.data.frame()
+  as.matrix(x$fit$exposure[rownames(x$input$counts),]*rowSums(x$input$counts)) %*%  as.matrix(signatures) %>%
+    as.data.frame()
 
 }
 
@@ -544,5 +547,141 @@ col = plot_serena_sign("Colorectal",cls = c(ggsci::pal_simpsons()(16),ggsci::pal
 
 
 
+# simulation poster
+
+setwd("~/Documents/GitHub/simbasilica/simulations")
+
+sample_list = str_remove(str_remove(list.files()[grep(list.files(),pattern = "simul.")],"simul."),
+                         ".Rds")
+
+sample_list
 
 
+results = lapply(sample_list,function(x){
+
+  print(x)
+
+  fit = readRDS(paste0("fit.",x,".Rds"))
+  fit_hier = readRDS(paste0("fit.hier.",x,".Rds"))
+  sim = readRDS(paste0("simul.",x,".Rds"))
+
+ rbind(tibble(x,fit = list(fit), sim = list(sim), type = "Normal"),
+       tibble(x,fit = list(fit_hier), sim = list(sim), type = "Hierarchical"))
+
+}) %>% bind_rows()
+
+
+statistics = lapply(1:nrow(results),function(i){
+
+  inferred_catalogue = results$fit[[i]]$fit$catalogue_signatures %>% as.data.frame() %>%
+    rownames()
+
+  reference = rbind(results$sim[[i]]$exp_fixed[[1]],results$sim[[i]]$exp_denovo[[1]])
+
+   inferred_de_novo =  cosine.matrix(
+    reference[! rownames(reference) %in% inferred_catalogue,],
+    results$fit[[i]]$fit$denovo_signatures)
+
+  inferred_de_novo = inferred_de_novo %>% as.data.frame() %>% mutate(D_fake = 1)
+
+  print(results$x[[i]])
+
+   inferred_de_novo = inferred_de_novo[,(inferred_de_novo > 0.7) %>% colSums() %>% as.data.frame() %>% pull() > 0]
+
+   inferred_de_novo = inferred_de_novo %>% dplyr::select(-D_fake)
+
+   de_novo_matching = sapply(inferred_de_novo,
+                            function(y) head(row.names(inferred_de_novo)[order(y, decreasing = TRUE)],1))
+
+
+  colMax <- function(data) sapply(data, max, na.rm = TRUE)
+  median_sign_recostr = colMax(inferred_de_novo) %>% mean()
+
+  mse = (results$fit[[i]]$fit$exposure[,c(inferred_catalogue, de_novo_matching %>% names())] -
+       as.data.frame(results$sim[[i]]$exp_exposure)[,c(inferred_catalogue, de_novo_matching %>% as.data.frame() %>%
+                                                         pull())])**2
+
+  mse = sum(mse)/(nrow(mse)*ncol(mse))
+
+  # inferred_de_novo = (inferred_de_novo > 0.7)*1
+  #
+  # inferred_de_novo = inferred_de_novo %>% as.data.frame() %>% mutate(D_fake_1 = 1,D_fake_2 = 1)
+  #
+  # present_inferred = inferred_de_novo[, colSums(inferred_de_novo != 0) > 0] %>% ncol() +
+  #                     length(inferred_catalogue) - 2
+  #
+  # present_missed =   nrow(reference) - present_inferred
+  #
+  # wrong_inferred = ncol(inferred_de_novo) - ncol(inferred_de_novo[, colSums(inferred_de_novo != 0) > 0])
+
+  K_sign = reference %>% nrow()
+
+  cosines = get_similarity_scores(get_reconstructed_data(results$fit[[i]]),results$fit[[i]]$input$counts) %>%
+             filter(!is.na(cos))
+
+  GOF = sum(cosines$cos > 0.9)/nrow(cosines)
+
+  # tibble(present_inferred = present_inferred, present_missed = present_missed,
+  #        wrong_inferred = wrong_inferred, K_sign = K_sign, sample = results$x[[i]],
+  #        type = results$type[[i]],
+  #        GOF = GOF )
+
+  tibble(sample = results$x[[i]],
+         type = results$type[[i]],
+         K_sign = K_sign,
+         GOF = GOF,
+         mse = mse,
+         median_sign_recostr = median_sign_recostr)
+
+
+}) %>% bind_rows()
+
+
+statistics = statistics %>% rowwise() %>% mutate(s = strsplit(x = sample,split = ".s")[[1]][2])
+
+# cls = RColorBrewer::brewer.pal(3,"Set1")
+# names(cls) = c("6","9","15")
+
+# plot_k = ggplot(statistics  %>%  dplyr::select(K_sign,present_inferred,present_missed,s,type)  %>%
+#                   dplyr::mutate(K_sign = paste0(K_sign)) %>% group_by(K_sign,type) %>%
+#              summarize(mean_inferred_signatures = mean(present_inferred)) %>%
+#               dplyr::mutate(mean_missed_signatures = as.numeric(K_sign) - mean_inferred_signatures) %>%
+#                dplyr::rename(method = type) %>% reshape2::melt(),
+#                  aes(x = factor(K_sign,levels =c("6","9","15")), y = value, fill = K_sign,alpha =
+#                        factor(variable,levels = c("mean_missed_signatures","mean_inferred_signatures")))) +
+#                 geom_bar(stat="identity")  + scale_fill_manual(values = cls)  +
+#            scale_alpha_manual(values = c(0.5,1)) +
+#           facet_grid(~factor(method,levels = c("Normal","Hierarchical"))) + CNAqc:::my_ggplot_theme() +
+#          labs(x = "Number of signatures", y = "",title = "Number of inferred signatures")
+#
+# ggsave(plot_k,filename = "k_inference.pdf",width = 10,height = 6)
+
+
+
+plot_cos = ggplot(statistics   %>%  dplyr::select(K_sign,s,type,GOF)  %>%
+                  dplyr::mutate(K_sign = paste0(K_sign)) %>% dplyr::rename(method = type),
+                aes(x = method,y =  GOF, fill = method)) + geom_boxplot() + ylim(0,1) +
+  ggsci::scale_fill_simpsons() + facet_grid(~factor(K_sign,levels =c("6","9","15"))) +
+  CNAqc:::my_ggplot_theme() +  labs(title = "GOF of data counts")
+
+
+
+plot_mse = ggplot(statistics   %>%  dplyr::select(K_sign,s,type,mse)  %>%
+                    dplyr::mutate(K_sign = paste0(K_sign)) %>% dplyr::rename(method = type),
+                  aes(x = method,y =  mse, fill = method)) + geom_boxplot() + ylim(0,1) +
+  ggsci::scale_fill_simpsons() + facet_grid(~factor(K_sign,levels =c("6","9","15"))) +
+  CNAqc:::my_ggplot_theme() +  labs(title = "MSE exposures")
+
+
+
+
+plot_sign = ggplot(statistics   %>%  dplyr::select(K_sign,s,type,median_sign_recostr)  %>%
+                    dplyr::mutate(K_sign = paste0(K_sign)) %>% dplyr::rename(method = type),
+                  aes(x = method,y = median_sign_recostr, fill = method)) + geom_boxplot() +
+  ggsci::scale_fill_simpsons() + facet_grid(~factor(K_sign,levels =c("6","9","15"))) + ylim(0,1) +
+  CNAqc:::my_ggplot_theme() +  labs(title = "Median cosine similarity of signature reconstruction")
+
+
+p = ggarrange(plotlist = list(plot_cos,plot_mse,plot_sign),ncol = 1,nrow = 3)
+
+ggsave(p,filename = "sim_inference.pdf",width = 10,height = 10)
