@@ -14,9 +14,7 @@ generate.data <- function(
     seed=NULL
 ) {
 
-  if (!is.null(seed)) {
-    set.seed(seed = seed)
-  }
+  if (!is.null(seed)) set.seed(seed = seed)
 
   # SIGNATURES --------------------------------
   signatures <- generate.signatures(

@@ -4,17 +4,11 @@ library(fdrtool)
 generate.exposure <- function(beta, groups, private_sigs, private_fracs, seed=NULL) {
 
   signatures <- rownames(beta)
-  if (!('SBS1' %in% signatures)) {
-    stop('Wrong signatures! SBS1 not included!')
-  }
+  if (!('SBS1' %in% signatures)) stop('Wrong signatures! SBS1 not included!')
 
-  if (!is.null(seed)) {
-    set.seed(seed = seed)
-  }
+  if (!is.null(seed)) set.seed(seed = seed)
 
-  if (length(signatures) < 2) {
-    stop("not valid! there are not enough signatures!")
-  }
+  if (length(signatures) < 2) stop("not valid! there are not enough signatures!")
 
   df_list <- list()
 
@@ -45,8 +39,8 @@ generate.exposure <- function(beta, groups, private_sigs, private_fracs, seed=NU
         sigNames_priv = base::sample(private_sigs.all, sigNums_priv)
         private_sigs.all = setdiff(private_sigs.all, sigNames_priv)
 
-      sigNames = c(shared_sigs, sigNames_priv)
-      sigNums = length(sigNames)
+        sigNames = c(shared_sigs, sigNames_priv)
+        sigNums = length(sigNames)
       }
     }
 
@@ -69,6 +63,8 @@ generate.exposure <- function(beta, groups, private_sigs, private_fracs, seed=NU
     alpha = adjust_frequency(alpha,
                      columns=intersect(private_sigs$common, colnames(alpha)),
                      frac=private_fracs$common, check="<=", mean=mean_prior, sd=1)
+
+    alpha = apply(alpha, 1, function(x) x/sum(x)) %>% t() %>% as.data.frame()
 
     # alpha = alpha / rowSums(alpha). ## check if it works
     alpha$group <- group
