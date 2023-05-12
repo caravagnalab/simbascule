@@ -22,7 +22,7 @@ select_fixed_sbs = function(referece_cat, n_fixed=4, cosine_limit=.5) {
 
 single_dataset = function(N, n_groups, samples_per_group,
                           reference_cat, denovo_cat,
-                          ref_cosine, denovo_cosine,
+                          reference_cosine, denovo_cosine,
                           private_sigs, private_fracs,
                           cosine_limit, seed,
                           out_path=NULL) {
@@ -36,7 +36,7 @@ single_dataset = function(N, n_groups, samples_per_group,
   x = generate.data(
     reference_catalogue=reference_cat,
     denovo_catalogue=denovo_cat,
-    reference_cosine=ref_cosine,
+    reference_cosine=reference_cosine,
     denovo_cosine=denovo_cosine,
     targetX=-1,
     inputX=NULL,
