@@ -62,16 +62,46 @@ reference_cosine = lsa::cosine(reference_catalogue %>% t())
 #                    private_fracs=list("rare"=0.05,"common"=0.3),
 #                    cosine_limit, seed=23, out_path="./nobuild/script_test/simulations/")
 
-x = readRDS("./nobuild/script_test/simulations/simul.N350.G2.s23.Rds")
-xx = create_basilica_obj_simul(x)
-plot_exposures(xx)
-plot_signatures(xx)
+x.simul = readRDS("./nobuild/script_test/simulations/simul.N350.G2.s23.Rds")
+xx = create_basilica_obj_simul(x.simul)
+# plot_mutations(xx)
+# plot_exposures(xx, sort_by="SBS1")
+# plot_signatures(xx)
 
-x.fit = fit(x$x[[1]], k=0:7, py=py, input_catalogue=NULL,
+x.fit = fit(x.simul$x[[1]], k=0:3, py=py, input_catalogue=NULL,
             reference_catalogue=COSMIC_filt_merged,
-            reg_bic=TRUE, filtered_cat=TRUE)
+            reg_bic=TRUE, filtered_cat=TRUE, regularizer = "KL")
+plot_mutations(x.fit)
+plot_exposures(x.fit, sort_by="SBS1")
+plot_signatures(x.fit)
 
 
+x.fit.g = fit(x$x[[1]], k=1:7, py=py, input_catalogue=NULL,
+            reference_catalogue=COSMIC_filt_merged,
+            reg_bic=TRUE, filtered_cat=TRUE, groups=x$groups[[1]]-1,
+            regularizer="KL")
+x.fit.g$groups = x$groups[[1]]-1
+plot_mutations(x.fit.g)
+plot_exposures(x.fit.g, sort_by="SBS1")
+plot_signatures(x.fit.g)
+
+
+two_steps_inference(x.simul$x[[1]],
+                    k=0:7,
+                    input_catalogue = COSMIC_filt_merged[c("SBS1", "SBS40 SBS3 SBS5", "SBS2", "SBS17b", "SBS20"),],
+                    enforce_sparsity1=TRUE,
+                    enforce_sparsity2=FALSE,
+                    py=py)
+
+x.fit.new = two_steps_inference(x$x[[1]],
+                                k=0:7,
+                                enforce_sparsity1=TRUE,
+                                enforce_sparsity2=FALSE,
+                                py=py)
+x.new = x.fit.new$tot
+plot_mutations(x.new)
+plot_exposures(x.new, sort_by="SBS1")
+plot_signatures(x.new)
 
 
 ## Old #########
