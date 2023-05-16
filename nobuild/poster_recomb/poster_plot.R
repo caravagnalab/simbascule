@@ -3,16 +3,14 @@
 
 library(reticulate)
 # reticulate::use_condaenv("/opt/anaconda3/envs/basilica-env/bin/python")
-devtools::load_all("~/Documents/GitHub/basilica")
+# devtools::load_all("~/Documents/GitHub/basilica")
 
 
-library(CNAqc)
+# library(CNAqc)
 library(ggplot2)
 library(patchwork)
 library(ggpubr)
 library(reshape2)
-library(stringr)
-library(ggplot2)
 
 
 
@@ -21,71 +19,60 @@ library(ggplot2)
 
 x <- readRDS("~/Documents/GitHub/simbasilica/script_test/simulations/simul.N100.G2.s23.Rds")
 
-source("./script_test/helper_fns.R")
-x = readRDS("~/Desktop/accento_fs/signatures/simul_data_obj/simul.N350.G2.s1.Rds")
-dn = x$exp_denovo %>% as.data.frame() %>% rownames
-sc = x$exp_fixed %>% as.data.frame() %>% rownames
+# dn = x$exp_denovo %>% as.data.frame() %>% rownames
+# sc = x$exp_fixed %>% as.data.frame() %>% rownames
+#
+# dn_c = ggsci::pal_nejm()(length(dn))
+# names(dn_c) = dn
+#
+# sc_c = ggsci::pal_simpsons()(length(sc))
+# names(sc_c) = sc
+#
+# cls = c(sc_c,dn_c)
+#
+# b = x$exp_exposure
+# a = rbind(x$exp_denovo %>% as.data.frame(),x$exp_fixed %>% as.data.frame())
 
-dn_c = ggsci::pal_nejm()(length(dn))
-names(dn_c) = dn
+# my_plot_exposure = function(b,cls){
+#
+#   ggplot(data = b %>% as.data.frame() %>% mutate(sample = paste0(1:100)) %>%
+#                       melt() %>% dplyr::rename(Signature = variable),aes(x = sample, y  = value, fill = Signature)) +
+#   geom_bar(stat = "identity")  + ggplot2::scale_fill_manual(values = cls ) + labs(title = "Expsosure") + theme(
+#
+#     axis.ticks.x = element_blank(),axis.text.x = element_blank()
+#   )
+#
+# }
+#
+#
+# my_plot_signatures = function(a,cls,levels){
+#
+#  a %>% as.data.frame() %>% dplyr::mutate(sbs = rownames(a)) %>%
+#   reshape2::melt() %>%
+#   as_tibble() %>% dplyr::rename(Var1 = sbs, Var2 = variable) %>%
+#   mutate(
+#     substitution = paste0(substr(start = 3, stop = 3, Var2),">",substr(start = 5, stop = 5, Var2)),
+#     context = paste0(
+#       substr(start = 1, stop = 1, Var2),
+#       '_',
+#       substr(start = 7, stop = 7, Var2)
+#     )
+#   )  %>%
+#   ggplot() +
+#   geom_bar(aes(value, x = context, fill = Var1), stat = 'identity') +
+#   facet_grid(factor(Var1, levels= levels) ~ substitution, scales = 'free') +
+#   my_ggplot_theme() +
+#   theme(axis.ticks.x = element_blank(),axis.text.x = element_blank()) +
+#   scale_fill_manual(values = cls) +
+#   guides(fill = 'none')  +
+#   labs(x = '', y = "", title = "Signatures")
+#
+# }
+#
 
-sc_c = ggsci::pal_simpsons()(length(sc))
-names(sc_c) = sc
+plot_simulated_data = function(x, cls = c("1"= "forestgreen", "2"= "purple3")){
 
-cls = c(sc_c,dn_c)
-
-b = x$exp_exposure[[1]]
-a = rbind(x$exp_denovo[[1]], x$exp_fixed[[1]])
-
-my_plot_exposure(x)
-my_plot_signatures(x)
-
-
-get_synthetic_datas = function(simul_path) {
-
-  simul_files = list.files(path=simul_path, pattern="simul.", full.names=T)
-
-  simul_df = data.frame() %>%
-    dplyr::mutate(N=as.integer(NA),)
-
-  for (sf in simul_files) {
-    x = readRDS(sf)
-
-  }
-
-}
-
-
-
-
-
-
-# plot_inference
-
-x.fit.noreg <- readRDS("~/Documents/GitHub/simbasilica/script_test/simulations/fit_noreg_nogroups_no_private.Rds")
-
-
-p1 = plot_signatures(x.fit.noreg, Type = 'Catalogue') + labs(title = 'Inferred Catalogue Signatures', x = "", y = "") +
-theme(axis.ticks.x = element_blank(),axis.text.x = element_blank(),legend.position = "none")
-
-ggsave(p1,filename = "inferred_catalogue_example.png",width = 7,height = 3)
-
-names(cls) = c("SBS1","SBS5","SBS17b","D2","D3","D1")
-
-inf_sign = rbind(as.data.frame(x.fit.noreg$fit$denovo_signatures),
-                 as.data.frame(x.fit.noreg$fit$catalogue_signatures)) %>%
-  my_plot_signatures(cls,levels = c("SBS1","D1","SBS17b","D2","SBS5","D3")) +
-  labs(title = "Inferred Signatures", x= "")
-
-inf_exp = x.fit.noreg$fit$exposure %>% my_plot_exposure(cls) +  labs(title = "Inferred Exposure")
-
-signatures = rbind(x.fit.noreg$fit$catalogue_signatures,x.fit.noreg$fit$denovo_signatures)
-exp = x.fit.noreg$fit$exposure
-
-tmb = x$x[[1]] %>% rowSums()
-
-rec_data =  as.matrix(exp*tmb) %*%  as.matrix(signatures) %>%  as.data.frame() %>%
-  dplyr::mutate(group=paste0(x$groups[[1]])) %>%
+  x$x[[1]] %>%  dplyr::mutate(group=paste0(x$groups[[1]])) %>%
   reshape2::melt() %>%
   as_tibble() %>%
   mutate(
@@ -100,14 +87,88 @@ rec_data =  as.matrix(exp*tmb) %*%  as.matrix(signatures) %>%  as.data.frame() %
   ggplot() +
   geom_bar(aes(y = n_muts, x = context, fill = group), stat = 'identity') +
   my_ggplot_theme()  +
-  facet_grid(group~ substitution, scales = 'free') + scale_fill_manual(values = c("1"= "forestgreen", "2"= "purple3")) +
-  theme(
-    strip.text.y = element_text(angle = 0),
-    axis.text.x = element_text(angle = 90, size = 4)
-  ) + labs(x = 'Context', y = "Mutation count", title = "Reconstructed data")
+  facet_grid(group~ substitution, scales = 'free') + scale_fill_manual(values = cls) +
+  theme(axis.ticks.x = element_blank(),axis.text.x = element_blank()
+  ) + labs(x = '', y = "Mutation count")  + labs(title = "Data")
 
+}
+
+
+# expos = my_plot_exposure(b,cls)
+#
+# sig = my_plot_signatures(a,cls,levels = c("SBS1","SBS10a","SBS17b","SBS4","SBS5","SBS6"))
 
 setwd("~/Documents/GitHub/simbasilica")
+
+data = plot_simulated_data(x) +
+  theme(legend.position = "none")
+
+ggsave(data + plot_annotation("Example of simulated data"),filename = paste0("input_data.pdf"),
+       height = 5,width = 5)
+
+
+# plot_inference
+
+
+x.fit.noreg <-
+readRDS("~/Documents/GitHub/simbasilica/script_test/simulations/fit_noreg_nogroups_no_private.Rds")
+
+
+p1 = plot_signatures(x.fit.noreg, Type = 'Catalogue') + labs(title = 'Inferred Catalogue Signatures',
+                                                      x = "", y = "") +
+theme(axis.ticks.x = element_blank(),axis.text.x = element_blank(),legend.position = "none")
+
+ggsave(p1,filename = "inferred_catalogue_example.pdf",width = 5,height = 3)
+
+
+
+inf_exp = ggplot(data = x.fit.noreg$fit$exposure  %>% mutate(groups= paste0(x$groups[[1]]),
+      id = paste0(1:nrow(x.fit.noreg$fit$exposure))) %>%
+      melt() %>% dplyr::rename(Signature = variable),
+      aes(x = groups, y  = value, fill = Signature)) +
+           geom_bar(stat = "identity",position = "dodge")  +
+  ggplot2::scale_fill_manual(values = get_signature_colors(x.fit.noreg) ) +
+  labs(title = "Expsosure",y="") + CNAqc:::my_ggplot_theme()
+
+ggsave(inf_exp,filename = paste0("inf_expos.pdf"),height = 3,width = 6)
+
+# names(cls) = c("SBS1","SBS5","SBS17b","D2","D3","D1")
+#
+# inf_sign = rbind(as.data.frame(x.fit.noreg$fit$denovo_signatures),as.data.frame(x.fit.noreg$fit$catalogue_signatures)) %>%
+#   my_plot_signatures(cls,levels = c("SBS1","D1","SBS17b","D2","SBS5","D3")) +
+#   labs(title = "Inferred Signatures", x= "")
+#
+# inf_exp = x.fit.noreg$fit$exposure %>% my_plot_exposure(cls) +  labs(title = "Inferred Exposure")
+#
+# signatures = rbind(x.fit.noreg$fit$catalogue_signatures,x.fit.noreg$fit$denovo_signatures)
+# exp = x.fit.noreg$fit$exposure
+#
+# tmb = x$x[[1]] %>% rowSums()
+#
+# rec_data =  as.matrix(exp*tmb) %*%  as.matrix(signatures) %>%  as.data.frame() %>%
+#   dplyr::mutate(group=paste0(x$groups[[1]])) %>%
+#   reshape2::melt() %>%
+#   as_tibble() %>%
+#   mutate(
+#     substitution = substr(start = 3, stop = 5, variable),
+#     context = paste0(
+#       substr(start = 1, stop = 1, variable),
+#       '_',
+#       substr(start = 7, stop = 7, variable)
+#     )
+#   ) %>%  dplyr::group_by(group) %>%
+#   dplyr::mutate(n_muts=value/sum(value)) %>%
+#   ggplot() +
+#   geom_bar(aes(y = n_muts, x = context, fill = group), stat = 'identity') +
+#   my_ggplot_theme()  +
+#   facet_grid(group~ substitution, scales = 'free') + scale_fill_manual(values = c("1"= "forestgreen", "2"= "purple3")) +
+#   theme(
+#     strip.text.y = element_text(angle = 0),
+#     axis.text.x = element_text(angle = 90, size = 4)
+#   ) + labs(x = 'Context', y = "Mutation count", title = "Reconstructed data")
+#
+
+
 
 # scores
 
@@ -119,32 +180,33 @@ input_list = c("SBS1","SBS5","SBS6","SBS7d","SBS33","SBS22","SBS10a","SBS4")
 sim_ref = x.fit.noreg %>% plot_similarity_reference(reference = cosmic[input_list,],context = F) +
   plot_annotation(title = "De Novo discovery")
 
-reconstr_data =  as.matrix(exp*tmb) %*%  as.matrix(signatures) %>%  as.data.frame()
-
-real_data = x$x[[1]]
-
-cosines = lapply(1:nrow(reconstr_data),function(i){
-
-    tibble(sample = paste0(i), cos =  cosine.vector(reconstr_data[i,],real_data[i,]))
-
-}) %>% bind_rows()
-
-cosine_plot = ggplot(cosines %>% dplyr::mutate(group=paste0(x$groups[[1]])),aes(x = group,y = cos, fill = group)) + geom_boxplot() +
-  CNAqc:::my_ggplot_theme() + scale_fill_manual(values = c("1"= "forestgreen", "2"= "purple3")) +
-  labs(y = "Cosine Similarity", title = "Data reconstruction")  + theme(
-    axis.text.x = element_blank()
-  )
+ggsave(sim_ref ,filename = paste0("sim_ref.pdf"),height = 7,width = 12)
 
 
-ggsave(sig,filename = paste0("input_sign.png"),height = 4,width = 6)
-ggsave(expos,filename = paste0("input_expos.png"),height = 3,width = 6)
-ggsave(data + plot_annotation("Example of simulated data"),filename = paste0("input_data.png"),height = 4,width = 6)
+# reconstr_data =  as.matrix(exp*tmb) %*%  as.matrix(signatures) %>%  as.data.frame()
+#
+# real_data = x$x[[1]]
+#
+# cosines = lapply(1:nrow(reconstr_data),function(i){
+#
+#     tibble(sample = paste0(i), cos =  cosine.vector(reconstr_data[i,],real_data[i,]))
+#
+# }) %>% bind_rows()
+#
+# cosine_plot = ggplot(cosines %>% dplyr::mutate(group=paste0(x$groups[[1]])),aes(x = group,y = cos, fill = group)) + geom_boxplot() +
+#   CNAqc:::my_ggplot_theme() + scale_fill_manual(values = c("1"= "forestgreen", "2"= "purple3")) +
+#   labs(y = "Cosine Similarity", title = "Data reconstruction")  + theme(
+#     axis.text.x = element_blank()
+#   )
+#
+#
+# ggsave(sig,filename = paste0("input_sign.png"),height = 4,width = 6)
+# ggsave(expos,filename = paste0("input_expos.png"),height = 3,width = 6)
+# ggsave(inf_sign,filename = paste0("inf_sign.png"),height = 3,width = 6)
+# ggsave(inf_exp,filename = paste0("inf_expos.png"),height = 3,width = 6)
+# ggsave(rec_data,filename = paste0("rec_data.png"),height = 4,width = 6)
 
-ggsave(inf_sign,filename = paste0("inf_sign.png"),height = 3,width = 6)
-ggsave(inf_exp,filename = paste0("inf_expos.png"),height = 3,width = 6)
-ggsave(rec_data,filename = paste0("rec_data.png"),height = 4,width = 6)
 
-ggsave(sim_ref ,filename = paste0("sim_ref.png"),height = 7,width = 8)
 
 
 
@@ -260,14 +322,13 @@ plot_exposure_data = function(b,sample_name = T){
 get_similarity_scores = function(reconstr_data,real_data){
 
 reconstr_data = reconstr_data[rownames(real_data),]
-cosines = lapply(1:nrow(reconstr_data),function(j){
+cosines = lapply(1:nrow(reconstr_data),function(i){
 
-  tibble(id = rownames(real_data)[j], cos =  cosine.vector(reconstr_data[j,],real_data[j,]))
+  tibble(id = rownames(real_data)[i], cos =  cosine.vector(reconstr_data[i,],real_data[i,]))
 
 }) %>% bind_rows()
 
 cosines
-
 }
 
 
@@ -279,8 +340,7 @@ get_reconstructed_data = function(x){
 
   signatures = signatures[colnames(x$fit$exposure),]
 
-  as.matrix(x$fit$exposure[rownames(x$input$counts),]*rowSums(x$input$counts)) %*%  as.matrix(signatures) %>%
-    as.data.frame()
+  as.matrix(x$fit$exposure[rownames(x$input$counts),]*rowSums(x$input$counts)) %*%  as.matrix(signatures) %>%  as.data.frame()
 
 }
 
@@ -378,7 +438,8 @@ cna_data = cna_data %>% dplyr::select(-c("PATIENT_ID","SAMPLE_ID","CANCER_TYPE")
 
 x = basilica::fit(x= cna_data, k=0:6, py=NULL,
                     reference_catalogue = cnv_cosmic_catalogue + 1e-18,
-                    input_catalogue= cnv_cosmic_catalogue["CN17",] + 1e-18,lr = 0.01,steps = 500,groups = cancer_type,
+                    input_catalogue= cnv_cosmic_catalogue["CN17",] + 1e-18,lr = 0.01,steps = 500,
+                    groups = cancer_type,
                     reg_weight = 0)
 
 
@@ -388,15 +449,43 @@ saveRDS(x,"cnv_fit.rds")
 cls_data = ggsci::pal_nejm()(nrow(x$fit$catalogue_signatures))
 names(cls_data) = rownames(x$fit$catalogue_signatures)
 
-cnv_sign = plot_data_signatures(x$fit$catalogue_signatures,what = "CNV",context = F,cls = cls_data) + labs(title = 'Copy Number Signatures')
-ggsave(cnv_sign,filename = "cnv_sign.png",height = 4,width = 7)
+cnv_sign = plot_data_signatures(x$fit$catalogue_signatures,what = "CNV",
+                                context = F,cls = cls_data) + labs(title = 'Copy Number Signatures')
+
+ggsave(cnv_sign,filename = "cnv_sign.pdf",height = 4,width = 6)
 
 # plot exp
 
-exp = plot_exposure(x,labels = labels) + labs(title = "Relative Exposure", x = "") +
+exp_breast = ggplot(data = x$fit$exposure %>% as.data.frame() %>%
+                      mutate(PATIENT_ID = rownames(x$fit$exposure)) %>%
+                      full_join(metadata,by = "PATIENT_ID") %>% drop_na() %>%
+                      filter(CANCER_TYPE == "Breast Cancer") %>%
+                      reshape2::melt() %>% dplyr::rename(Signature = variable),
+                    aes(x = PATIENT_ID , y  = value, fill =
+                        factor(Signature,levels = colnames(x$fit$exposure)))) +
+  geom_bar(stat = "identity")  + ggplot2::scale_fill_manual(values = cls_data) +
+  labs(title = "Breast Cancer", y = "Exposure", x = "") + CNAqc:::my_ggplot_theme() +
   theme(axis.ticks.x = element_blank(),axis.text.x = element_blank())
 
-ggsave(exp,filename = "cnv_exp.png",height = 4.5,width = 8.5)
+exp_gl = ggplot(data = x$fit$exposure %>% as.data.frame() %>%
+                  mutate(PATIENT_ID = rownames(x$fit$exposure)) %>%
+                  full_join(metadata,by = "PATIENT_ID") %>% drop_na() %>%
+                  filter(CANCER_TYPE == "Glioblastoma") %>%
+                  reshape2::melt() %>% dplyr::rename(Signature = variable),
+                aes(x = PATIENT_ID , y  = value, fill =
+                      factor(Signature,levels = colnames(x$fit$exposure)))) +
+  geom_bar(stat = "identity")  + ggplot2::scale_fill_manual(values = cls_data) +
+  labs(title = "Glioblastoma", y = "Exposure", x = "") + CNAqc:::my_ggplot_theme() +
+  theme(axis.ticks.x = element_blank(),axis.text.x = element_blank())
+
+ggsave(exp_breast,filename = "glioblastoma_cnv.pdf",height = 3,width = 9)
+
+ggsave(exp_gl,filename = "breast_cnv.pdf",height = 3,width = 9)
+
+ggsave(ggarrange(plotlist = list(exp_breast,exp_gl),nrow = 1,ncol = 2,common.legend = T,
+                 legend = "bottom"),
+       filename = "cnv_exposure.pdf",height = 3,width = 12)
+
 
 # plot_exposure_data(x$fit$exposure,sample_name = F)
 #
@@ -443,19 +532,32 @@ ggsave(exp,filename = "cnv_exp.png",height = 4.5,width = 8.5)
 
 # lung and colorectal
 
-x <- readRDS("~/Desktop/processed_data/test_fit.Rds")
+x <- readRDS("~/Documents/GitHub/basilica/nobuild/test_fit.hier2.Rds")
 
-exposure_lung = read.table("~/Desktop/processed_data/SBS_v2.03/organSpecificExposures/GEL/GEL-Lung_SBS_exposures_finalT.tsv",row.names = 1) %>%
+setwd("~/Documents/GitHub/simbasilica/processed_data")
+
+exposure_lung = read.table("./SBS_v2.03/organSpecificExposures/GEL/GEL-Lung_SBS_exposures_finalT.tsv",row.names = 1) %>%
   dplyr::select(-unassigned)
-exposure_colorectal = read.table("~/Desktop/processed_data/SBS_v2.03/organSpecificExposures/GEL/GEL-Colorectal_SBS_exposures_finalT.tsv",
+
+exposure_colorectal = read.table("./SBS_v2.03/organSpecificExposures/GEL/GEL-Colorectal_SBS_exposures_finalT.tsv",
                                  row.names = 1)  %>% dplyr::select(-unassigned)
 
-serena_signatures = read.table("~/Desktop/processed_data/SBS_v2.03/OrganSpecificSigs_GEL_SBS_v2.03.tsv",row.names = 1)
+serena_signatures = read.table("./SBS_v2.03/OrganSpecificSigs_GEL_SBS_v2.03.tsv",row.names = 1)
 
 serena_signatures = serena_signatures[,c(colnames(exposure_lung),colnames(exposure_colorectal))] %>% t
 
+colnames(exposure_lung) = stringr::str_remove(colnames(exposure_lung),pattern = paste0("GEL.Lung_common_"))
+colnames(exposure_lung) = stringr::str_remove(colnames(exposure_lung),pattern = paste0("GEL.Lung_rare_"))
+colnames(exposure_colorectal) = stringr::str_remove(colnames(exposure_colorectal),pattern = paste0("GEL.Colorectal_common_"))
+colnames(exposure_colorectal) = stringr::str_remove(colnames(exposure_colorectal),pattern = paste0("GEL.Colorectal_rare_"))
+
+common = intersect(colnames(exposure_lung),colnames(exposure_colorectal))
+
+exposure_colorectal = exposure_colorectal/rowSums(exposure_colorectal)
+exposure_lung = exposure_lung/rowSums(exposure_lung)
+
 exposure_serena = exposure_colorectal %>% mutate(id = rownames(exposure_colorectal),organ = "Colorectal") %>%
-  full_join(exposure_lung %>% mutate(id = rownames(exposure_lung),organ = "Lung"), by = c("id","organ"))
+  full_join(exposure_lung %>% mutate(id = rownames(exposure_lung),organ = "Lung"), by = c("id","organ",common))
 
 exposure_serena[is.na(exposure_serena)] = 0
 
@@ -466,10 +568,9 @@ exposure_serena = exposure_serena %>% dplyr::select(-id)
 exposure_serena = exposure_serena[rownames(x$input$counts),]
 
 
-# data reconstruction
+organs = exposure_serena %>% dplyr::select(organ) %>% mutate(Sample = rownames(exposure_serena)) %>% rename(groups = organ) %>%
+  mutate(a = ifelse(groups =="Colorectal",0,1)) %>% as_tibble() %>% arrange(a) %>% dplyr::select(-a)
 
-# organs = exposure_serena %>% dplyr::select(organ) %>% mutate(id = rownames(exposure_serena))
-#
 # exposure_serena =  exposure_serena %>% dplyr::select(-organ)
 #
 # serena_rec = as.matrix(exposure_serena*rowSums(x$input$counts)) %*%
@@ -491,15 +592,79 @@ exposure_serena = exposure_serena[rownames(x$input$counts),]
 
 
 # plot_group_exposure
+samples_order = organs$Sample
 
-exposure_serena %>% mutate(id = rownames(exposure_serena)) %>% full_join(organs, by = "id")
+common = intersect(x$fit$catalogue_signatures %>% rownames(),exposure_serena %>% colnames())
+
+cls_shared= c(get_signature_colors(x)[common])
+colnames(exposure_serena)
+
+cls_pr = c(RColorBrewer::brewer.pal(12,"Paired"),RColorBrewer::brewer.pal(12,"Set3"),RColorBrewer::brewer.pal(7,"Accent"),
+           RColorBrewer::brewer.pal(3,"Dark2"))
+
+names(cls_pr) = colnames(exposure_serena)[!colnames(exposure_serena) %in% c(common,"organ")]
+
+pl_exp_serena = exposure_serena %>% mutate(Sample = rownames(exposure_serena)) %>% reshape2::melt() %>% rename(Exposure = value,Signature = variable) %>%
+  ggplot(aes(x=factor(Sample,levels = samples_order), y=Exposure, fill=Signature)) +
+  ggplot2::geom_bar(stat = "identity") +
+  my_ggplot_theme() +
+  ggplot2::scale_y_continuous(labels=scales::percent) +
+  ggplot2::scale_fill_manual(values = c(cls_shared,cls_pr)) +
+  ggplot2::theme(
+    axis.text.x = ggplot2::element_text(angle = 90, hjust = 1)
+  ) +
+  ggplot2::labs(
+    title = paste0(x$cohort, ' (n = ', x$n_samples, ')'),
+    caption = 'Sorted by sample'
+  ) + ggplot2::facet_grid(organ~., scales="free_x") +
+  theme(axis.ticks.x = element_blank(),axis.text.x = element_blank()) + labs(x = "",title = "GEL.crcr_lung 200 (Degasperi et al, Science, 2022)")
+
+ggsave(pl_exp_serena,filename = "pl_exp_serena.png",height = 4,width = 7)
 
 
+# basilica
+
+dn_c = ggsci::pal_nejm()(4)
+names(dn_c) = rownames(x$fit$denovo_signatures)
+
+sc_c = ggsci::pal_simpsons()(12)
+names(sc_c) = rownames(x$fit$catalogue_signatures)[sample(1:12,replace = F,size = 12)]
+
+cls = c(sc_c,dn_c)
+cls["Other"] = "gainsboro"
+thr = 0.05
+
+exp_cl = ggplot(data = x$fit$exposure %>% as.data.frame() %>%
+                      mutate(Sample= rownames(x$fit$exposure)) %>%
+                      full_join(organs,by = "Sample") %>% drop_na() %>%
+                      filter(groups == "Colorectal") %>%
+                      reshape2::melt() %>% dplyr::rename(Signature = variable) %>%
+                dplyr::mutate(Signature = ifelse(value > thr,paste0(Signature),"Other")),
+                    aes(x = Sample , y  = value, fill =
+    factor(Signature,levels =
+      c("SBS4",colnames(x$fit$exposure)[colnames(x$fit$exposure) != "SBS4"],"Other")))) +
+  geom_bar(stat = "identity")  + ggplot2::scale_fill_manual(values = cls) +
+  labs(title = "Colorectal Cancer", y = "Exposure", x = "") + CNAqc:::my_ggplot_theme() +
+  theme(axis.ticks.x = element_blank(),axis.text.x = element_blank())
+
+exp_lung = ggplot(data = x$fit$exposure %>% as.data.frame() %>%
+                  mutate(Sample= rownames(x$fit$exposure)) %>%
+                  full_join(organs,by = "Sample") %>% drop_na() %>%
+                  filter(groups == "Lung") %>%
+                  reshape2::melt() %>% dplyr::rename(Signature = variable) %>%
+                  dplyr::mutate(Signature = ifelse(value > thr,paste0(Signature),"Other")),
+                aes(x = Sample , y  = value, fill =
+                      factor(Signature,levels =
+  c("SBS4",colnames(x$fit$exposure)[colnames(x$fit$exposure) != "SBS4"],"Other")))) +
+  geom_bar(stat = "identity")  + ggplot2::scale_fill_manual(values = cls) +
+  labs(title = "Lung Cancer", y = "Exposure", x = "") + CNAqc:::my_ggplot_theme() +
+  theme(axis.ticks.x = element_blank(),axis.text.x = element_blank())
 
 
+pl_exp_bas = ggarrange(plotlist = list(exp_cl,exp_lung),nrow = 2,ncol = 1,common.legend = T,
+                       legend = "bottom")
 
-plot_exposure(x)
-
+ggsave(pl_exp_bas,filename = "exp_bas_gel.pdf",height = 6,width = 6)
 
 
 # plot cosines
@@ -523,165 +688,32 @@ plot_exposure(x)
 
 # basilica signatures
 
-basilica_sign = plot_signatures(x)
+basilica_sign = plot_data_signatures(a = rbind(x$fit$catalogue_signatures,x$fit$denovo_signatures),
+                                     context = F,cls = cls)
+
+ggsave(basilica_sign,filename = "basilica_sign_gel.pdf",height = 9,width = 10)
 
 # serena signatures
 # lung
 
-plot_serena_sign = function(type,cls){
-
-lung_sign = serena_signatures[grepl(rownames(serena_signatures),pattern = type),]
-
-rownames(lung_sign) = stringr::str_remove(rownames(lung_sign),pattern = paste0("GEL.",type,"_common_"))
-rownames(lung_sign) = stringr::str_remove(rownames(lung_sign),pattern = paste0("GEL.",type,"_rare_"))
-
-names(cls) = rownames(lung_sign)
-plot_data_signatures(lung_sign %>% as.data.frame(),cls = cls,context = F) + labs(title = paste0(type," Cancer"))
-
-}
-
-lung = plot_serena_sign("Lung", cls = c(ggsci::pal_simpsons()(16),ggsci::pal_jama()(4)))
-
-col = plot_serena_sign("Colorectal",cls = c(ggsci::pal_simpsons()(16),ggsci::pal_nejm()(8),ggsci::pal_lancet()(4)) )
-
-
-
-
-# simulation poster
-
-setwd("~/Documents/GitHub/simbasilica/simulations")
-
-sample_list = str_remove(str_remove(list.files()[grep(list.files(),pattern = "simul.")],"simul."),
-                         ".Rds")
-
-sample_list
-
-
-results = lapply(sample_list,function(x){
-
-  print(x)
-
-  fit = readRDS(paste0("fit.",x,".Rds"))
-  fit_hier = readRDS(paste0("fit.hier.",x,".Rds"))
-  sim = readRDS(paste0("simul.",x,".Rds"))
-
- rbind(tibble(x,fit = list(fit), sim = list(sim), type = "Normal"),
-       tibble(x,fit = list(fit_hier), sim = list(sim), type = "Hierarchical"))
-
-}) %>% bind_rows()
-
-
-statistics = lapply(1:nrow(results),function(i){
-
-  inferred_catalogue = results$fit[[i]]$fit$catalogue_signatures %>% as.data.frame() %>%
-    rownames()
-
-  reference = rbind(results$sim[[i]]$exp_fixed[[1]],results$sim[[i]]$exp_denovo[[1]])
-
-   inferred_de_novo =  cosine.matrix(
-    reference[! rownames(reference) %in% inferred_catalogue,],
-    results$fit[[i]]$fit$denovo_signatures)
-
-  inferred_de_novo = inferred_de_novo %>% as.data.frame() %>% mutate(D_fake = 1)
-
-  print(results$x[[i]])
-
-   inferred_de_novo = inferred_de_novo[,(inferred_de_novo > 0.7) %>% colSums() %>% as.data.frame() %>% pull() > 0]
-
-   inferred_de_novo = inferred_de_novo %>% dplyr::select(-D_fake)
-
-   de_novo_matching = sapply(inferred_de_novo,
-                            function(y) head(row.names(inferred_de_novo)[order(y, decreasing = TRUE)],1))
-
-
-  colMax <- function(data) sapply(data, max, na.rm = TRUE)
-  median_sign_recostr = colMax(inferred_de_novo) %>% mean()
-
-  mse = (results$fit[[i]]$fit$exposure[,c(inferred_catalogue, de_novo_matching %>% names())] -
-       as.data.frame(results$sim[[i]]$exp_exposure)[,c(inferred_catalogue, de_novo_matching %>% as.data.frame() %>%
-                                                         pull())])**2
-
-  mse = sum(mse)/(nrow(mse)*ncol(mse))
-
-  # inferred_de_novo = (inferred_de_novo > 0.7)*1
-  #
-  # inferred_de_novo = inferred_de_novo %>% as.data.frame() %>% mutate(D_fake_1 = 1,D_fake_2 = 1)
-  #
-  # present_inferred = inferred_de_novo[, colSums(inferred_de_novo != 0) > 0] %>% ncol() +
-  #                     length(inferred_catalogue) - 2
-  #
-  # present_missed =   nrow(reference) - present_inferred
-  #
-  # wrong_inferred = ncol(inferred_de_novo) - ncol(inferred_de_novo[, colSums(inferred_de_novo != 0) > 0])
-
-  K_sign = reference %>% nrow()
-
-  cosines = get_similarity_scores(get_reconstructed_data(results$fit[[i]]),results$fit[[i]]$input$counts) %>%
-             filter(!is.na(cos))
-
-  GOF = sum(cosines$cos > 0.9)/nrow(cosines)
-
-  # tibble(present_inferred = present_inferred, present_missed = present_missed,
-  #        wrong_inferred = wrong_inferred, K_sign = K_sign, sample = results$x[[i]],
-  #        type = results$type[[i]],
-  #        GOF = GOF )
-
-  tibble(sample = results$x[[i]],
-         type = results$type[[i]],
-         K_sign = K_sign,
-         GOF = GOF,
-         mse = mse,
-         median_sign_recostr = median_sign_recostr)
-
-
-}) %>% bind_rows()
-
-
-statistics = statistics %>% rowwise() %>% mutate(s = strsplit(x = sample,split = ".s")[[1]][2])
-
-# cls = RColorBrewer::brewer.pal(3,"Set1")
-# names(cls) = c("6","9","15")
-
-# plot_k = ggplot(statistics  %>%  dplyr::select(K_sign,present_inferred,present_missed,s,type)  %>%
-#                   dplyr::mutate(K_sign = paste0(K_sign)) %>% group_by(K_sign,type) %>%
-#              summarize(mean_inferred_signatures = mean(present_inferred)) %>%
-#               dplyr::mutate(mean_missed_signatures = as.numeric(K_sign) - mean_inferred_signatures) %>%
-#                dplyr::rename(method = type) %>% reshape2::melt(),
-#                  aes(x = factor(K_sign,levels =c("6","9","15")), y = value, fill = K_sign,alpha =
-#                        factor(variable,levels = c("mean_missed_signatures","mean_inferred_signatures")))) +
-#                 geom_bar(stat="identity")  + scale_fill_manual(values = cls)  +
-#            scale_alpha_manual(values = c(0.5,1)) +
-#           facet_grid(~factor(method,levels = c("Normal","Hierarchical"))) + CNAqc:::my_ggplot_theme() +
-#          labs(x = "Number of signatures", y = "",title = "Number of inferred signatures")
+# plot_serena_sign = function(type,cls){
 #
-# ggsave(plot_k,filename = "k_inference.pdf",width = 10,height = 6)
-
-
-
-plot_cos = ggplot(statistics   %>%  dplyr::select(K_sign,s,type,GOF)  %>%
-                  dplyr::mutate(K_sign = paste0(K_sign)) %>% dplyr::rename(method = type),
-                aes(x = method,y =  GOF, fill = method)) + geom_boxplot() + ylim(0,1) +
-  ggsci::scale_fill_simpsons() + facet_grid(~factor(K_sign,levels =c("6","9","15"))) +
-  CNAqc:::my_ggplot_theme() +  labs(title = "GOF of data counts")
-
-
-
-plot_mse = ggplot(statistics   %>%  dplyr::select(K_sign,s,type,mse)  %>%
-                    dplyr::mutate(K_sign = paste0(K_sign)) %>% dplyr::rename(method = type),
-                  aes(x = method,y =  mse, fill = method)) + geom_boxplot() + ylim(0,1) +
-  ggsci::scale_fill_simpsons() + facet_grid(~factor(K_sign,levels =c("6","9","15"))) +
-  CNAqc:::my_ggplot_theme() +  labs(title = "MSE exposures")
+# lung_sign = serena_signatures[grepl(rownames(serena_signatures),pattern = type),]
+#
+# rownames(lung_sign) = stringr::str_remove(rownames(lung_sign),pattern = paste0("GEL.",type,"_common_"))
+# rownames(lung_sign) = stringr::str_remove(rownames(lung_sign),pattern = paste0("GEL.",type,"_rare_"))
+#
+# names(cls) = rownames(lung_sign)
+# plot_data_signatures(lung_sign %>% as.data.frame(),cls = cls,context = F) + labs(title = paste0(type," Cancer"))
+#
+# }
+#
+# lung = plot_serena_sign("Lung", cls = c(ggsci::pal_simpsons()(16),ggsci::pal_jama()(4)))
+#
+# col = plot_serena_sign("Colorectal",cls = c(ggsci::pal_simpsons()(16),ggsci::pal_nejm()(8),ggsci::pal_lancet()(4)) )
+#
 
 
 
 
-plot_sign = ggplot(statistics   %>%  dplyr::select(K_sign,s,type,median_sign_recostr)  %>%
-                    dplyr::mutate(K_sign = paste0(K_sign)) %>% dplyr::rename(method = type),
-                  aes(x = method,y = median_sign_recostr, fill = method)) + geom_boxplot() +
-  ggsci::scale_fill_simpsons() + facet_grid(~factor(K_sign,levels =c("6","9","15"))) + ylim(0,1) +
-  CNAqc:::my_ggplot_theme() +  labs(title = "Median cosine similarity of signature reconstruction")
 
-
-p = ggarrange(plotlist = list(plot_cos,plot_mse,plot_sign),ncol = 1,nrow = 3)
-
-ggsave(p,filename = "sim_inference.pdf",width = 10,height = 10)
