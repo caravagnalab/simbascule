@@ -24,7 +24,7 @@ single_dataset = function(N, n_groups, samples_per_group,
                           reference_cat, denovo_cat,
                           reference_cosine, denovo_cosine,
                           private_sigs, private_fracs,
-                          cosine_limit, seed,
+                          cosine_limit, seed, cohort_name="",
                           out_path=NULL) {
 
   groups = sample(1:n_groups, N, replace=T)
@@ -52,7 +52,11 @@ single_dataset = function(N, n_groups, samples_per_group,
   if (!dir.exists(out_path))
     dir.create(out_path, recursive=T)
 
-  saveRDS(x, paste0(out_path, "simul.", idd, ".Rds"))
+  if (cohort_name == "")
+    saveRDS(x, paste0(out_path, "simul.", idd, ".Rds"))
+  else
+    saveRDS(x, paste0(out_path, "simul.", idd, ".", cohort_name, ".Rds"))
+
   return(x)
 }
 
