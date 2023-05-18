@@ -69,6 +69,12 @@ generate.data <- function(
     sapply(1:num_samples, function(n)
       rpois(1, rate[n, s]))) %>% as.data.frame()
 
+  while (any(!rowSums(M) %in% mut_range)) {
+    M = sapply(colnames(beta), function(s)
+      sapply(1:num_samples, function(n)
+        rpois(1, rate[n, s]))) %>% as.data.frame()
+  }
+
   rownames(M) <- rownames(alpha)
   colnames(M) <- colnames(beta)
 
