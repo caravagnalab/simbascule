@@ -24,7 +24,8 @@ single_dataset = function(N, n_groups, samples_per_group,
                           reference_cat, denovo_cat,
                           reference_cosine, denovo_cosine,
                           private_sigs, private_fracs,
-                          cosine_limit, seed, cohort_name="",
+                          cosine_limit, seed,
+                          mut_range=2:5000, cohort_name="",
                           out_path=NULL) {
 
   groups = sample(1:n_groups, N, replace=T)
@@ -44,7 +45,7 @@ single_dataset = function(N, n_groups, samples_per_group,
     groups=groups,
     private_sigs=private_sigs,
     private_fracs=private_fracs,
-    mut_range=1:5000,
+    mut_range=mut_range,
     seed=seed)
 
   if (is.null(out_path)) return(x)
