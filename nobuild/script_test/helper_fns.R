@@ -20,12 +20,128 @@ select_fixed_sbs = function(referece_cat, n_fixed=4, cosine_limit=.5) {
 }
 
 
+generate_synthetic_datasets = function(shared,
+                                      private,
+                                      catalogue,
+                                      comb_matrix,
+                                      py,
+                                      out_path = NULL,
+                                      seeds = 1:30,
+                                      mut_range = 10:8000,
+                                      # k_list = 0:10,
+                                      input_catalogue = NULL,
+                                      reg_weight = 0.,
+                                      regularizer = "cosine",
+                                      CUDA = FALSE,
+                                      do.fits = FALSE,
+                                      verbose = FALSE) {
+
+  failed = file(paste0(out_path, "failed_runs.txt"))
+
+  # catalogue = whole_catalogue[intersect(sbs.names, rownames(whole_catalogue)),]
+  reference_cat = catalogue[shared,]
+
+  for (i in 1:nrow(comb)) {
+
+    private_common = sample(private, comb$n_priv_comm[i])
+
+    tmp = setdiff(private, private_common)
+    private_rare = sample(tmp, comb$n_priv_rare[i])
+
+    denovo_cat = catalogue[c(private_common, private_rare),]
+
+    for (j in seeds) {
+
+      x = single_dataset(
+        N = comb$N_vals[i][[1]],
+        n_groups = comb$n_groups_vals[i][[1]],
+        samples_per_group = comb$samples_per_group[i][[1]],
+        reference_cat = reference_cat,
+        denovo_cat = denovo_cat,
+        private_sigs = list("rare" = private_rare, "common" = private_common),
+        private_fracs = list("rare" = 0.05, "common" = 0.1),
+        mut_range = mut_range,
+        seed = j,
+        out_path = out_path
+      )
+
+      min_k = max(1, nrow(reference_cat) + nrow(denovo_cat) - 5)
+      max_k = min_k + 10
+      k_list = min_k:max_k
+
+      if (do.fits) {
+
+        tryCatch(
+          expr = {
+            x.fit = fit(
+              x = x$x[[1]],
+              k = k_list,
+              py = py,
+              reference_catalogue = reference_cat,
+              input_catalogue = input_catalogue,
+              reg_weight = reg_weight,
+              CUDA = CUDA,
+              regularizer = regularizer,
+              filtered_cat = TRUE,
+              verbose = verbose
+            )
+
+            if (!is.null(out_path))
+              saveRDS(x.fit, paste0(out_path, "fit.N", comb$N_vals[i][[1]], ".G",
+                                         comb$n_groups_vals[i][[1]], ".s", seeds[j], ".Rds"))
+
+          },
+          error = function(e) {
+            writeLines(paste0("fit.N", comb$N_vals[i][[1]], ".G", comb$n_groups_vals[i][[1]], ".s", j), failed)
+            writeLines(e)
+          }
+        )
+
+
+        tryCatch(
+          expr = {
+            x.fit.hier = fit(
+              x = x$x[[1]],
+              k = k_list,
+              py = py,
+              groups = x$groups[[1]] - 1,
+              reference_catalogue = reference_cat,
+              input_catalogue = input_catalogue,
+              reg_weight = reg_weight,
+              CUDA = CUDA,
+              regularizer = regularizer,
+              filtered_cat = TRUE,
+              verbose = verbose
+            )
+
+            if (!is.null(out_path))
+              saveRDS(x.fit.hier, file = paste0(out_path, "fit.hier.N", comb$N_vals[i][[1]], ".G",
+                                           comb$n_groups_vals[i][[1]], ".s", seeds[j], ".Rds"))
+          },
+          error = function(e) {
+            writeLines(paste0("fit_hier.N", comb$N_vals[i][[1]], ".G", comb$n_groups_vals[i][[1]], ".s", j), failed)
+            writeLines(e)
+          }
+        )
+
+      }
+    }
+  }
+
+  close(failed)
+}
+
+
+
+
+
+
 single_dataset = function(N, n_groups, samples_per_group,
                           reference_cat, denovo_cat,
-                          reference_cosine, denovo_cosine,
                           private_sigs, private_fracs,
                           cosine_limit, seed,
-                          mut_range=2:5000, cohort_name="",
+                          reference_cosine=NULL, denovo_cosine=NULL,
+                          mut_range=10:8000, cohort_name="",
                           out_path=NULL) {
 
   groups = sample(1:n_groups, N, replace=T)
@@ -33,6 +149,12 @@ single_dataset = function(N, n_groups, samples_per_group,
     groups = sample(1:n_groups, N, replace=T)
 
   idd = paste0("N", N, ".G", n_groups, ".s", seed)
+
+  if (cohort_name == "") out_name = paste0(out_path, "simul.", idd, ".Rds") else
+    out_name = paste0(out_path, "simul.", idd, ".", cohort_name, ".Rds")
+
+  if (!is.null(out_path) && paste0("simul.", idd, ".Rds") %in% list.files(paste0(out_path)))
+    return(readRDS(out_name))
 
   x = generate.data(
     reference_catalogue=reference_cat,

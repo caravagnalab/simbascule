@@ -8,11 +8,11 @@
 generate.signatures <- function(
     reference_catalogue,
     denovo_catalogue,
-    reference_cosine, # cosine similarity matrix of reference signatures (SBS1 excluded)
-    denovo_cosine,    # cosine similarity matrix of denovo signatures
-    complexity,       # c(3,2) | "low" | "medium" | "high" |
-    similarity_limit,
-    seed=NULL
+    reference_cosine = NULL, # cosine similarity matrix of reference signatures (SBS1 excluded)
+    denovo_cosine = NULL,    # cosine similarity matrix of denovo signatures
+    complexity = NULL,       # c(3,2) | "low" | "medium" | "high" |
+    similarity_limit = NULL,
+    seed = NULL
 ) {
 
   if (complexity == -1)

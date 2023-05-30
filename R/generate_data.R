@@ -2,13 +2,13 @@
 generate.data <- function(
     reference_catalogue,
     denovo_catalogue,
-    reference_cosine,
-    denovo_cosine,
     targetX,
     inputX,
     similarity_limit,
     groups,
     mut_range,
+    reference_cosine = NULL,
+    denovo_cosine = NULL,
     private_sigs=list("rare"=c(), "common"=c()),
     private_fracs=list("rare"=1., "common"=0),
     seed=NULL
@@ -69,11 +69,14 @@ generate.data <- function(
     sapply(1:num_samples, function(n)
       rpois(1, rate[n, s]))) %>% as.data.frame()
 
-  while (any(!rowSums(M) %in% mut_range)) {
-    M = sapply(colnames(beta), function(s)
-      sapply(1:num_samples, function(n)
-        rpois(1, rate[n, s]))) %>% as.data.frame()
-  }
+  # print(rate)
+  # print(rowSums(M) < mut_range[1])
+  #
+  # while (any(rowSums(M) < mut_range[1])) {
+  #   M = sapply(colnames(beta), function(s)
+  #     sapply(1:num_samples, function(n)
+  #       rpois(1, rate[n, s]))) %>% as.data.frame()
+  # }
 
   rownames(M) <- rownames(alpha)
   colnames(M) <- colnames(beta)
