@@ -1,10 +1,11 @@
 main_path = "/u/cdslab/ebusca00/scratch_shared/basilica_pkgs/"
-data_path = paste0(main_path, "simbasilica/nobuild/simulations/simulations_2905")
-out_path = paste0(main_path, "simbasilica/nobuild/simulations/fits_new_model_3105")
+data_path = paste0(main_path, "simbasilica/nobuild/simulations/simulations_2905/")
+out_path = paste0(main_path, "simbasilica/nobuild/simulations/fits_new_model_3105/")
 new_model = TRUE
 
-reticulate::use_condaenv("basilica-env")
-py = reticulate::import_from_path(module = "pybasilica", path = paste0(main_path,"pybasilica/"))
+py = NULL
+# reticulate::use_condaenv("basilica-env")
+# py = reticulate::import_from_path(module = "pybasilica", path = paste0(main_path,"pybasilica/"))
 
 devtools::load_all(paste0(main_path, "basilica"))
 devtools::load_all(paste0(main_path, "simbasilica"))
@@ -32,7 +33,7 @@ generate_synthetic_datasets(shared = shared,
                             reg_weight = 0,
                             out_path = out_path,
                             data_path = data_path,
-                            seeds = 1:20,
+                            seeds = 1:8,
                             do.fits = TRUE,
                             verbose = FALSE,
                             new_model = new_model)
