@@ -14,6 +14,8 @@ generate_synthetic_datasets = function(shared,
                                        do.fits = FALSE,
                                        verbose = FALSE,
                                        new_model = TRUE) {
+  if (!dir.exists(out_path))
+    dir.create(out_path, recursive=T)
 
   failed = file(paste0(out_path, "failed_runs.txt"), open="w")
 
@@ -83,6 +85,8 @@ generate_synthetic_datasets = function(shared,
 
 save_fit = function(x.fit, path, filename) {
   if (is.null(path)) return()
+  
+  if (is.null(x.fit)) return()
 
   if (!dir.exists(path))
     dir.create(path, recursive=T)
@@ -134,6 +138,7 @@ try_run = function(error_file, expr, msg) {
            error = function(e) {
              writeLines(msg, error_file)
              writeLines(paste(e))
+	     writeLines(paste(reticulate::py_last_error()))
              return(NULL)
            })
 }
