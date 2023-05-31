@@ -2,49 +2,37 @@ library(lsa)
 library(dplyr)
 library(ggplot2)
 source("~/GitHub/simbasilica/nobuild/script_test/helper_fns.R")
-py = reticulate::import_from_path("pybasilica","~/GitHub/pybasilica/")
+# py = reticulate::import_from_path("pybasilica","~/GitHub/pybasilica/")
 devtools::load_all("~/GitHub/basilica/")
 devtools::load_all()
 
-path = "~/GitHub/simbasilica/nobuild/script_test/simulations/"
+path = "~/GitHub/simbasilica/nobuild/simulations/simulations_2905/"
 # source("./R/generate_data.R")
 # source("./R/signatures.R")
 # source("./R/input.R")
 # source("./R/exposure.R")
 # source("./R/theta.R")
 
-make_plots = function(x, x.true=NULL, reconstructed=T, cls = NULL) {
-  mm = plot_mutations(x, reconstructed = reconstructed)
-  alp = plot_exposures(x, sort_by="SBS1", cls=cls)
-  bet = plot_signatures(x, cls=cls)
-
-  if (is.null(x.true)) return(patchwork::wrap_plots(bet + (mm/alp), guides="collect"))
-
-  mm.true = plot_mutations(x.true, reconstructed = F)
-  alpha.true = plot_exposures(x.true, sort_by="SBS1", cls=cls)
-
-  return(patchwork::wrap_plots(bet + (mm/mm.true/alp/alpha.true), guides="collect"))
-}
 
 # Generate inputs ####
-
-# cosmic = read.csv("./script_test/COSMIC_v3.3.1_SBS_GRCh38.txt", sep="\t") %>%
-#   tibble::column_to_rownames(var="Type") %>% t()
-
-cosine_limit = .8
-n_fixed = 2 # n of fixed signatures
-
-shared = c("SBS1", "SBS40 SBS3 SBS5")
-private_common = c("SBS17b", "SBS2", "SBS20")
-private_rare = c("SBS8 SBS4")
-
-denovo_catalogue = COSMIC_filt_merged[c(private_common, private_rare),]
-# reference catalogue is all cosmic - the sigs selected as private common/rare and shared
-# reference_cat = cosmic[!rownames(cosmic) %in% keep,]
-# reference_cat = select_fixed_sbs(reference_cat, n_fixed=n_fixed, cosine_limit=cosine_limit)
-reference_catalogue = COSMIC_filt_merged[shared,]
-denovo_cosine = lsa::cosine(denovo_catalogue %>% t())
-reference_cosine = lsa::cosine(reference_catalogue %>% t())
+#
+# # cosmic = read.csv("./script_test/COSMIC_v3.3.1_SBS_GRCh38.txt", sep="\t") %>%
+# #   tibble::column_to_rownames(var="Type") %>% t()
+#
+# cosine_limit = .8
+# n_fixed = 2 # n of fixed signatures
+#
+# shared = c("SBS1", "SBS40 SBS3 SBS5")
+# private_common = c("SBS17b", "SBS2", "SBS20")
+# private_rare = c("SBS8 SBS4")
+#
+# denovo_catalogue = COSMIC_filt_merged[c(private_common, private_rare),]
+# # reference catalogue is all cosmic - the sigs selected as private common/rare and shared
+# # reference_cat = cosmic[!rownames(cosmic) %in% keep,]
+# # reference_cat = select_fixed_sbs(reference_cat, n_fixed=n_fixed, cosine_limit=cosine_limit)
+# reference_catalogue = COSMIC_filt_merged[shared,]
+# denovo_cosine = lsa::cosine(denovo_catalogue %>% t())
+# reference_cosine = lsa::cosine(reference_catalogue %>% t())
 
 
 # First datasets - rare ####
@@ -54,24 +42,24 @@ reference_cosine = lsa::cosine(reference_catalogue %>% t())
 #                    private_fracs=list("rare"=0.05,"common"=0.3), cohort_name="rare",
 #                    cosine_limit, seed=23, out_path="./nobuild/script_test/simulations/")
 
-x.simul = readRDS(paste0(path, "simul.N350.G2.s23.rare.Rds"))
+x.simul = readRDS(paste0(path, "simul.N300.G2.s23.Rds"))
 xx = create_basilica_obj_simul(x.simul)
-make_plots(xx, reconstructed = F)
+plot_fit(xx, reconstructed = F)
 
 ## Old model fit, no groups
-x.fit.good = x.fit
-x.fit = fit(x.simul$x[[1]], k=0:7, py=py,
-            input_catalogue=COSMIC_filt_merged[c("SBS1","SBS40 SBS3 SBS5"),],
+x.fit = fit(x.simul$x[[1]], k=0:10, py=NULL,
+            input_catalogue=COSMIC_filt_merged[c("SBS1","SBS5"),],
             reference_catalogue=COSMIC_filt_merged,
+            reg_weight=0,
             reg_bic=TRUE,
             filtered_cat=TRUE,
             regularizer = "cosine")
 
 
 # Old model fit, with groups
-x.fit.g = fit(x.simul$x[[1]], k=0:7, py=py,
-              input_catalogue=COSMIC_filt_merged[c("SBS1","SBS40 SBS3 SBS5"),],
-              reference_catalogue=COSMIC_filt_merged,
+x.fit.g = fit(x.simul$x[[1]], k=0:10, py=NULL,
+              input_catalogue=COSMIC_filt_merged[c("SBS1","SBS5"),],
+              reference_catalogue=COSMIC_filt_merged, reg_weight = 0,
               reg_bic=TRUE, filtered_cat=TRUE, groups=x.simul$groups[[1]]-1,
               regularizer = "cosine")
 x.fit.g$groups = x.simul$groups[[1]]-1
@@ -84,12 +72,12 @@ cls = gen_palette(length(sigs)) %>% setNames(sigs)
 
 
 
-true.plots = make_plots(xx, reconstructed=F, cls=cls) & theme(legend.position="bottom")
-x1.plots = make_plots(x.fit, xx, reconstructed=T, cls=cls) & theme(legend.position="bottom")
-x2.plots = make_plots(x.fit.g, xx, reconstructed=T, cls=cls) & theme(legend.position="bottom")
+true.plots = plot_fit(xx, reconstructed=F, cls=cls) & theme(legend.position="bottom")
+x1.plots = plot_fit(x.fit, xx, reconstructed=T, cls=cls) & theme(legend.position="bottom")
+x2.plots = plot_fit(x.fit.g, xx, reconstructed=T, cls=cls) & theme(legend.position="bottom")
 
 
-pdf("~/GitHub/hBasilica/results/fit_simulated/report.simul_tests.norare.pdf", height = 8, width = 14)
+pdf("~/GitHub/hBasilica/results/fit_simulated/report.simul_tests.pdf", height = 8, width = 14)
 true.plots & patchwork::plot_annotation(title="True data")
 x1.plots & patchwork::plot_annotation(title="Fit 1")
 x2.plots & patchwork::plot_annotation(title="Fit 2 - hierarchical")

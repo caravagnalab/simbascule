@@ -1,53 +1,28 @@
-# library(lsa)
-
-## Function to select "n_fixed" signatures from a reference catalogue (i.e. COSMIC)
-## with a cosine similarity lower than "cosine_limit"
-## It returns the subset reference
-select_fixed_sbs = function(referece_cat, n_fixed=4, cosine_limit=.5) {
-  ref_cosine.all = lsa::cosine(reference_cat %>% t())
-
-  while (TRUE) {
-    idxs = sample(1:nrow(ref_cosine.all), n_fixed)
-    sbss = rownames(ref_cosine.all)[idxs]
-    sbs_cosine = ref_cosine.all[sbss, sbss]
-    if (any(sbs_cosine != 1. & sbs_cosine > cosine_limit)) next
-
-    sbs_fixed = sbss
-    sbs_ref = reference_cat[sbs_fixed,]
-    break
-  }
-  return(sbs_ref)
-}
-
-
 generate_synthetic_datasets = function(shared,
-                                      private,
-                                      catalogue,
-                                      comb_matrix,
-                                      py,
-                                      out_path = NULL,
-                                      seeds = 1:30,
-                                      mut_range = 10:8000,
-                                      # k_list = 0:10,
-                                      input_catalogue = NULL,
-                                      reg_weight = 0.,
-                                      regularizer = "cosine",
-                                      CUDA = FALSE,
-                                      do.fits = FALSE,
-                                      verbose = FALSE) {
+                                       private,
+                                       catalogue,
+                                       comb_matrix,
+                                       py,
+                                       out_path = NULL,
+                                       seeds = 1:30,
+                                       mut_range = 10:8000,
+                                       input_catalogue = NULL,
+                                       reg_weight = 0.,
+                                       regularizer = "cosine",
+                                       CUDA = FALSE,
+                                       do.fits = FALSE,
+                                       verbose = FALSE,
+                                       new_model = TRUE) {
 
-  failed = file(paste0(out_path, "failed_runs.txt"))
+  failed = file(paste0(out_path, "failed_runs.txt"), open="w")
 
-  # catalogue = whole_catalogue[intersect(sbs.names, rownames(whole_catalogue)),]
   reference_cat = catalogue[shared,]
 
   for (i in 1:nrow(comb)) {
 
     private_common = sample(private, comb$n_priv_comm[i])
-
     tmp = setdiff(private, private_common)
     private_rare = sample(tmp, comb$n_priv_rare[i])
-
     denovo_cat = catalogue[c(private_common, private_rare),]
 
     for (j in seeds) {
@@ -71,65 +46,33 @@ generate_synthetic_datasets = function(shared,
 
       idd = paste0("N", comb$N_vals[i][[1]], ".G", comb$n_groups_vals[i][[1]], ".s", j)
 
-      cat(idd)
-
-      invisible(
+      cat(paste0(idd, "\n"))
 
       if (do.fits) {
-        if (!is.null(out_path) && !paste0("fit.", idd, ".Rds") %in% list.files(paste0(out_path))) {
-          tryCatch(expr = {
-            x.fit = fit(
-              x = x$x[[1]],
-              k = k_list,
-              py = py,
-              reference_catalogue = reference_cat,
-              input_catalogue = input_catalogue,
-              reg_weight = reg_weight,
-              CUDA = CUDA,
-              regularizer = regularizer,
-              filtered_cat = TRUE,
-              verbose = verbose
-            )
+        fits = run_model(x = x$x[[1]],
+                  k = k_list,
+                  py = py,
+                  reference_catalogue = reference_cat,
+                  input_catalogue = input_catalogue,
+                  reg_weight = reg_weight,
+                  CUDA = CUDA,
+                  regularizer = regularizer,
+                  filtered_cat = TRUE,
+                  verbose = verbose,
+                  groups = x$groups[[1]] - 1,
+                  new_model = new_model,
+                  error_file = failed,
+                  idd = idd)
 
-            if (!is.null(out_path))
-              saveRDS(x.fit, paste0(out_path, "fit.N", comb$N_vals[i][[1]], ".G",
-                                         comb$n_groups_vals[i][[1]], ".s", seeds[j], ".Rds")) 
-	  }, error = function(e) {
-            writeLines(paste0("fit.", idd), failed)
-            writeLines(paste(e))
-          }
-	  
-        ) }  # end tryCatch
+        filename1 = paste0("fit.N", comb$N_vals[i][[1]], ".G",
+                           comb$n_groups_vals[i][[1]], ".s", seeds[j], ".Rds")
 
-        if (!is.null(out_path) && !paste0("fit.hier.", idd, ".Rds") %in% list.files(paste0(out_path))) {
-          tryCatch(expr = {
-            x.fit.hier = fit(
-              x = x$x[[1]],
-              k = k_list,
-              py = py,
-              groups = x$groups[[1]] - 1,
-              reference_catalogue = reference_cat,
-              input_catalogue = input_catalogue,
-              reg_weight = reg_weight,
-              CUDA = CUDA,
-              regularizer = regularizer,
-              filtered_cat = TRUE,
-              verbose = verbose
-            )
+        filename2 = paste0("fit.hier.N", comb$N_vals[i][[1]], ".G",
+                           comb$n_groups_vals[i][[1]], ".s", seeds[j], ".Rds")
 
-            if (!is.null(out_path))
-              saveRDS(x.fit.hier, file = paste0(out_path, "fit.hier.N", comb$N_vals[i][[1]], ".G",
-                                           comb$n_groups_vals[i][[1]], ".s", seeds[j], ".Rds"))
-          }, error = function(e) {
-            writeLines(paste0("fit_hier.", idd), failed)
-            writeLines(paste(e))
-          }
-
-        ) }  # end tryCatch
-      }  # end if (do.fits) 
-
-      )  # end invisible
-    
+        save_fit(fits$fit1, out_path, filename1)
+        save_fit(fits$fit.hier, out_path, filename2)
+      }
     }
   }
 
@@ -137,7 +80,62 @@ generate_synthetic_datasets = function(shared,
 }
 
 
+save_fit = function(x.fit, path, filename) {
+  if (is.null(out_path)) return()
 
+  if (!dir.exists(out_path))
+    dir.create(out_path, recursive=T)
+
+  if (filename %in% list.files(paste0(out_path)))
+    return()
+
+  saveRDS(x.fit, paste0(out_path, filename))
+}
+
+
+run_model = function(...,
+                     input_catalogue=NULL,
+                     filtered_cat=TRUE,
+                     groups=NULL,
+                     new_model=FALSE,
+                     error_file=NULL,
+                     idd="") {
+  msg1 = paste0("fit.", idd, "\n")
+  msg2 = paste0("fit.hier.", idd, "\n")
+
+  if (!new_model) {
+    x.fit = try_run(error_file,
+            expr = fit(..., groups=NULL, input_catalogue=input_catalogue),
+            msg = msg1)
+
+    x.fit.hier = try_run(error_file,
+            expr = fit(..., groups=groups, input_catalogue=input_catalogue),
+            msg = msg2)
+
+  } else {
+    x.fit = try_run(error_file,
+            expr = two_steps_inference(..., groups=NULL)$tot,
+            msg = msg1)
+
+    x.fit.hier = try_run(error_file,
+            expr = two_steps_inference(..., groups=groups)$tot,
+            msg = msg2)
+
+  }
+
+  return(list("fit1"=x.fit, "fit.hier"=x.fit.hier))
+}
+
+
+try_run = function(error_file, expr, msg) {
+
+  tryCatch(expr = expr,
+           error = function(e) {
+             writeLines(msg, error_file)
+             writeLines(paste(e))
+             return(NULL)
+           })
+}
 
 
 
@@ -188,6 +186,26 @@ single_dataset = function(N, n_groups, samples_per_group,
   return(x)
 }
 
+
+
+## Function to select "n_fixed" signatures from a reference catalogue (i.e. COSMIC)
+## with a cosine similarity lower than "cosine_limit"
+## It returns the subset reference
+select_fixed_sbs = function(referece_cat, n_fixed=4, cosine_limit=.5) {
+  ref_cosine.all = lsa::cosine(reference_cat %>% t())
+
+  while (TRUE) {
+    idxs = sample(1:nrow(ref_cosine.all), n_fixed)
+    sbss = rownames(ref_cosine.all)[idxs]
+    sbs_cosine = ref_cosine.all[sbss, sbss]
+    if (any(sbs_cosine != 1. & sbs_cosine > cosine_limit)) next
+
+    sbs_fixed = sbss
+    sbs_ref = reference_cat[sbs_fixed,]
+    break
+  }
+  return(sbs_ref)
+}
 
 
 
