@@ -4,6 +4,7 @@ generate_synthetic_datasets = function(shared,
                                        comb_matrix,
                                        py,
                                        out_path = NULL,
+                                       data_path = NULL,
                                        seeds = 1:30,
                                        mut_range = 10:8000,
                                        input_catalogue = NULL,
@@ -37,7 +38,7 @@ generate_synthetic_datasets = function(shared,
         private_fracs = list("rare" = 0.05, "common" = 0.1),
         mut_range = mut_range,
         seed = j,
-        out_path = out_path
+        out_path = data_path
       )
 
       min_k = max(1, nrow(reference_cat) + nrow(denovo_cat) - 5)
@@ -81,15 +82,15 @@ generate_synthetic_datasets = function(shared,
 
 
 save_fit = function(x.fit, path, filename) {
-  if (is.null(out_path)) return()
+  if (is.null(path)) return()
 
-  if (!dir.exists(out_path))
-    dir.create(out_path, recursive=T)
+  if (!dir.exists(path))
+    dir.create(path, recursive=T)
 
-  if (filename %in% list.files(paste0(out_path)))
+  if (filename %in% list.files(paste0(path)))
     return()
 
-  saveRDS(x.fit, paste0(out_path, filename))
+  saveRDS(x.fit, paste0(path, filename))
 }
 
 
