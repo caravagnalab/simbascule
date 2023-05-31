@@ -69,10 +69,15 @@ generate_synthetic_datasets = function(shared,
       max_k = min_k + 10
       k_list = min_k:max_k
 
-      if (do.fits) {
+      idd = paste0("N", comb$N_vals[i][[1]], ".G", comb$n_groups_vals[i][[1]], ".s", j)
 
-        tryCatch(
-          expr = {
+      cat(idd)
+
+      invisible(
+
+      if (do.fits) {
+        if (!is.null(out_path) && !paste0("fit.", idd, ".Rds") %in% list.files(paste0(out_path))) {
+          tryCatch(expr = {
             x.fit = fit(
               x = x$x[[1]],
               k = k_list,
@@ -88,18 +93,16 @@ generate_synthetic_datasets = function(shared,
 
             if (!is.null(out_path))
               saveRDS(x.fit, paste0(out_path, "fit.N", comb$N_vals[i][[1]], ".G",
-                                         comb$n_groups_vals[i][[1]], ".s", seeds[j], ".Rds"))
-
-          },
-          error = function(e) {
-            writeLines(paste0("fit.N", comb$N_vals[i][[1]], ".G", comb$n_groups_vals[i][[1]], ".s", j), failed)
-            writeLines(e)
+                                         comb$n_groups_vals[i][[1]], ".s", seeds[j], ".Rds")) 
+	  }, error = function(e) {
+            writeLines(paste0("fit.", idd), failed)
+            writeLines(paste(e))
           }
-        )
+	  
+        ) }  # end tryCatch
 
-
-        tryCatch(
-          expr = {
+        if (!is.null(out_path) && !paste0("fit.hier.", idd, ".Rds") %in% list.files(paste0(out_path))) {
+          tryCatch(expr = {
             x.fit.hier = fit(
               x = x$x[[1]],
               k = k_list,
@@ -117,14 +120,16 @@ generate_synthetic_datasets = function(shared,
             if (!is.null(out_path))
               saveRDS(x.fit.hier, file = paste0(out_path, "fit.hier.N", comb$N_vals[i][[1]], ".G",
                                            comb$n_groups_vals[i][[1]], ".s", seeds[j], ".Rds"))
-          },
-          error = function(e) {
-            writeLines(paste0("fit_hier.N", comb$N_vals[i][[1]], ".G", comb$n_groups_vals[i][[1]], ".s", j), failed)
-            writeLines(e)
+          }, error = function(e) {
+            writeLines(paste0("fit_hier.", idd), failed)
+            writeLines(paste(e))
           }
-        )
 
-      }
+        ) }  # end tryCatch
+      }  # end if (do.fits) 
+
+      )  # end invisible
+    
     }
   }
 
