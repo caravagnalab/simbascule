@@ -139,7 +139,7 @@ try_run = function(error_file, expr, msg) {
              writeLines(msg, error_file)
              writeLines(paste(e))
 	     writeLines(paste(reticulate::py_last_error()))
-             return(NULL)
+             return(c(paste(e), paste(reticulate::py_last_error()) ) )
            })
 }
 
