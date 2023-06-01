@@ -1,8 +1,5 @@
 main_path = "/u/cdslab/ebusca00/scratch_shared/basilica_pkgs/"
-data_path = paste0(main_path, "simbasilica/nobuild/simulations/simulations_2905/")
-out_path = paste0(main_path, "simbasilica/nobuild/simulations/fits_new_model_3105/")
-new_model = TRUE
-
+out_path = paste0(main_path, "simbasilica/nobuild/simulations/simulations_2905/")
 
 reticulate::use_condaenv("basilica-env")
 py = reticulate::import_from_path(module = "pybasilica", path = paste0(main_path,"pybasilica/"))
@@ -10,7 +7,7 @@ py = reticulate::import_from_path(module = "pybasilica", path = paste0(main_path
 devtools::load_all(paste0(main_path, "basilica"))
 devtools::load_all(paste0(main_path, "simbasilica"))
 
-source(paste0(main_path, "simbasilica/nobuild/script_test/helper_fns.R"))
+# source(paste0(main_path, "simbasilica/nobuild/script_test/helper_fns.R"))
 library(ggplot2)
 
 comb = tibble(
@@ -31,9 +28,7 @@ generate_synthetic_datasets(shared = shared,
                             py = py,
                             CUDA = TRUE,
                             reg_weight = 0,
-                            out_path = out_path,
-                            data_path = data_path,
-                            seeds = 1:8,
+                            fits_path = out_path,
+                            seeds = 1:20,
                             do.fits = TRUE,
-                            verbose = FALSE,
-                            new_model = new_model)
+                            verbose = FALSE)
