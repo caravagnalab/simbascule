@@ -85,7 +85,7 @@ generate_synthetic_datasets = function(shared,
 
 save_fit = function(x.fit, path, filename) {
   if (is.null(path)) return()
-  
+
   if (is.null(x.fit)) return()
 
   if (!dir.exists(path))
@@ -315,17 +315,3 @@ plot_alpha = function(x) {
       theme_bw() + theme(legend.position="bottom")
   )
 }
-
-# plot_beta = function(x) {
-#   beta = rbind(x$exp_fixed[[1]],
-#                x$exp_denovo[[1]])
-#   return(
-#     beta %>%
-#       as.data.frame() %>%
-#       tibble::rownames_to_column(var="sbs") %>%
-#       reshape2::melt(id="sbs", variable.name="context", value.name="beta") %>%
-#       ggplot() +
-#       geom_bar(aes(x=context, y=beta), stat="identity") +
-#       facet_grid(sbs~.)
-#   )
-# }
