@@ -32,8 +32,7 @@ compare_single_fit = function(fitname, fits_path, data_path) {
                  setdiff(rownames(sigs.simul), names(assigned)))
 
   mse_counts = compute.mse(x.simul$input$counts, get_data(x.fit, reconstructed=T))
-  mse_expos = compute.mse(x.simul$fit$exposure[, names(assigned)],
-                          x.fit$fit$exposure[, assigned])
+  mse_expos = compute.mse(expos.simul, expos.fit, assigned=assigned)
   cosine_sigs = compute.cosine(sigs.fit, sigs.simul, assigned, unassigned, what="sigs")
   cosine_expos = compute.cosine(expos.fit, expos.simul, assigned, unassigned, what="expos")
 
