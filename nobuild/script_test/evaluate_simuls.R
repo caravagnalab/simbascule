@@ -55,11 +55,17 @@ stats %>%
 
 
 ## Example ####
+simul_id = "N50.G2.s4"
 
-x.simul = readRDS(paste0(data_path, "simul.N5000.G6.s2.Rds")) %>%
+x.simul = readRDS(paste0(data_path, "simul.", simul_id, ".Rds")) %>%
   create_basilica_obj_simul()
-x.fit = readRDS(paste0(fits_path, "fit.N5000.G6.s2.Rds"))
-x.fit.hier = readRDS(paste0(fits_path, "fit.hier.N5000.G6.s2.Rds"))
+x.fit = readRDS(paste0(fits_path, "fit.", simul_id, ".Rds"))
+x.fit.hier = readRDS(paste0(fits_path, "fit.", simul_id, ".Rds"))
+
+x.fit2 = two_steps_inference(x=x.simul$input$counts,
+                             k=0:10, py=py, reg_weight=0.,
+                             reference_catalogue=COSMIC_filt_merged, )
+
 
 plot_fit(x.simul)
 plot_mutations(x.simul)
