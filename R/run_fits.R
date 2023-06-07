@@ -64,7 +64,7 @@ generate_and_run = function(shared,
         private_fracs = list("rare" = 0.05, "common" = 0.1),
         mut_range = mut_range,
         seed = j,
-        fits_path = data_path
+        out_path = data_path
       )
 
       min_k = max(1, nrow(reference_cat) + nrow(denovo_cat) - 5)
