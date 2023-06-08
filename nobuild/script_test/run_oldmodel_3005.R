@@ -1,5 +1,5 @@
 main_path = "/u/cdslab/ebusca00/scratch_shared/basilica_pkgs/"
-out_path = paste0(main_path, "simbasilica/nobuild/simulations/run_oldmodel_regul_0106/")
+out_path = paste0(main_path, "simbasilica/nobuild/simulations/run_oldmodel_regul_0806/")
 data_path = paste0(main_path, "simbasilica/nobuild/simulations/synthetic_datasets/")
 
 reticulate::use_condaenv("basilica-env")
