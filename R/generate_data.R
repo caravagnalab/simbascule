@@ -11,6 +11,7 @@ generate.data <- function(
     denovo_cosine = NULL,
     private_sigs=list("rare"=c(), "common"=c()),
     private_fracs=list("rare"=1., "common"=0),
+    thr = 0.1,
     seed=NULL
 ) {
 
@@ -41,7 +42,8 @@ generate.data <- function(
                              groups=groups,
                              private_sigs=private_sigs,
                              private_fracs=private_fracs,
-                             seed=seed) # include group column
+                             seed=seed,
+                             thr=thr) # include group column
 
   # removing group column
   if (!is.null(alpha$group)) {
