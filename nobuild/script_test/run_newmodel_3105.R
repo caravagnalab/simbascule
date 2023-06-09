@@ -1,6 +1,6 @@
 main_path = "/u/cdslab/ebusca00/scratch_shared/basilica_pkgs/"
-data_path = paste0(main_path, "simbasilica/nobuild/simulations/simulations_2905/")
-out_path = paste0(main_path, "simbasilica/nobuild/simulations/fits_new_model_3105/")
+data_path = paste0(main_path, "simbasilica/nobuild/simulations/synthetic_datasets/")
+out_path = paste0(main_path, "simbasilica/nobuild/simulations/run_new_model_0806/")
 new_model = TRUE
 
 
@@ -24,16 +24,17 @@ comb = tibble(
 shared = c("SBS1", "SBS5", "SBS17b")
 private = c("SBS10b", "SBS28", "SBS56 SBS10a", "SBS90", "SBS2", "SBS13", "SBS20", "SBS22")
 
-generate_synthetic_datasets(shared = shared,
-                            private = private,
-                            catalogue = COSMIC_filt_merged,
-                            comb_matrix = comb,
-                            py = py,
-                            CUDA = TRUE,
-                            reg_weight = 0,
-                            fits_path = out_path,
-                            data_path = data_path,
-                            seeds = 1:8,
-                            do.fits = TRUE,
-                            verbose = FALSE,
-                            new_model = new_model)
+generate_and_run(shared = shared,
+                 private = private,
+                 catalogue = COSMIC_filt_merged,
+                 comb_matrix = comb,
+                 py = py,
+                 CUDA = TRUE,
+                 reg_weight = 1.,
+		 regularizer = "cosine",
+                 fits_path = out_path,
+                 data_path = data_path,
+                 seeds = 1:8,
+                 do.fits = TRUE,
+                 verbose = FALSE,
+                 new_model = new_model)
