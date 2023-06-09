@@ -1,7 +1,7 @@
 library(gtools)
 library(fdrtool)
 
-generate.exposure <- function(beta, groups, private_sigs, private_fracs, seed=NULL) {
+generate.exposure <- function(beta, groups, private_sigs, private_fracs, seed=NULL, thr=0.1) {
 
   signatures <- rownames(beta)
   if (!('SBS1' %in% signatures)) stop('Wrong signatures! SBS1 not included!')
@@ -46,23 +46,22 @@ generate.exposure <- function(beta, groups, private_sigs, private_fracs, seed=NU
 
     num_samples <- length(groups[groups==group])
 
-    # TEST - start
     mean_prior = fdrtool::rhalfnorm(sigNums, 1) %>% setNames(sigNames)
     alpha = sapply(1:sigNums, function(s)
       sapply(1:num_samples, function(x) sample_positive_norm(mean=mean_prior[s], sd=1))
       )
     alpha = apply(alpha, 1, function(x) x/sum(x)) %>% t() %>% as.data.frame()
     colnames(alpha) <- sigNames
-    # TEST - end
 
     ## change values for rare/common
 
     alpha = adjust_frequency(alpha,
                      columns=intersect(private_sigs$rare, colnames(alpha)),
                      frac=private_fracs$rare, check=">=", mean=rep(0,length.out=sigNums) %>% setNames(sigNames), sd=0)
+
     alpha = adjust_frequency(alpha,
                      columns=intersect(private_sigs$common, colnames(alpha)),
-                     frac=private_fracs$common, check="<=", mean=mean_prior, sd=1)
+                     frac=private_fracs$common, check="<=", mean=mean_prior, sd=1, thr=thr)
 
     alpha = apply(alpha, 1, function(x) x/sum(x)) %>% t() %>% as.data.frame()
 
@@ -91,9 +90,11 @@ generate.exposure <- function(beta, groups, private_sigs, private_fracs, seed=NU
   }
 
 
-adjust_frequency = function(alpha, columns, frac, check, mean, sd) {
+adjust_frequency = function(alpha, columns, frac, check, mean, sd, thr=0.) {
   nn = round(nrow(alpha) * frac)
   for (colname in columns) {
+    alpha = alpha %>% tibble::as_tibble() %>% dplyr::mutate(!!colname:=replace( .[[colname]], {{colname}}<thr, 0 ))
+
     if (!match.fun(check)(sum(alpha[,colname]>0), nn) ) next
     samples.tmp = sample(1:nrow(alpha), size=nn)
     alpha[-samples.tmp, colname] = sample_positive_norm(mean[colname], sd)
