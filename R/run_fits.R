@@ -31,6 +31,7 @@ generate_and_run = function(shared,
                             seeds = 1:30,
                             mut_range = 10:8000,
                             input_catalogue = NULL,
+			    keep_sigs = c("SBS1", "SBS5"),
                             reg_weight = 0.,
                             regularizer = "cosine",
                             CUDA = FALSE,
@@ -81,6 +82,7 @@ generate_and_run = function(shared,
                          py = py,
                          reference_catalogue = reference_cat,
                          input_catalogue = input_catalogue,
+			 keep_sigs = keep_sigs,
                          reg_weight = reg_weight,
                          CUDA = CUDA,
                          regularizer = regularizer,
@@ -196,6 +198,7 @@ save_fit = function(x.fit, path, filename) {
 
 run_model = function(...,
                      input_catalogue=NULL,
+		     keep_sigs = c("SBS1","SBS5"),
                      filtered_cat=TRUE,
                      groups=NULL,
                      new_model=FALSE,
@@ -215,11 +218,11 @@ run_model = function(...,
 
   } else {
     x.fit = try_run(error_file,
-                    expr = two_steps_inference(..., groups=NULL)$tot,
+                    expr = two_steps_inference(..., keep_sigs=keep_sigs, groups=NULL)$tot,
                     msg = msg1)
 
     x.fit.hier = try_run(error_file,
-                         expr = two_steps_inference(..., groups=groups)$tot,
+                         expr = two_steps_inference(..., keep_sigs=keep_sigs, groups=groups)$tot,
                          msg = msg2)
 
   }
