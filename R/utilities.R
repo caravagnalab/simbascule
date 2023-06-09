@@ -105,8 +105,19 @@ compute.mae <- function(m , mr) {
 
 #----------------------------------------------------------------------QC:PASSED
 
-compute.mse <- function(m , mr) {
-  mse <- sum((m - mr)^2) / (dim(m)[1] * dim(m)[2])
+# compute.mse <- function(m , mr) {
+#   mse <- sum((m - mr)^2) / (dim(m)[1] * dim(m)[2])
+#   return(mse)
+# }
+
+compute.mse <- function(m_inf, m_true, assigned=NULL) {
+  if (!is.null(assigned)) {
+    m_true[, setdiff(colnames(m_inf), assigned)] = 0
+    m_inf[, setdiff(colnames(m_true), names(assigned))] = 0
+  }
+
+  mse = sum((m_inf - m_true)^2) / (dim(m_inf)[1] * dim(m_inf)[2])
+  mse = sqrt(mse) / ( max(m_true) - min(m_true) )
   return(mse)
 }
 

@@ -14,7 +14,7 @@
 # }
 
 
-compare_single_fit = function(fitname, fits_path, data_path) {
+compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8) {
   idd = stringr::str_replace_all(fitname, pattern="fit.|hier.|.Rds", replacement="")
   simulname = paste0("simul.", idd, ".Rds")
 
@@ -27,12 +27,12 @@ compare_single_fit = function(fitname, fits_path, data_path) {
   expos.fit = get_exposure(x.fit)
   expos.simul = get_exposure(x.simul)
 
-  assigned = compare_sigs_inf_gt(sigs.fit, sigs.simul)
+  assigned = compare_sigs_inf_gt(sigs.fit, sigs.simul, cutoff=cutoff)
   unassigned = c(setdiff(rownames(sigs.fit), assigned),
                  setdiff(rownames(sigs.simul), names(assigned)))
 
-  mse_counts = compute.mse(x.simul$input$counts, get_data(x.fit, reconstructed=T))
-  mse_expos = compute.mse(expos.simul, expos.fit, assigned=assigned)
+  mse_counts = compute.mse(m_true=x.simul$input$counts, m_inf=get_data(x.fit, reconstructed=T))
+  mse_expos = compute.mse(m_true=expos.simul, m_inf=expos.fit, assigned=assigned)
   cosine_sigs = compute.cosine(sigs.fit, sigs.simul, assigned, unassigned, what="sigs")
   cosine_expos = compute.cosine(expos.fit, expos.simul, assigned, unassigned, what="expos")
 
@@ -86,8 +86,23 @@ compute.cosine = function(m1, m2, assigned, unassigned, what) {
 }
 
 
+convert_sigs_names = function(x, assigned) {
+  signames = rownames(get_signatures(x))
+  signames_dn = intersect(rownames(x$fit$denovo_signatures), assigned)
 
-compare_sigs_inf_gt = function(sigs.fit, sigs.simul) {
+  missing = c(setdiff(signames, assigned),
+              setdiff(assigned, signames))
+  new_names = c(names(assigned), missing)
+  new_names_dn = c(names(assigned[assigned %in% signames_dn]), missing)
+
+  x$fit$exposure = x$fit$exposure[, c(assigned, missing)]
+  x$fit$denovo_signatures = x$fit$denovo_signatures[c(), ]
+  colnames(x$fit$exposure) = new_names
+
+}
+
+
+compare_sigs_inf_gt = function(sigs.fit, sigs.simul, cutoff=0.8) {
   common = intersect(rownames(sigs.fit), rownames(sigs.simul))
   unique_inf = setdiff(rownames(sigs.fit), common)
   unique_gt = setdiff(rownames(sigs.simul), common)
@@ -98,13 +113,15 @@ compare_sigs_inf_gt = function(sigs.fit, sigs.simul) {
   assign_similar = cosine_matr %>% as.data.frame() %>%
     tibble::rownames_to_column(var="gt") %>%
     reshape2::melt(id="gt", variable.name="inf", value.name="cosine") %>%
+    dplyr::filter(cosine >= cutoff) %>%
     dplyr::group_by(gt) %>%
     dplyr::mutate(inf=as.character(inf)) %>%
     dplyr::filter(cosine == max(cosine)) %>% dplyr::arrange(gt)
 
-  if (nrow(sigs.simul) > nrow(sigs.fit))
-    assign_similar %>% dplyr::group_by(inf) %>%
-    dplyr::filter(cosine == max(cosine)) %>% ungroup()
+  # if (nrow(sigs.simul) > nrow(sigs.fit))
+  if (any(duplicated(assign_similar$inf)))
+    assign_similar = assign_similar %>% dplyr::group_by(inf) %>%
+      dplyr::filter(cosine == max(cosine)) %>% ungroup()
 
   similar = assign_similar$inf %>% setNames(assign_similar$gt)
 
