@@ -22,8 +22,8 @@ colors_hier = c("darkorange", "dodgerblue4") %>%
 stats %>%
   dplyr::mutate(rare_ratio = n_priv_rare_found / n_priv_rare) %>%
   ggplot() +
-  geom_jitter(aes(x=as.factor(N), y=rare_ratio, color=inf_type), size=.1, height=0) +
-  geom_boxplot(aes(x=as.factor(N), y=rare_ratio, color=inf_type), alpha=0) +
+  geom_jitter(aes(x=as.factor(N), y=rare_ratio, color=inf_type), size=.5, height=0) +
+  geom_violin(aes(x=as.factor(N), y=rare_ratio, color=inf_type), alpha=0) +
   facet_grid(~G, scales="free_x") +
   scale_color_manual(values=colors_hier) +
   theme_bw() + labs(title="N rare found / N rare")
