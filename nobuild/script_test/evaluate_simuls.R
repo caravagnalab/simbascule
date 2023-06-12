@@ -16,22 +16,37 @@ stats = lapply(fits, function(fitname) {
   dplyr::mutate(inf_type=ifelse(is_hierarchical, "Hierarchical", "Non-hierarchical"))
 
 
+colors_hier = c("darkorange", "dodgerblue4") %>%
+  setNames(c("Hierarchical", "Non-hierarchical"))
+
 stats %>%
   dplyr::mutate(rare_ratio = n_priv_rare_found / n_priv_rare) %>%
   ggplot() +
   geom_jitter(aes(x=as.factor(N), y=rare_ratio, color=inf_type), size=.1, height=0) +
   geom_boxplot(aes(x=as.factor(N), y=rare_ratio, color=inf_type), alpha=0) +
   facet_grid(~G, scales="free_x") +
+  scale_color_manual(values=colors_hier) +
   theme_bw() + labs(title="N rare found / N rare")
 
 
 stats %>%
-  dplyr::mutate(common_ratio = n_priv_common_found / n_priv_common) %>%
   ggplot() +
-  geom_jitter(aes(x=as.factor(N), y=common_ratio, color=inf_type), size=.1) +
-  geom_boxplot(aes(x=as.factor(N), y=common_ratio, color=inf_type), alpha=0) +
-  facet_grid(~G, scales="free_x") +
-  theme_bw() + labs(title="N common found / N common")
+  geom_jitter(aes(x=n_priv_rare_found, y=n_priv_rare, color=inf_type), size=1.5,
+              width=.15, height=.15) +
+  geom_abline() +
+  ggh4x::facet_nested(~G+as.factor(N), scales="free_x") +
+  scale_color_manual(values=colors_hier) +
+  theme_bw() + labs(title="N rare found vs N rare") + xlim(0,3) + ylim(0,3)
+
+
+stats %>%
+  ggplot() +
+  geom_jitter(aes(x=n_priv_common_found, y=n_priv_common, color=inf_type), size=1.5,
+              width=.15, height=.15) +
+  geom_abline() +
+  ggh4x::facet_nested(~G+as.factor(N)) +
+  scale_color_manual(values=colors_hier) + ylim(0, NA) + xlim(0, NA) +
+  theme_bw() + labs(title="N common found vs N common")
 
 
 mse_counts = stats %>%

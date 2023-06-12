@@ -104,6 +104,9 @@ adjust_frequency = function(alpha, columns, frac, check, mean, sd, thr=0.) {
 }
 
 
+
+
+
 sample_positive_norm = function(mean, sd) {
   while(TRUE) {
     n = rnorm(1, mean, sd)
