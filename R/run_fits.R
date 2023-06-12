@@ -93,7 +93,8 @@ generate_and_run = function(shared,
                          groups = x$groups[[1]] - 1,
                          new_model = new_model,
                          error_file = failed,
-                         idd = idd)
+                         idd = idd,
+                         cohort = idd)
 
         filename1 = paste0("fit.N", comb$N_vals[i][[1]], ".G",
                            comb$n_groups_vals[i][[1]], ".s", seeds[j], ".Rds")
@@ -182,8 +183,7 @@ single_dataset = function(N, n_groups, samples_per_group,
 }
 
 
-
-save_fit = function(x.fit, path, filename) {
+save_fit = function(x.fit, path, filename, check_present=FALSE) {
   if (is.null(path)) return()
 
   if (is.null(x.fit)) return()
@@ -191,7 +191,7 @@ save_fit = function(x.fit, path, filename) {
   if (!dir.exists(path))
     dir.create(path, recursive=T)
 
-  if (filename %in% list.files(paste0(path)))
+  if (check_present && filename %in% list.files(paste0(path)))
     return()
 
   saveRDS(x.fit, paste0(path, filename))
