@@ -10,6 +10,7 @@
 #' @param data_path Path to store the data
 #' @param seeds List of seeds to use
 #' @param mut_range Number of mutation range for each patient
+#' @param reference_catalogue Reference catalogue to use for the inference
 #' @param input_catalogue Input catalogue to use for the fit
 #' @param reg_weight Regularization weight
 #' @param regularizer Type of regularization
@@ -30,6 +31,7 @@ generate_and_run = function(shared,
                             data_path = NULL,
                             seeds = 1:30,
                             mut_range = 10:8000,
+                            reference_catalogue = COSMIC_filt_merged,
                             input_catalogue = NULL,
                             keep_sigs = c("SBS1", "SBS5"),
                             reg_weight = 0.,
@@ -44,7 +46,7 @@ generate_and_run = function(shared,
 
   failed = file(paste0(fits_path, "failed_runs.txt"), open="w")
 
-  reference_cat = catalogue[shared,]
+  shared_cat = catalogue[shared,]
 
   for (i in 1:nrow(comb)) {
 
@@ -59,7 +61,7 @@ generate_and_run = function(shared,
         N = comb$N_vals[i][[1]],
         n_groups = comb$n_groups_vals[i][[1]],
         samples_per_group = comb$samples_per_group[i][[1]],
-        reference_cat = reference_cat,
+        reference_cat = shared_cat,
         denovo_cat = denovo_cat,
         private_sigs = list("rare" = private_rare, "common" = private_common),
         private_fracs = list("rare" = 0.05, "common" = 0.1),
@@ -80,7 +82,7 @@ generate_and_run = function(shared,
         fits = run_model(x = x$x[[1]],
                          k = k_list,
                          py = py,
-                         reference_catalogue = reference_cat,
+                         reference_catalogue = reference_catalogue,
                          input_catalogue = input_catalogue,
                          keep_sigs = keep_sigs,
                          reg_weight = reg_weight,
@@ -204,6 +206,7 @@ run_model = function(...,
                      new_model=FALSE,
                      error_file=NULL,
                      idd="") {
+
   msg1 = paste0("fit.", idd, "\n")
   msg2 = paste0("fit.hier.", idd, "\n")
 

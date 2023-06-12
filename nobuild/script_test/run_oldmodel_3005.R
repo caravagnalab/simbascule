@@ -1,15 +1,13 @@
 main_path = "/u/cdslab/ebusca00/scratch_shared/basilica_pkgs/"
 out_path = paste0(main_path, "simbasilica/nobuild/simulations/run_oldmodel_regul_0806/")
 data_path = paste0(main_path, "simbasilica/nobuild/simulations/synthetic_datasets/")
+new_model = FALSE
 
 reticulate::use_condaenv("basilica-env")
 py = reticulate::import_from_path(module = "pybasilica", path = paste0(main_path,"pybasilica/"))
 
 devtools::load_all(paste0(main_path, "basilica"))
 devtools::load_all(paste0(main_path, "simbasilica"))
-
-# source(paste0(main_path, "simbasilica/nobuild/script_test/helper_fns.R"))
-library(ggplot2)
 
 comb = tibble(
   N_vals = c(50, 300, 300, 1000, 1000, 5000, 5000),
@@ -25,16 +23,19 @@ private = c("SBS10b", "SBS28", "SBS56 SBS10a", "SBS90", "SBS2", "SBS13", "SBS20"
 generate_and_run(shared = shared,
                  private = private,
                  catalogue = COSMIC_filt_merged,
-                 input_catalogue = COSMIC_filt_merged[c("SBS1","SBS5"), ],
                  comb_matrix = comb,
                  py = py,
-                 CUDA = TRUE,
-                 reg_weight = 1,
-                 regularizer = "cosine",
                  fits_path = out_path,
                  data_path = data_path,
                  seeds = 1:8,
+                 mut_range = 10:8000,
+                 reference_catalogue = COSMIC_filt_merged,
+                 input_catalogue = COSMIC_filt_merged[c("SBS1","SBS5"), ],
+                 keep_sigs = c("SBS1", "SBS5"),
+                 reg_weight = 1.,
+                 regularizer = "cosine",
+                 CUDA = TRUE,
                  do.fits = TRUE,
                  verbose = FALSE,
-                 new_model = FALSE)
+                 new_model = new_model)
 
