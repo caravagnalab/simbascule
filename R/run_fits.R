@@ -31,7 +31,7 @@ generate_and_run = function(shared,
                             seeds = 1:30,
                             mut_range = 10:8000,
                             input_catalogue = NULL,
-			    keep_sigs = c("SBS1", "SBS5"),
+                            keep_sigs = c("SBS1", "SBS5"),
                             reg_weight = 0.,
                             regularizer = "cosine",
                             CUDA = FALSE,
@@ -68,7 +68,7 @@ generate_and_run = function(shared,
         out_path = data_path
       )
 
-      min_k = max(1, nrow(reference_cat) + nrow(denovo_cat) - 5)
+      min_k = max(0, length(shared) + nrow(denovo_cat) - 5)
       max_k = min_k + 10
       k_list = min_k:max_k
 
@@ -82,7 +82,7 @@ generate_and_run = function(shared,
                          py = py,
                          reference_catalogue = reference_cat,
                          input_catalogue = input_catalogue,
-			 keep_sigs = keep_sigs,
+                         keep_sigs = keep_sigs,
                          reg_weight = reg_weight,
                          CUDA = CUDA,
                          regularizer = regularizer,
@@ -198,7 +198,7 @@ save_fit = function(x.fit, path, filename) {
 
 run_model = function(...,
                      input_catalogue=NULL,
-		     keep_sigs = c("SBS1","SBS5"),
+                     keep_sigs = c("SBS1","SBS5"),
                      filtered_cat=TRUE,
                      groups=NULL,
                      new_model=FALSE,

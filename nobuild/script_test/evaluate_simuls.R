@@ -16,6 +16,24 @@ stats = lapply(fits, function(fitname) {
   dplyr::mutate(inf_type=ifelse(is_hierarchical, "Hierarchical", "Non-hierarchical"))
 
 
+stats %>%
+  dplyr::mutate(rare_ratio = n_priv_rare_found / n_priv_rare) %>%
+  ggplot() +
+  geom_jitter(aes(x=as.factor(N), y=rare_ratio, color=inf_type), size=.1, height=0) +
+  geom_boxplot(aes(x=as.factor(N), y=rare_ratio, color=inf_type), alpha=0) +
+  facet_grid(~G, scales="free_x") +
+  theme_bw() + labs(title="N rare found / N rare")
+
+
+stats %>%
+  dplyr::mutate(common_ratio = n_priv_common_found / n_priv_common) %>%
+  ggplot() +
+  geom_jitter(aes(x=as.factor(N), y=common_ratio, color=inf_type), size=.1) +
+  geom_boxplot(aes(x=as.factor(N), y=common_ratio, color=inf_type), alpha=0) +
+  facet_grid(~G, scales="free_x") +
+  theme_bw() + labs(title="N common found / N common")
+
+
 mse_counts = stats %>%
   ggplot() +
   geom_jitter(aes(x=as.factor(N), y=mse_counts, color=inf_type), size=.1) +
@@ -49,7 +67,7 @@ cos_expos = stats %>%
 
 
 pdf(file = "~/GitHub/simbasilica/nobuild/simulations/run_newmodel_0806.pdf",
-    height = 8, width = 8)
+    height = 4, width = 8)
 mse_counts %>% print()
 mse_expos %>% print()
 cos_sigs %>% print()
@@ -105,3 +123,71 @@ plot_signatures(x.simul)
 
 plot_signatures(x.fit)
 plot_signatures(x.fit.hier)
+
+
+
+
+
+#########
+x.fit.hier = readRDS("~/GitHub/simbasilica/nobuild/simulations/run_oldmodel_regul_0806/fit.hier.N1000.G6.s1.Rds")
+x.fit = readRDS("~/GitHub/simbasilica/nobuild/simulations/run_oldmodel_regul_0806/fit.N1000.G6.s1.Rds")
+x.simul = readRDS("~/GitHub/simbasilica/nobuild/simulations/synthetic_datasets/simul.N1000.G6.s1.Rds") %>%
+  create_basilica_obj_simul()
+rare_common_sigs(x.simul)
+
+plot_fit(x.simul)
+plot_exposures(x.simul, sort_by = "SBS28")
+
+plot_exposures(x.fit)
+plot_exposures(x.fit.hier)
+
+assigned = compare_sigs_inf_gt(get_signatures(x.fit),
+                               get_signatures(x.simul), cutoff=0.8)
+assigned2 = compare_sigs_inf_gt(get_signatures(x.fit.hier),
+                               get_signatures(x.simul), cutoff=0.8)
+
+unassigned = c(setdiff(rownames(get_signatures(x.fit)), assigned),
+               setdiff(rownames(get_signatures(x.simul)), names(assigned)))
+unassigned2 = c(setdiff(rownames(get_signatures(x.fit.hier)), assigned2),
+               setdiff(rownames(get_signatures(x.simul)), names(assigned2)))
+
+compute.mse(get_exposure(x.fit), get_exposure(x.simul), assigned)
+compute.mse(get_exposure(x.fit.hier), get_exposure(x.simul), assigned2)
+
+compute.cosine(get_exposure(x.fit), get_exposure(x.simul), assigned, unassigned, what="expos")
+compute.mse(get_exposure(x.fit.hier), get_exposure(x.simul), assigned2)
+
+
+
+# min_k = max(1, nrow(x.simul$exp_fixed[[1]]) + nrow(x.simul$exp_denovo[[1]]) - 5)
+# max_k = min_k + 10
+# k_list = min_k:max_k
+# py = reticulate::import_from_path("pybasilica", "~/GitHub/pybasilica/")
+#
+# x.fit2 = run_model(x = x.simul$x[[1]],
+#                    k = k_list,
+#                    py = py,
+#                    reference_catalogue = COSMIC_filt_merged,
+#                    input_catalogue = COSMIC_filt_merged[c("SBS1","SBS5"),],
+#                    # keep_sigs = keep_sigs,
+#                    reg_weight = 1.,
+#                    CUDA = FALSE,
+#                    regularizer = "cosine",
+#                    filtered_cat = TRUE,
+#                    verbose = TRUE,
+#                    groups = x.simul$groups[[1]] - 1,
+#                    new_model = FALSE,
+#                    error_file = failed,
+#                    idd = idd)
+# close(failed)
+
+
+x.fit2$fit1 %>% plot_similarity_reference(reference=get_signatures(x.simul %>% create_basilica_obj_simul()))
+x.fit2$fit.hier %>% plot_similarity_reference(reference=get_signatures(x.simul %>% create_basilica_obj_simul()))
+x.fit.hier %>% plot_similarity_reference(reference=get_signatures(x.simul %>% create_basilica_obj_simul()))
+x.simul %>% create_basilica_obj_simul() %>% plot_mutations()
+
+
+
+
+
