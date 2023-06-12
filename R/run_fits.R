@@ -70,9 +70,13 @@ generate_and_run = function(shared,
         out_path = data_path
       )
 
-      min_k = max(0, length(shared) + nrow(denovo_cat) - 5)
+      if (!is.null(input_catalogue))
+        input_sigs = nrow(input_catalogue) else
+          input_sigs = length(keep_sigs)
+
+      min_k = max(0, length(shared) + nrow(denovo_cat) - input_sigs - 5)
       max_k = min_k + 10
-      k_list = min_k:max_k
+      k_list = 0:max_k
 
       idd = paste0("N", comb$N_vals[i][[1]], ".G", comb$n_groups_vals[i][[1]], ".s", j)
 

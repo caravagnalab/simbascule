@@ -2,7 +2,9 @@ devtools::load_all("~/GitHub/basilica/")
 devtools::load_all("~/GitHub/simbasilica/")
 library(ggplot2)
 
-fits_path = "~/GitHub/simbasilica/nobuild/simulations/run_new_model_0806/"
+# fits_path = "~/GitHub/simbasilica/nobuild/simulations/run_new_model_0806/"
+fits_path = "~/GitHub/simbasilica/nobuild/simulations/run_new_model_wholeCat_1206/"
+
 # fits_path = "~/GitHub/simbasilica/nobuild/simulations/run_oldmodel_regul_0806/"
 data_path = "~/GitHub/simbasilica/nobuild/simulations/synthetic_datasets/"
 
