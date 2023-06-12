@@ -1,5 +1,3 @@
-
-#-------------------------------------------------------------------------------
 cosine.vector <- function(a, b) {
 
   if (!identical(colnames(a), colnames(b))) {
@@ -11,7 +9,7 @@ cosine.vector <- function(a, b) {
   return(numerator / denominator)
 }
 
-#-------------------------------------------------------------------------------
+
 cosine.matrix <- function(a, b) {
   # a and b are data.frame
 
@@ -32,9 +30,7 @@ cosine.matrix <- function(a, b) {
   return(df)
 }
 
-# ------------------------------------------------------------------------------
-# edit exposure
-# ------------------------------------------------------------------------------
+
 edit.exposure <- function(alpha) {
 
   n <- nrow(alpha)
@@ -62,7 +58,6 @@ edit.exposure <- function(alpha) {
   }
 }
 
-#----------------------------------------------------------------------QC:PASSED
 
 fixed.accuracy <- function(reference, input, expected_fixed, inferred_fixed) {
   ref_list <- rownames(reference)
@@ -82,7 +77,6 @@ fixed.accuracy <- function(reference, input, expected_fixed, inferred_fixed) {
   return(accuracy)
 }
 
-#----------------------------------------------------------------------QC:PASSED
 
 reconstruct.count <- function(m, alpha, beta) {
   # all args are data.frame
@@ -96,24 +90,22 @@ reconstruct.count <- function(m, alpha, beta) {
   return(mr)
 }
 
-#----------------------------------------------------------------------QC:PASSED
 
 compute.mae <- function(m , mr) {
   mae <- sum(abs(m - mr)) / (dim(m)[1] * dim(m)[2])
   return(mae)
 }
 
-#----------------------------------------------------------------------QC:PASSED
 
-# compute.mse <- function(m , mr) {
-#   mse <- sum((m - mr)^2) / (dim(m)[1] * dim(m)[2])
-#   return(mse)
-# }
-
-compute.mse <- function(m_inf, m_true, assigned=NULL) {
+compute.mse <- function(m_inf, m_true, assigned=NULL, subset_cols=NULL) {
   if (!is.null(assigned)) {
     m_true[, setdiff(colnames(m_inf), assigned)] = 0
     m_inf[, setdiff(colnames(m_true), names(assigned))] = 0
+  }
+
+  if (!is.null(subset_cols)) {
+    m_true = m_true %>% dplyr::select(subset_cols)
+
   }
 
   mse = sum((m_inf - m_true)^2) / (dim(m_inf)[1] * dim(m_inf)[2])
@@ -121,7 +113,6 @@ compute.mse <- function(m_inf, m_true, assigned=NULL) {
   return(mse)
 }
 
-#----------------------------------------------------------------------QC:PASSED
 
 denovo.similarity <- function(expected_denovo, inferred_denovo) {
 
@@ -143,8 +134,6 @@ denovo.similarity <- function(expected_denovo, inferred_denovo) {
       }
     }
 
-    #------------------------------
-    #match_list <- list()
     match_df <- data.frame(matrix(nrow = nrow(inferred_denovo), ncol = 2))
     colnames(match_df) <- c("match", "similarity")
     rownames(match_df) <- rownames(inferred_denovo)
@@ -159,7 +148,6 @@ denovo.similarity <- function(expected_denovo, inferred_denovo) {
       row <- row.names(df[max[,1],])
       column <- names(df[max[,2]])
 
-      #match_list[row] <- column
       match_df[row, 'match'] <- column
       match_df[row, 'similarity'] <- df[max]
 
@@ -170,7 +158,6 @@ denovo.similarity <- function(expected_denovo, inferred_denovo) {
   }
 }
 
-#----------------------------------------------------------------------QC:PASSED
 
 denovo.ratio <- function(expected_denovo, inferred_denovo) {
 
