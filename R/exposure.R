@@ -91,7 +91,8 @@ generate.exposure <- function(beta, groups, private_sigs, private_fracs, seed=NU
 
 
 adjust_frequency = function(alpha, columns, frac, check, mean, sd, thr=0.) {
-  nn = round(nrow(alpha) * frac)
+  if (!is.integer(frac)) { nn = round(nrow(alpha) * frac) }
+  else { nn = frac}
   for (colname in columns) {
     alpha = alpha %>% tibble::as_tibble() %>% dplyr::mutate(!!colname:=replace( .[[colname]], {{colname}}<thr, 0 ))
 
