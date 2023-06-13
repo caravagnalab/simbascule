@@ -10,7 +10,7 @@ generate.data <- function(
     reference_cosine = NULL,
     denovo_cosine = NULL,
     private_sigs=list("rare"=c(), "common"=c()),
-    private_fracs=list("rare"=1., "common"=0),
+    private_fracs=list("rare"=1., "common"=0.),
     thr = 0.1,
     seed=NULL
 ) {

@@ -105,7 +105,7 @@ compute.mse <- function(m_inf, m_true, assigned=NULL, subset_cols=NULL) {
 
   if (!is.null(subset_cols)) {
     m_true = m_true %>% dplyr::select(subset_cols)
-
+    m_inf = m_true %>% dplyr::select(subset_cols)
   }
 
   mse = sum((m_inf - m_true)^2) / (dim(m_inf)[1] * dim(m_inf)[2])

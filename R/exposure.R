@@ -15,13 +15,15 @@ generate.exposure <- function(beta, groups, private_sigs, private_fracs, seed=NU
   private_sigs.all = c(private_sigs$common, private_sigs$rare)
   shared_sigs = setdiff(signatures, private_sigs.all)
 
-  unq = unique(groups)
+  unq = unique(groups) %>% sort()
 
   data = data.frame(matrix(ncol=length(signatures)+1, nrow=0))
   colnames(data) = c(signatures, "group")
 
   for (i in 1:length(unq)) {
     group = unq[i]
+    # print(group)
+    # print(private_sigs.all)
 
     if (length(unique(groups))==1) {
       sigNums <- length(signatures)
@@ -38,6 +40,7 @@ generate.exposure <- function(beta, groups, private_sigs, private_fracs, seed=NU
 
         sigNames_priv = base::sample(private_sigs.all, sigNums_priv)
         private_sigs.all = setdiff(private_sigs.all, sigNames_priv)
+        # print(paste0("signames_priv", sigNames_priv))
 
         sigNames = c(shared_sigs, sigNames_priv)
         sigNums = length(sigNames)
@@ -57,11 +60,13 @@ generate.exposure <- function(beta, groups, private_sigs, private_fracs, seed=NU
 
     alpha = adjust_frequency(alpha,
                      columns=intersect(private_sigs$rare, colnames(alpha)),
-                     frac=private_fracs$rare, check=">=", mean=rep(0,length.out=sigNums) %>% setNames(sigNames), sd=0)
+                     frac=private_fracs$rare, check=">=",
+                     mean=rep(0,length.out=sigNums) %>% setNames(sigNames), sd=0)
 
     alpha = adjust_frequency(alpha,
                      columns=intersect(private_sigs$common, colnames(alpha)),
-                     frac=private_fracs$common, check="<=", mean=mean_prior, sd=1, thr=thr)
+                     frac=private_fracs$common, check="<=",
+                     mean=mean_prior, sd=1, thr=thr)
 
     alpha = apply(alpha, 1, function(x) x/sum(x)) %>% t() %>% as.data.frame()
 
