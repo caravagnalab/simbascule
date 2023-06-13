@@ -2,7 +2,7 @@ devtools::load_all("~/GitHub/basilica/")
 devtools::load_all("~/GitHub/simbasilica/")
 library(ggplot2)
 
-# fits_path = "~/GitHub/simbasilica/nobuild/simulations/run_new_model_0806/"
+fits_path = "~/GitHub/simbasilica/nobuild/simulations/run_new_model_0806/"
 fits_path = "~/GitHub/simbasilica/nobuild/simulations/run_new_model_wholeCat_1206/"
 
 # fits_path = "~/GitHub/simbasilica/nobuild/simulations/run_oldmodel_regul_0806/"
@@ -21,14 +21,7 @@ stats = lapply(fits, function(fitname) {
 colors_hier = c("darkorange", "dodgerblue4") %>%
   setNames(c("Hierarchical", "Non-hierarchical"))
 
-stats %>%
-  dplyr::mutate(rare_ratio = n_priv_rare_found / n_priv_rare) %>%
-  ggplot() +
-  geom_jitter(aes(x=as.factor(N), y=rare_ratio, color=inf_type), size=.5, height=0) +
-  geom_violin(aes(x=as.factor(N), y=rare_ratio, color=inf_type), alpha=0) +
-  facet_grid(~G, scales="free_x") +
-  scale_color_manual(values=colors_hier) +
-  theme_bw() + labs(title="N rare found / N rare")
+
 
 
 stats %>%
@@ -36,9 +29,21 @@ stats %>%
   geom_jitter(aes(x=n_priv_rare_found, y=n_priv_rare, color=inf_type), size=1.5,
               width=.15, height=.15) +
   geom_abline() +
-  ggh4x::facet_nested(~G+as.factor(N), scales="free_x") +
+  ggh4x::facet_nested(~G+as.factor(N)) +
   scale_color_manual(values=colors_hier) +
   theme_bw() + labs(title="N rare found vs N rare") + xlim(0,3) + ylim(0,3)
+
+
+stats %>%
+  dplyr::mutate(found_ratio = inf_K / true_K) %>%
+  ggplot() +
+  # geom_jitter(aes(x=inf_K, y=true_K, color=inf_type), size=1.5,
+  #             width=.15, height=.15) +
+  geom_jitter(aes(x=as.factor(N), y=found_ratio, color=inf_type), width=0.1, height=0.1) +
+  geom_violin(aes(x=as.factor(N), y=found_ratio, color=inf_type)) +
+  ggh4x::facet_nested(~G, scales="free_x") +
+  scale_color_manual(values=colors_hier) +
+  theme_bw() + labs(title="N sigs found vs N sigs") + ylim(0,NA)
 
 
 stats %>%

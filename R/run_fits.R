@@ -27,6 +27,7 @@ generate_and_run = function(shared,
                             catalogue,
                             comb_matrix,
                             py,
+                            private_fracs = list("rare"=0.05, "common"=0.3),
                             fits_path = NULL,
                             data_path = NULL,
                             seeds = 1:30,
@@ -40,6 +41,7 @@ generate_and_run = function(shared,
                             do.fits = FALSE,
                             verbose = FALSE,
                             new_model = TRUE,
+                            cohort = "",
                             ...) {
   if (!dir.exists(fits_path))
     dir.create(fits_path, recursive=T)
@@ -50,9 +52,15 @@ generate_and_run = function(shared,
 
   for (i in 1:nrow(comb)) {
 
-    private_common = sample(private, comb$n_priv_comm[i])
-    tmp = setdiff(private, private_common)
-    private_rare = sample(tmp, comb$n_priv_rare[i])
+    if (is.list(private)) {
+      private_common = private$common
+      private_rare = private$rare
+    } else {
+      private_common = sample(private, comb$n_priv_comm[i])
+      tmp = setdiff(private, private_common)
+      private_rare = sample(tmp, comb$n_priv_rare[i])
+    }
+
     denovo_cat = catalogue[c(private_common, private_rare),]
 
     for (j in seeds) {
@@ -64,10 +72,11 @@ generate_and_run = function(shared,
         reference_cat = shared_cat,
         denovo_cat = denovo_cat,
         private_sigs = list("rare" = private_rare, "common" = private_common),
-        private_fracs = list("rare" = 0.05, "common" = 0.1),
+        private_fracs = private_fracs,
         mut_range = mut_range,
         seed = j,
-        out_path = data_path
+        out_path = data_path,
+        cohort_name = cohort
       )
 
       if (!is.null(input_catalogue))
@@ -83,6 +92,10 @@ generate_and_run = function(shared,
       cat(paste0(idd, "\n"))
 
       if (do.fits) {
+        fname = paste0("N", comb$N_vals[i][[1]], ".G",
+                       comb$n_groups_vals[i][[1]], ".s", seeds[j],
+                       ".", cohort, ".Rds") %>% stringr::str_replace_all("\\.\\.", ".")
+
         fits = run_model(x = x$x[[1]],
                          k = k_list,
                          py = py,
@@ -98,13 +111,17 @@ generate_and_run = function(shared,
                          new_model = new_model,
                          error_file = failed,
                          idd = idd,
-                         cohort = idd)
+                         cohort = cohort,
+                         path = fits_path,
+                         out_name = fname)
 
         filename1 = paste0("fit.N", comb$N_vals[i][[1]], ".G",
-                           comb$n_groups_vals[i][[1]], ".s", seeds[j], ".Rds")
+                           comb$n_groups_vals[i][[1]], ".s", seeds[j],
+                           ".", cohort, ".Rds") %>% stringr::str_replace_all("\\.\\.", ".")
 
         filename2 = paste0("fit.hier.N", comb$N_vals[i][[1]], ".G",
-                           comb$n_groups_vals[i][[1]], ".s", seeds[j], ".Rds")
+                           comb$n_groups_vals[i][[1]], ".s", seeds[j],
+                           ".", cohort, ".Rds") %>% stringr::str_replace_all("\\.\\.", ".")
 
         save_fit(fits$fit1, fits_path, filename1)
         save_fit(fits$fit.hier, fits_path, filename2)
@@ -153,11 +170,11 @@ single_dataset = function(N, n_groups, samples_per_group,
 
   idd = paste0("N", N, ".G", n_groups, ".s", seed)
 
-  if (cohort_name == "") out_name = paste0(out_path, "simul.", idd, ".Rds") else
-    out_name = paste0(out_path, "simul.", idd, ".", cohort_name, ".Rds")
+  out_name = paste0("simul.N", N, ".G", n_groups, ".s", seed, ".", cohort_name, ".Rds") %>%
+    stringr::str_replace_all("\\.\\.", ".")
 
-  if (!is.null(out_path) && paste0("simul.", idd, ".Rds") %in% list.files(paste0(out_path)))
-    return(readRDS(out_name))
+  if (!is.null(out_path) && paste0(out_name) %in% list.files(paste0(out_path)))
+    return(readRDS(paste0(out_path, out_name)))
 
   x = generate.data(
     reference_catalogue=reference_cat,
@@ -172,6 +189,10 @@ single_dataset = function(N, n_groups, samples_per_group,
     private_fracs=private_fracs,
     mut_range=mut_range,
     seed=seed)
+
+  x$private_rare = list(private_sigs$rare)
+  x$private_common = list(private_sigs$common)
+  print(x)
 
   if (is.null(out_path)) return(x)
 
@@ -209,29 +230,37 @@ run_model = function(...,
                      groups=NULL,
                      new_model=FALSE,
                      error_file=NULL,
-                     idd="") {
+                     idd="",
+                     path=NULL,
+                     out_name=NULL) {
 
   msg1 = paste0("fit.", idd, "\n")
   msg2 = paste0("fit.hier.", idd, "\n")
 
+  expr_fit = (is.null(path) || !paste0("fit.", out_name) %in% path)
+  expr_fit_hier = (is.null(path) || !paste0("fit.hier.", out_name) %in% path)
+  x.fit = x.fit.hier = NULL
   if (!new_model) {
-    x.fit = try_run(error_file,
-                    expr = fit(..., groups=NULL, input_catalogue=input_catalogue),
-                    msg = msg1)
+    if (expr_fit)
+      x.fit = try_run(error_file,
+                      expr = fit(..., groups=NULL, input_catalogue=input_catalogue),
+                      msg = msg1)
 
-    x.fit.hier = try_run(error_file,
-                         expr = fit(..., groups=groups, input_catalogue=input_catalogue),
-                         msg = msg2)
+    if (expr_fit_hier)
+      x.fit.hier = try_run(error_file,
+                           expr = fit(..., groups=groups, input_catalogue=input_catalogue),
+                           msg = msg2)
 
   } else {
-    x.fit = try_run(error_file,
-                    expr = two_steps_inference(..., keep_sigs=keep_sigs, groups=NULL)$tot,
-                    msg = msg1)
+    if (expr_fit)
+      x.fit = try_run(error_file,
+                      expr = two_steps_inference(..., keep_sigs=keep_sigs, groups=NULL)$tot,
+                      msg = msg1)
 
-    x.fit.hier = try_run(error_file,
-                         expr = two_steps_inference(..., keep_sigs=keep_sigs, groups=groups)$tot,
-                         msg = msg2)
-
+    if (expr_fit_hier)
+      x.fit.hier = try_run(error_file,
+                           expr = two_steps_inference(..., keep_sigs=keep_sigs, groups=groups)$tot,
+                           msg = msg2)
   }
 
   return(list("fit1"=x.fit, "fit.hier"=x.fit.hier))
