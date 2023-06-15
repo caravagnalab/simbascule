@@ -35,8 +35,16 @@ generate_and_run = function(shared,
                             reference_catalogue = COSMIC_filt_merged,
                             input_catalogue = NULL,
                             keep_sigs = c("SBS1", "SBS5"),
+                            hyperparameters = NULL,
+
                             reg_weight = 0.,
                             regularizer = "cosine",
+
+                            initializ_seed = FALSE,
+                            initializ_pars_fit = FALSE,
+                            save_runs_seed = FALSE,
+                            seed_list = c(4,17,22),
+
                             CUDA = FALSE,
                             do.fits = FALSE,
                             verbose = FALSE,
@@ -102,9 +110,17 @@ generate_and_run = function(shared,
                          reference_catalogue = reference_catalogue,
                          input_catalogue = input_catalogue,
                          keep_sigs = keep_sigs,
+                         hyperparameters = hyperparameters,
+
                          reg_weight = reg_weight,
                          CUDA = CUDA,
                          regularizer = regularizer,
+
+                         initializ_seed = initializ_seed,
+                         initializ_pars_fit = initializ_pars_fit,
+                         save_runs_seed = save_runs_seed,
+                         seed_list = seed_list,
+
                          filtered_cat = TRUE,
                          verbose = verbose,
                          groups = x$groups[[1]] - 1,
@@ -226,6 +242,7 @@ save_fit = function(x.fit, path, filename, check_present=FALSE) {
 run_model = function(...,
                      input_catalogue=NULL,
                      keep_sigs = c("SBS1","SBS5"),
+                     # hyperparameters = NULL,
                      filtered_cat=TRUE,
                      groups=NULL,
                      new_model=FALSE,
@@ -243,23 +260,31 @@ run_model = function(...,
   if (!new_model) {
     if (expr_fit)
       x.fit = try_run(error_file,
-                      expr = fit(..., groups=NULL, input_catalogue=input_catalogue),
+                      expr =
+                        fit(..., groups=NULL,
+                            input_catalogue=input_catalogue),
                       msg = msg1)
 
     if (expr_fit_hier)
       x.fit.hier = try_run(error_file,
-                           expr = fit(..., groups=groups, input_catalogue=input_catalogue),
+                           expr =
+                             fit(..., groups=groups,
+                                 input_catalogue=input_catalogue),
                            msg = msg2)
 
   } else {
     if (expr_fit)
       x.fit = try_run(error_file,
-                      expr = two_steps_inference(..., keep_sigs=keep_sigs, groups=NULL)$tot,
+                      expr =
+                        two_steps_inference(..., keep_sigs=keep_sigs,
+                                            groups=NULL)$tot,
                       msg = msg1)
 
     if (expr_fit_hier)
       x.fit.hier = try_run(error_file,
-                           expr = two_steps_inference(..., keep_sigs=keep_sigs, groups=groups)$tot,
+                           expr =
+                             two_steps_inference(..., keep_sigs=keep_sigs,
+                                                 groups=groups)$tot,
                            msg = msg2)
   }
 

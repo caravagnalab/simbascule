@@ -104,8 +104,11 @@ compute.mse <- function(m_inf, m_true, assigned=NULL, subset_cols=NULL) {
   }
 
   if (!is.null(subset_cols)) {
-    m_true = m_true %>% dplyr::select(subset_cols)
-    m_inf = m_true %>% dplyr::select(subset_cols)
+    m_true = m_true %>%
+      dplyr::select(intersect(subset_cols, colnames(m_true)))
+
+    inters = intersect(subset_cols, names(assigned))
+    m_inf = m_inf %>% dplyr::select(intersect(assigned[inters], colnames(m_inf)))
   }
 
   mse = sum((m_inf - m_true)^2) / (dim(m_inf)[1] * dim(m_inf)[2])
