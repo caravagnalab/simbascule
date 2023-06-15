@@ -1,3 +1,16 @@
+get_stats_df = function(data_path, fits_path, cutoff=0.8) {
+  fits = list.files(path=fits_path, pattern="fit.")
+
+  return(
+    lapply(fits, function(fitname) {
+      print(fitname)
+      compare_single_fit(fitname, fits_path, data_path, cutoff=cutoff)
+    } ) %>%
+      do.call(what=rbind, args=.) %>%
+      dplyr::mutate(inf_type=ifelse(is_hierarchical, "Hierarchical", "Non-hierarchical"))
+  )
+}
+
 
 compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
                               filtered_catalogue=TRUE) {
@@ -17,21 +30,30 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
   expos.fit = get_exposure(x.fit)
   expos.simul = get_exposure(x.simul)
 
-  # assigned = compare_sigs_inf_gt(sigs.fit, sigs.simul, cutoff=cutoff)
-  # unassigned = c(setdiff(rownames(sigs.fit), assigned),
-  #                setdiff(rownames(sigs.simul), names(assigned)))
   assigned_missing = get_assigned_missing(x.fit=x.fit, x.simul=x.simul, cutoff=cutoff)
   assigned = assigned_missing$assigned_tp
   unassigned = c(assigned_missing$missing_fn, assigned_missing$added_fp)
+
+  # x.fit = x.fit %>% convert_sigs_names(x.simul, cutoff=cutoff)
 
   mse_counts = compute.mse(m_true=x.simul$input$counts,
                            m_inf=get_data(x.fit, reconstructed=T))
   mse_expos = compute.mse(m_true=expos.simul,
                           m_inf=expos.fit,
                           assigned=assigned)
+  # mse_expos_rare = compute.mse(m_true=expos.simul,
+  #                              m_inf=expos.fit,
+  #                              assigned=assigned,
+  #                              subset_cols=rare_common$private_rare)
 
-  cosine_sigs = compute.cosine(sigs.fit, sigs.simul, assigned, unassigned, what="sigs")
-  cosine_expos = compute.cosine(expos.fit, expos.simul, assigned, unassigned, what="expos")
+  cosine_sigs = compute.cosine(sigs.fit, sigs.simul,
+                               assigned, unassigned,
+                               what="sigs")
+  cosine_expos = compute.cosine(expos.fit, expos.simul,
+                                assigned, unassigned,
+                                what="expos")
+  # cosine_expos_rare = compute.cosine(expos.fit, expos.simul, assigned, unassigned,
+  #                                    what="expos", subset_cols=rare_common$private_rare)
 
   n_rare_found = assigned[names(assigned) %in% rare_common$private_rare] %>% length()
   n_common_found = assigned[names(assigned) %in% rare_common$private_common] %>% length()
@@ -64,9 +86,11 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
 
       "mse_counts"=mse_counts,
       "mse_expos"=mse_expos,
+      # "mse_expos_rare"=mse_expos_rare,
 
       "cosine_sigs"=cosine_sigs,
       "cosine_expos"=cosine_expos,
+      # "cosine_expos_rare"=cosine_expos_rare,
 
       "true_K"=true_n_sigs,
       "inf_K"=inf_n_sigs,
@@ -90,10 +114,20 @@ get_assigned_missing = function(x.fit, x.simul, cutoff=0.8) {
 }
 
 
-compute.cosine = function(m1, m2, assigned, unassigned, what) {
+compute.cosine = function(m1, m2, assigned, unassigned, what, subset_cols=NULL) {
+  # m1 = fit
+  # m2 = simul
+
   if (what == "expos") {
     m1 = as.data.frame(t(m1))
     m2 = as.data.frame(t(m2))
+  }
+
+
+  if (!is.null(subset_cols)) {
+    inters = intersect(subset_cols, names(assigned))
+    m1 = m1[intersect(rownames(m1), inters), ]
+    m2 = m2[intersect(rownames(m2), subset_cols), ]
   }
 
   rownames(m1) = paste0("F_", rownames(m1))
@@ -120,20 +154,32 @@ convert_sigs_names = function(x.fit, x.simul, cutoff=0.8) {
   assigned_missing = get_assigned_missing(x.fit=x.fit, x.simul=x.simul, cutoff=cutoff)
   assigned_missing$assigned_tp = assigned_missing$assigned_tp %>% sort
 
-  signames = rownames(get_signatures(x.fit)) %>% sort
-  signames_dn = rownames(get_denovo_signatures(x.fit)) %>% sort
-  new_names = c(names(assigned_missing$assigned_tp), assigned_missing$added_fp)
-  new_names_dn = assigned_missing$assigned_tp[which(assigned_missing$assigned_tp %in% signames_dn)] %>% names
+  signames_ref = get_fixed_signames(x.fit)
+  signames_dn = get_dn_signames(x.fit)
+  which_ref = assigned_missing$assigned_tp %in% signames_ref
+  which_dn = assigned_missing$assigned_tp %in% signames_dn
+
+  added_ref = intersect(signames_ref, assigned_missing$added_fp) %>%
+    setNames(intersect(signames_ref, assigned_missing$added_fp))
+  added_dn = intersect(signames_dn, assigned_missing$added_fp) %>%
+    setNames(intersect(signames_dn, assigned_missing$added_fp))
+
+  new_order_ref = c(assigned_missing$assigned_tp[which_ref], added_ref)
+  new_order_dn = c(assigned_missing$assigned_tp[which_dn], added_dn)
 
   # reorder
-  x.fit$fit$exposure = x.fit %>% get_exposure() %>% dplyr::select(dplyr::contains(signames))
-  x.fit$fit$denovo_signatures = get_denovo_signatures(x.fit)[signames_dn,]
-  x.fit$color_palette = x.fit$color_palette[signames]
+  x.fit$fit$exposure = x.fit %>% get_exposure() %>%
+    dplyr::select(dplyr::contains(new_order_ref), dplyr::contains(new_order_dn))
+
+  x.fit$fit$denovo_signatures = get_denovo_signatures(x.fit)[new_order_dn,]
+  x.fit$fit$catalogue_signatures = get_catalogue_signatures(x.fit)[new_order_ref,]
+  x.fit$color_palette = x.fit$color_palette[c(new_order_ref, new_order_dn)]
 
   # modify names
-  colnames(x.fit$fit$exposure) = new_names
-  rownames(x.fit$fit$denovo_signatures) = new_names_dn
-  names(x.fit$color_palette) = new_names
+  colnames(x.fit$fit$exposure) = c(new_order_ref, new_order_dn) %>% names
+  rownames(x.fit$fit$denovo_signatures) = new_order_dn %>% names
+  rownames(x.fit$fit$catalogue_signatures) = new_order_ref %>% names
+  names(x.fit$color_palette) = c(new_order_ref, new_order_dn) %>% names
 
   return(x.fit)
 }
@@ -203,38 +249,4 @@ rare_common_sigs = function(x.simul) {
 }
 
 
-
-
-plot_sigs_found = function(stats_df, which=c("rare","common","shared","all"), ratio=F) {
-  columns = dplyr::case_when(
-    which == "rare" ~ c("n_priv_rare_found", "n_priv_rare"),
-    which == "common" ~ c("n_priv_common_found", "n_priv_common"),
-    which == "shared" ~ c("n_shared_found", "n_shared"),
-    which == "all" ~ c("inf_K", "true_K")
-  )
-
-  colors_hier = c("darkorange", "dodgerblue4") %>%
-    setNames(c("Hierarchical", "Non-hierarchical"))
-
-  if (ratio)
-    p = stats_df %>%
-    dplyr::mutate(ratio = columns[1] / columns[2]) %>%
-    ggplot() +
-    geom_jitter(aes(x=as.factor(N), y=ratio, color=inf_type), size=.5, height=0) +
-    geom_violin(aes(x=as.factor(N), y=ratio, color=inf_type), alpha=0) +
-    facet_grid(~G, scales="free_x") +
-    scale_color_manual(values=colors_hier) +
-    theme_bw() + labs(title="N found / N")
-
-  if (!ratio)
-    p = stats_df %>%
-    ggplot() +
-    geom_jitter(aes_string(x=columns[1], y=columns[2], color="inf_type"), size=.5, height=0) +
-    geom_violin(aes_string(x=columns[1], y=columns[2], color="inf_type"), alpha=0) +
-    ggh4x::facet_nested(~G+as.factor(N)) +
-    scale_color_manual(values=colors_hier) + ylim(0, NA) + xlim(0, NA) +
-    theme_bw() + labs(title="N found (x) vs N (y)")
-
-  return(p)
-}
 
