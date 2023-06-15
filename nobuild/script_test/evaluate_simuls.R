@@ -1,100 +1,32 @@
-devtools::load_all("~/GitHub/basilica/")
-devtools::load_all("~/GitHub/simbasilica/")
-library(ggplot2)
+load_deps()
 
+data_path = "~/GitHub/simbasilica/nobuild/simulations/synthetic_datasets/"
+
+fits_path = "~/GitHub/simbasilica/nobuild/simulations/run_oldmodel_regul_0806/"
 fits_path = "~/GitHub/simbasilica/nobuild/simulations/run_new_model_0806/"
 fits_path = "~/GitHub/simbasilica/nobuild/simulations/run_new_model_wholeCat_1206/"
 
-# fits_path = "~/GitHub/simbasilica/nobuild/simulations/run_oldmodel_regul_0806/"
-data_path = "~/GitHub/simbasilica/nobuild/simulations/synthetic_datasets/"
-
-fits = list.files(path=fits_path,
-                   pattern="fit.")
-
-stats = lapply(fits, function(fitname) {
-  print(fitname)
-  compare_single_fit(fitname, fits_path, data_path, cutoff=0.8)
-  } ) %>% do.call(what=rbind, args=.) %>%
-  dplyr::mutate(inf_type=ifelse(is_hierarchical, "Hierarchical", "Non-hierarchical"))
-
-
-colors_hier = c("darkorange", "dodgerblue4") %>%
-  setNames(c("Hierarchical", "Non-hierarchical"))
+out_name = "old_model_0806"
+out_name = "new_model_0806"
+out_name = "wholeCat"
 
 
 
+## Stats df and plots ####
+# stats_df = get_stats_df(data_path=data_path, fits_path=fits_path, cutoff=0.8)
+# saveRDS(stats_df, paste0("~/GitHub/simbasilica/nobuild/simulations/stats.", out_name, ".Rds"))
 
-stats %>%
-  ggplot() +
-  geom_jitter(aes(x=n_priv_rare_found, y=n_priv_rare, color=inf_type), size=1.5,
-              width=.15, height=.15) +
-  geom_abline() +
-  ggh4x::facet_nested(~G+as.factor(N)) +
-  scale_color_manual(values=colors_hier) +
-  theme_bw() + labs(title="N rare found vs N rare") + xlim(0,3) + ylim(0,3)
+stats_df = readRDS(paste0("~/GitHub/simbasilica/nobuild/simulations/stats.", out_name, ".Rds"))
 
+pdf(file = paste0("~/GitHub/simbasilica/nobuild/simulations/plot.", out_name, ".pdf"),
+    height = 8, width = 14)
 
-stats %>%
-  dplyr::mutate(found_ratio = inf_K / true_K) %>%
-  ggplot() +
-  # geom_jitter(aes(x=inf_K, y=true_K, color=inf_type), size=1.5,
-  #             width=.15, height=.15) +
-  geom_jitter(aes(x=as.factor(N), y=found_ratio, color=inf_type), width=0.1, height=0.1) +
-  geom_violin(aes(x=as.factor(N), y=found_ratio, color=inf_type)) +
-  ggh4x::facet_nested(~G, scales="free_x") +
-  scale_color_manual(values=colors_hier) +
-  theme_bw() + labs(title="N sigs found vs N sigs") + ylim(0,NA)
+plot_sigs_stats(stats_df, wrap=T)
+plot_sigs_stats(stats_df, wrap=T, ratio=T)
+plot_metrics_stats(stats_df, wrap=T)
 
-
-stats %>%
-  ggplot() +
-  geom_jitter(aes(x=n_priv_common_found, y=n_priv_common, color=inf_type), size=1.5,
-              width=.15, height=.15) +
-  geom_abline() +
-  ggh4x::facet_nested(~G+as.factor(N)) +
-  scale_color_manual(values=colors_hier) + ylim(0, NA) + xlim(0, NA) +
-  theme_bw() + labs(title="N common found vs N common")
-
-
-mse_counts = stats %>%
-  ggplot() +
-  geom_jitter(aes(x=as.factor(N), y=mse_counts, color=inf_type), size=.1) +
-  geom_boxplot(aes(x=as.factor(N), y=mse_counts, color=inf_type), alpha=0) +
-  facet_grid(~G, scales="free_x") +
-  theme_bw() + labs(title="MSE between true and reconstructed counts")
-
-
-mse_expos = stats %>%
-  ggplot() +
-  geom_jitter(aes(x=as.factor(N), y=mse_expos, color=inf_type), size=.1) +
-  geom_boxplot(aes(x=as.factor(N), y=mse_expos, color=inf_type), alpha=0) +
-  facet_grid(~G, scales="free_x") +
-  theme_bw() + labs(title="MSE between true and estimated exposures")
-
-
-cos_sigs = stats %>%
-  ggplot() +
-  geom_jitter(aes(x=factor(N), y=cosine_sigs, color=inf_type), size=.1) +
-  geom_boxplot(aes(x=factor(N), y=cosine_sigs, color=inf_type), alpha=0) +
-  facet_grid(~G, scales="free_x") +
-  theme_bw() + labs(title="Cosine between true and estimated signatures")
-
-
-cos_expos = stats %>%
-  ggplot() +
-  geom_jitter(aes(x=factor(N), y=cosine_expos, color=inf_type), size=.1) +
-  geom_boxplot(aes(x=factor(N), y=cosine_expos, color=inf_type), alpha=0) +
-  facet_grid(~G, scales="free_x") +
-  theme_bw() + labs(title="Cosine between true and estimated exposures")
-
-
-pdf(file = "~/GitHub/simbasilica/nobuild/simulations/run_newmodel_0806.pdf",
-    height = 4, width = 8)
-mse_counts %>% print()
-mse_expos %>% print()
-cos_sigs %>% print()
-cos_expos %>% print()
 dev.off()
+
 
 
 ## Example good ####
