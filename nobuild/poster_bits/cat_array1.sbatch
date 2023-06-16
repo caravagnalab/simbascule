@@ -1,9 +1,10 @@
 #!/bin/bash
 #SBATCH --time=30:00:00
-#SBATCH --nodes=2
-#SBATCH --cpus-per-task=1
-#SBATCH --array=0-4
-#SBATCH --partition=CPU
+#SBATCH --nodes=1
+#SBATCH --tasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --array=0-2
+#SBATCH --partition=EPYC
 #SBATCH --job-name=1cat_array
 #SBATCH --mem=50GB
 #SBATCH --output=1cat_array-%A-%a.log
@@ -18,7 +19,8 @@ echo ' MAX TASK ID: '$SLURM_ARRAY_TASK_MAX
 echo ' TOTAL NUMBER OF TASKS: '$SLURM_ARRAY_TASK_COUNT
 echo '----------------------------'
 
-module load architecture/Intel
+module load architecture/x86
+module load conda
 module load cuda
 module load R/4.2.2
 

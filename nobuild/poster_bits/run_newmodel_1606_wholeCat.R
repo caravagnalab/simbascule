@@ -2,8 +2,9 @@ args = commandArgs(trailingOnly = TRUE)
 print(args)
 
 main_path = "/u/cdslab/ebusca00/scratch_shared/basilica_pkgs/"
-out_path = paste0(main_path, "simbasilica/nobuild/simulations/run_new_model_wholeCat_1606/")
-data_path = paste0(main_path, "simbasilica/nobuild/simulations/synthetic_datasets_1606/")
+fits_path = paste0(main_path, "simbasilica/nobuild/poster_bits/run_new_model_wholeCat_1606/")
+data_path = paste0(main_path, "simbasilica/nobuild/poster_bits/synthetic_datasets_1606/")
+
 new_model = TRUE
 
 reticulate::use_condaenv("basilica-env")
@@ -20,7 +21,15 @@ comb = tibble(
   n_priv_rare = c(1, 1, 1, 1, 2, 2, 3)
 )
 
-comb_i = comb[i+1, ]
+
+if (args[1]=="NULL") {
+  comb_i = comb[4:nrow(comb), ] 
+} else {
+  i = as.integer(args[1])
+  comb_i = comb[i+1, ]
+  print(i)
+  print(comb_i)
+}
 
 shared = c("SBS1", "SBS5", "SBS17b")
 private = c("SBS10b", "SBS28", "SBS56 SBS10a", "SBS90", "SBS2", "SBS13", "SBS20", "SBS22")
@@ -31,16 +40,27 @@ generate_and_run(shared = shared,
                  catalogue = COSMIC_filt_merged,
                  comb_matrix = comb_i,
                  py = py,
-                 fits_path = out_path,
+                 private_fracs = list("rare"=0.05, "common"=0.3),
+                 fits_path = fits_path,
                  data_path = data_path,
                  seeds = 1:10,
                  mut_range = 10:8000,
                  reference_catalogue = COSMIC_filt_merged,
                  input_catalogue = NULL,
                  keep_sigs = c("SBS1", "SBS5"),
+                 hyperparameters = NULL,
+
                  reg_weight = 1.,
                  regularizer = "cosine",
+
+                 initializ_seed = FALSE,
+                 initializ_pars_fit = TRUE,
+                 save_runs_seed = TRUE,
+                 seed_list = c(10,27,33,92,111),
+
                  CUDA = TRUE,
                  do.fits = TRUE,
                  verbose = FALSE,
-                 new_model = new_model)
+                 new_model = TRUE,
+		 cohort = "")
+
