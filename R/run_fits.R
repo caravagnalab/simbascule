@@ -51,7 +51,8 @@ generate_and_run = function(shared,
                             new_model = TRUE,
                             cohort = "",
                             ...) {
-  if (!dir.exists(fits_path))
+
+  if (!is.null(fits_path) && !dir.exists(fits_path))
     dir.create(fits_path, recursive=T)
 
   failed = file(paste0(fits_path, "failed_runs.txt"), open="w")
@@ -91,8 +92,8 @@ generate_and_run = function(shared,
         input_sigs = nrow(input_catalogue) else
           input_sigs = length(keep_sigs)
 
-      min_k = max(0, length(shared) + nrow(denovo_cat) - input_sigs - 5)
-      max_k = min_k + 10
+      # min_k = max(0, length(shared) + nrow(denovo_cat) - input_sigs - 5)
+      max_k = length(shared) + nrow(denovo_cat) + 5
       k_list = 0:max_k
 
       idd = paste0("N", comb$N_vals[i][[1]], ".G", comb$n_groups_vals[i][[1]], ".s", j)

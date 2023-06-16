@@ -24,18 +24,28 @@ private = c("SBS10b", "SBS28", "SBS56 SBS10a", "SBS90", "SBS2", "SBS13", "SBS20"
 generate_and_run(shared = shared,
                  private = private,
                  catalogue = COSMIC_filt_merged,
-                 comb_matrix = comb[i+1,],
+                 comb_matrix = comb,
                  py = py,
-                 fits_path = out_path,
+                 private_fracs = list("rare"=0.05, "common"=0.3),
+                 fits_path = NULL,
                  data_path = data_path,
                  seeds = 1:10,
                  mut_range = 10:8000,
                  reference_catalogue = COSMIC_filt_merged,
                  input_catalogue = NULL,
                  keep_sigs = c("SBS1", "SBS5"),
+                 hyperparameters = NULL,
+
                  reg_weight = 1.,
                  regularizer = "cosine",
-                 CUDA = TRUE,
-                 do.fits = TRUE,
+
+                 initializ_seed = FALSE,
+                 initializ_pars_fit = TRUE,
+                 save_runs_seed = TRUE,
+                 seed_list = c(10,27,33,92,111),
+
+                 CUDA = FALSE,
+                 do.fits = FALSE,
                  verbose = FALSE,
-                 new_model = new_model)
+                 new_model = TRUE,
+                 cohort = "")
