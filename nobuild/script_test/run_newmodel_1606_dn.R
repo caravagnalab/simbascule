@@ -1,5 +1,4 @@
 main_path = "/u/cdslab/ebusca00/scratch_shared/basilica_pkgs/"
-main_path = "~/GitHub/simbasilica/nobuild/"
 out_path = paste0(main_path, "simbasilica/nobuild/simulations/run_new_model_wholeCat_1606/")
 data_path = paste0(main_path, "simbasilica/nobuild/simulations/synthetic_datasets_1606/")
 new_model = TRUE
