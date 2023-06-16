@@ -3,9 +3,10 @@ print(args)
 
 i = as.integer(args[1])
 
-main_path = "/u/cdslab/ebusca00/scratch_shared/basilica_pkgs/"
-fits_path = paste0(main_path, "simbasilica/nobuild/simulations/run_new_model_wholeCat_1606/")
-data_path = paste0(main_path, "simbasilica/nobuild/simulations/synthetic_datasets_1606/")
+main_path = "/home/elena.buscaroli/GitHub/"
+
+fits_path = paste0(main_path, "simbasilica/nobuild/poster_bits/run_newmodel_1606_dn/")
+data_path = paste0(main_path, "simbasilica/nobuild/poster_bits/synthetic_datasets_1606/")
 new_model = TRUE
 
 reticulate::use_condaenv("basilica-env")
@@ -37,7 +38,7 @@ generate_and_run(shared = shared,
                  data_path = data_path,
                  seeds = 1:10,
                  mut_range = 10:8000,
-                 reference_catalogue = COSMIC_filt_merged,
+                 reference_catalogue = COSMIC_filt_merged[c("SBS1","SBS5"), ],
                  input_catalogue = NULL,
                  keep_sigs = c("SBS1", "SBS5"),
                  hyperparameters = NULL,

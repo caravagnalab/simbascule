@@ -1,11 +1,10 @@
 #!/bin/bash
 #SBATCH --time=30:00:00
 #SBATCH --nodes=1
-#SBATCH --array=0-3
-#SBATCH --cpus-per-task=24
+#SBATCH --array=4-6
 #SBATCH --partition=gpuq
-#SBATCH --gres=gpu:4
-#SBATCH --job-name=1dn_array
+#SBATCH --gres=gpu:3
+#SBATCH --job-name=2dn_array
 #SBATCH --mem=50GB
 #SBATCH --output=1dn_array-%A-%a.log
 
