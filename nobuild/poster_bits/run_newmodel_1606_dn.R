@@ -1,5 +1,10 @@
+args = commandArgs(trailingOnly = TRUE)
+print(args)
+
+i = as.integer(args[1])
+
 main_path = "/u/cdslab/ebusca00/scratch_shared/basilica_pkgs/"
-out_path = paste0(main_path, "simbasilica/nobuild/simulations/run_new_model_wholeCat_1606/")
+fits_path = paste0(main_path, "simbasilica/nobuild/simulations/run_new_model_wholeCat_1606/")
 data_path = paste0(main_path, "simbasilica/nobuild/simulations/synthetic_datasets_1606/")
 new_model = TRUE
 
@@ -20,14 +25,15 @@ comb = tibble(
 shared = c("SBS1", "SBS5", "SBS17b")
 private = c("SBS10b", "SBS28", "SBS56 SBS10a", "SBS90", "SBS2", "SBS13", "SBS20", "SBS22")
 
+comb_i = comb[i+1,]
 
 generate_and_run(shared = shared,
                  private = private,
                  catalogue = COSMIC_filt_merged,
-                 comb_matrix = comb,
+                 comb_matrix = comb_i,
                  py = py,
                  private_fracs = list("rare"=0.05, "common"=0.3),
-                 fits_path = NULL,
+                 fits_path = fits_path,
                  data_path = data_path,
                  seeds = 1:10,
                  mut_range = 10:8000,
@@ -44,8 +50,8 @@ generate_and_run(shared = shared,
                  save_runs_seed = TRUE,
                  seed_list = c(10,27,33,92,111),
 
-                 CUDA = FALSE,
-                 do.fits = FALSE,
+                 CUDA = TRUE,
+                 do.fits = TRUE,
                  verbose = FALSE,
                  new_model = TRUE,
                  cohort = "")
