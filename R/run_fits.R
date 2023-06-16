@@ -52,6 +52,8 @@ generate_and_run = function(shared,
                             cohort = "",
                             ...) {
 
+  print(comb_matrix)
+
   if (!is.null(fits_path) && !dir.exists(fits_path))
     dir.create(fits_path, recursive=T)
 
@@ -59,15 +61,17 @@ generate_and_run = function(shared,
 
   shared_cat = catalogue[shared,]
 
-  for (i in 1:nrow(comb)) {
+  for (i in 1:nrow(comb_matrix)) {
+    print(i)
+    print(comb_matrix)
 
     if (is.list(private)) {
       private_common = private$common
       private_rare = private$rare
     } else {
-      private_common = sample(private, comb$n_priv_comm[i])
+      private_common = sample(private, comb_matrix$n_priv_comm[i])
       tmp = setdiff(private, private_common)
-      private_rare = sample(tmp, comb$n_priv_rare[i])
+      private_rare = sample(tmp, comb_matrix$n_priv_rare[i])
     }
 
     denovo_cat = catalogue[c(private_common, private_rare),]
@@ -75,9 +79,9 @@ generate_and_run = function(shared,
     for (j in seeds) {
 
       x = single_dataset(
-        N = comb$N_vals[i][[1]],
-        n_groups = comb$n_groups_vals[i][[1]],
-        samples_per_group = comb$samples_per_group[i][[1]],
+        N = comb_matrix$N_vals[i][[1]],
+        n_groups = comb_matrix$n_groups_vals[i][[1]],
+        samples_per_group = comb_matrix$samples_per_group[i][[1]],
         reference_cat = shared_cat,
         denovo_cat = denovo_cat,
         private_sigs = list("rare" = private_rare, "common" = private_common),
@@ -96,13 +100,13 @@ generate_and_run = function(shared,
       max_k = length(shared) + nrow(denovo_cat) + 5
       k_list = 0:max_k
 
-      idd = paste0("N", comb$N_vals[i][[1]], ".G", comb$n_groups_vals[i][[1]], ".s", j)
+      idd = paste0("N", comb_matrix$N_vals[i][[1]], ".G", comb_matrix$n_groups_vals[i][[1]], ".s", j)
 
       cat(paste0(idd, "\n"))
 
       if (do.fits) {
-        fname = paste0("N", comb$N_vals[i][[1]], ".G",
-                       comb$n_groups_vals[i][[1]], ".s", seeds[j],
+        fname = paste0("N", comb_matrix$N_vals[i][[1]], ".G",
+                       comb_matrix$n_groups_vals[i][[1]], ".s", seeds[j],
                        ".", cohort, ".Rds") %>% stringr::str_replace_all("\\.\\.", ".")
 
         fits = run_model(x = x$x[[1]],
@@ -132,13 +136,11 @@ generate_and_run = function(shared,
                          path = fits_path,
                          out_name = fname)
 
-        filename1 = paste0("fit.N", comb$N_vals[i][[1]], ".G",
-                           comb$n_groups_vals[i][[1]], ".s", seeds[j],
-                           ".", cohort, ".Rds") %>% stringr::str_replace_all("\\.\\.", ".")
+        filename1 = paste0("fit", idd, ".", cohort, ".Rds") %>%
+                           stringr::str_replace_all("\\.\\.", ".")
 
-        filename2 = paste0("fit.hier.N", comb$N_vals[i][[1]], ".G",
-                           comb$n_groups_vals[i][[1]], ".s", seeds[j],
-                           ".", cohort, ".Rds") %>% stringr::str_replace_all("\\.\\.", ".")
+        filename2 = paste0("fit.hier", idd, ".", cohort, ".Rds") %>% 
+		          stringr::str_replace_all("\\.\\.", ".")
 
         save_fit(fits$fit1, fits_path, filename1)
         save_fit(fits$fit.hier, fits_path, filename2)
