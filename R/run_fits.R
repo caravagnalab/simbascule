@@ -52,8 +52,6 @@ generate_and_run = function(shared,
                             cohort = "",
                             ...) {
 
-  print(comb_matrix)
-
   if (!is.null(fits_path) && !dir.exists(fits_path))
     dir.create(fits_path, recursive=T)
 
@@ -62,7 +60,6 @@ generate_and_run = function(shared,
   shared_cat = catalogue[shared,]
 
   for (i in 1:nrow(comb_matrix)) {
-    print(i)
     print(comb_matrix)
 
     if (is.list(private)) {
@@ -136,10 +133,10 @@ generate_and_run = function(shared,
                          path = fits_path,
                          out_name = fname)
 
-        filename1 = paste0("fit", idd, ".", cohort, ".Rds") %>%
+        filename1 = paste0("fit.", idd, ".", cohort, ".Rds") %>%
                            stringr::str_replace_all("\\.\\.", ".")
 
-        filename2 = paste0("fit.hier", idd, ".", cohort, ".Rds") %>% 
+        filename2 = paste0("fit.hier.", idd, ".", cohort, ".Rds") %>% 
 		          stringr::str_replace_all("\\.\\.", ".")
 
         save_fit(fits$fit1, fits_path, filename1)
@@ -257,8 +254,9 @@ run_model = function(...,
   msg1 = paste0("fit.", idd, "\n")
   msg2 = paste0("fit.hier.", idd, "\n")
 
-  expr_fit = (is.null(path) || !paste0("fit.", out_name) %in% path)
-  expr_fit_hier = (is.null(path) || !paste0("fit.hier.", out_name) %in% path)
+  expr_fit = (is.null(path) || !paste0("fit.", out_name) %in% list.files(path))
+  expr_fit_hier = (is.null(path) || !paste0("fit.hier.", out_name) %in% list.files(path))
+  
   x.fit = x.fit.hier = NULL
   if (!new_model) {
     if (expr_fit)
