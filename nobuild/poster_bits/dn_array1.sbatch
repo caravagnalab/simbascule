@@ -7,7 +7,6 @@
 #SBATCH --gres=gpu:8
 #SBATCH --job-name=1dn_array
 #SBATCH --mem=50GB
-#SBATCH --mail-type=ALL
 #SBATCH --output=1dn_array-%A-%a.log
 
 echo '----------------------------'
@@ -23,4 +22,7 @@ echo '----------------------------'
 module load cuda11.1/toolkit/11.1.1
 module load R/4.2.2
 
-# Rscript /u/cdslab/ebusca00/scratch_shared/basilica_pkgs/simbasilica/nobuild/script_test/run_newmodel_3105.R
+export PATH=~/miniconda3/bin:$PATH
+conda activate basilica-env
+
+# Rscript /u/cdslab/ebusca00/scratch_shared/basilica_pkgs/simbasilica/nobuild/script_test/run_newmodel_3105.R  $SLURM_ARRAY_TASK_ID
