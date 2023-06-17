@@ -66,3 +66,146 @@ v Installing the `pybasilica` package from PyPI. ... done
 i Loading simbasilica
 No id variables; using all as measure variables
 No id variables; using all as measure variables
+No id variables; using all as measure variables
+No id variables; using all as measure variables
+Warning messages:
+1: This manual palette can handle a maximum of 16 values. You have supplied 27. 
+2: This manual palette can handle a maximum of 16 values. You have supplied 25. 
+Running with seed 12
+
+Running with seed 22
+
+Running with seed 43
+
+Running with seed 55
+
+Running with seed 12
+
+Running with seed 22
+
+Running with seed 43
+
+Running with seed 55
+
+Running with seed 12
+
+Running with seed 22
+
+Running with seed 43
+
+Running with seed 55
+
+Running with seed 12
+
+Running with seed 22
+
+Running with seed 43
+
+Running with seed 55
+
+Running with seed 12
+
+Running with seed 22
+
+Running with seed 43
+
+Running with seed 55
+
+Running with seed 12
+
+Running with seed 22
+
+Running with seed 43
+
+Running with seed 55
+
+Running with seed 12
+
+Running with seed 22
+
+Running with seed 43
+
+Running with seed 55
+
+Running with seed 12
+
+Running with seed 22
+
+Running with seed 43
+
+Running with seed 55
+
+Running with seed 12
+
+Running with seed 22
+
+Running with seed 43
+
+Running with seed 55
+
+Running with seed 12
+
+Running with seed 22
+
+Running with seed 43
+
+Running with seed 55
+
+Running with seed 12
+
+Running with seed 22
+
+Running with seed 43
+
+Running with seed 55
+
+Running with seed 12
+
+Running with seed 22
+
+Running with seed 43
+
+Running with seed 55
+
+Running with seed 12
+
+Running with seed 22
+
+Running with seed 43
+
+Running with seed 55
+
+Running with seed 12
+
+Running with seed 22
+
+Running with seed 43
+
+Running with seed 55
+
+Running with seed 12
+
+Running with seed 22
+
+Running with seed 43
+
+Running with seed 55
+
+Running with seed 12
+
+Running with seed 22
+
+Running with seed 43
+
+Running with seed 55
+
+Running with seed 12
+
+Running with seed 22
+
+Running with seed 43
+
+Running with seed 55
+
+slurmstepd: error: _cgroup_procs_check: failed on path /sys/fs/cgroup/memory/slurm/uid_6710/job_2871012/step_batch/cgroup.procs: No such file or directory
+slurmstepd: error: unable to read '/sys/fs/cgroup/memory/slurm/uid_6710/job_2871012/step_batch/cgroup.procs'
