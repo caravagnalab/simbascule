@@ -97,18 +97,18 @@ compute.mae <- function(m , mr) {
 }
 
 
-compute.mse <- function(m_inf, m_true, assigned=NULL, subset_cols=NULL) {
-  if (!is.null(assigned)) {
-    m_true[, setdiff(colnames(m_inf), assigned)] = 0
-    m_inf[, setdiff(colnames(m_true), names(assigned))] = 0
+compute.mse <- function(m_inf, m_true, subset_cols=NULL, assigned_missing=NULL) {
+                        # assigned=NULL, subset_cols=NULL) {
+  if (!is.null(assigned_missing)) {
+    m_true[, assigned_missing$added_fp] = 0
+    m_inf[, assigned_missing$missing_fn] = 0
   }
 
   if (!is.null(subset_cols)) {
     m_true = m_true %>%
-      dplyr::select(intersect(subset_cols, colnames(m_true)))
-
-    inters = intersect(subset_cols, names(assigned))
-    m_inf = m_inf %>% dplyr::select(intersect(assigned[inters], colnames(m_inf)))
+      dplyr::select(subset_cols)
+    m_inf = m_inf %>%
+      dplyr::select(subset_cols)
   }
 
   mse = sum((m_inf - m_true)^2) / (dim(m_inf)[1] * dim(m_inf)[2])

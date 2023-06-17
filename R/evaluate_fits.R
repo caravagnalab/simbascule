@@ -24,6 +24,8 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
 
   rare_common = rare_common_sigs(x.simul)
 
+  x.fit = x.fit %>% convert_sigs_names(x.simul, cutoff=cutoff)
+
   sigs.fit = get_signatures(x.fit)
   sigs.simul = get_signatures(x.simul)
 
@@ -34,26 +36,27 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
   assigned = assigned_missing$assigned_tp
   unassigned = c(assigned_missing$missing_fn, assigned_missing$added_fp)
 
-  # x.fit = x.fit %>% convert_sigs_names(x.simul, cutoff=cutoff)
-
   mse_counts = compute.mse(m_true=x.simul$input$counts,
                            m_inf=get_data(x.fit, reconstructed=T))
   mse_expos = compute.mse(m_true=expos.simul,
                           m_inf=expos.fit,
-                          assigned=assigned)
-  # mse_expos_rare = compute.mse(m_true=expos.simul,
-  #                              m_inf=expos.fit,
-  #                              assigned=assigned,
-  #                              subset_cols=rare_common$private_rare)
+                          assigned_missing=assigned_missing)
+  mse_expos_rare = compute.mse(m_true=expos.simul,
+                               m_inf=expos.fit,
+                               assigned_missing=assigned_missing,
+                               subset_cols=rare_common$private_rare)
+
 
   cosine_sigs = compute.cosine(sigs.fit, sigs.simul,
-                               assigned, unassigned,
+                               assigned_missing=assigned_missing,
                                what="sigs")
   cosine_expos = compute.cosine(expos.fit, expos.simul,
-                                assigned, unassigned,
+                                assigned_missing=assigned_missing,
                                 what="expos")
-  # cosine_expos_rare = compute.cosine(expos.fit, expos.simul, assigned, unassigned,
-  #                                    what="expos", subset_cols=rare_common$private_rare)
+  cosine_expos_rare = compute.cosine(expos.fit, expos.simul,
+                                     assigned_missing=assigned_missing,
+                                     what="expos",
+                                     subset_cols=rare_common$private_rare)
 
   n_rare_found = assigned[names(assigned) %in% rare_common$private_rare] %>% length()
   n_common_found = assigned[names(assigned) %in% rare_common$private_common] %>% length()
@@ -86,11 +89,11 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
 
       "mse_counts"=mse_counts,
       "mse_expos"=mse_expos,
-      # "mse_expos_rare"=mse_expos_rare,
+      "mse_expos_rare"=mse_expos_rare,
 
       "cosine_sigs"=cosine_sigs,
       "cosine_expos"=cosine_expos,
-      # "cosine_expos_rare"=cosine_expos_rare,
+      "cosine_expos_rare"=cosine_expos_rare,
 
       "true_K"=true_n_sigs,
       "inf_K"=inf_n_sigs,
@@ -114,34 +117,45 @@ get_assigned_missing = function(x.fit, x.simul, cutoff=0.8) {
 }
 
 
-compute.cosine = function(m1, m2, assigned, unassigned, what, subset_cols=NULL) {
+compute.cosine = function(m1, m2, assigned_missing, what, subset_cols=NULL) {
   # m1 = fit
   # m2 = simul
+
+  unassigned = unique(c(assigned_missing$missing_fn,
+                        assigned_missing$added_fp))
 
   if (what == "expos") {
     m1 = as.data.frame(t(m1))
     m2 = as.data.frame(t(m2))
   }
 
-
   if (!is.null(subset_cols)) {
-    inters = intersect(subset_cols, names(assigned))
-    m1 = m1[intersect(rownames(m1), inters), ]
+    m1 = m1[intersect(rownames(m1), subset_cols), ]
     m2 = m2[intersect(rownames(m2), subset_cols), ]
-  }
+
+    if (nrow(m1) == 0) {
+      return(0)
+    }
+    consider = intersect(subset_cols, assigned_missing$assigned_tp)
+    unassigned = intersect(unassigned, subset_cols)
+  } else
+    consider = assigned_missing$assigned_tp
 
   rownames(m1) = paste0("F_", rownames(m1))
   rownames(m2) = paste0("S_", rownames(m2))
 
-  compare = rbind(m1[paste0("F_",assigned), ],
-                  m2[paste0("S_",names(assigned)), ] )
+  compare = rbind(m1[paste0("F_",consider), ],
+                  m2[paste0("S_",consider), ] )
 
-  cosine_sim = lsa::cosine(t(compare))[paste0("F_",assigned),
-                                       paste0("S_",names(assigned))]
+  cosine_sim = lsa::cosine(t(compare))[paste0("F_",consider),
+                                       paste0("S_",consider)]
 
-  cosines_tmp = sapply(names(assigned), function(i)
-    cosine_sim[paste0("F_",assigned[i]), paste0("S_",i)]
-  )
+  if (is.numeric(cosine_sim))
+    cosines_tmp = cosines_tmp
+  else
+    cosines_tmp = sapply(consider, function(i)
+      cosine_sim[paste0("F_",i), paste0("S_",i)]
+    )
 
   return(
     mean(c(cosines_tmp,
