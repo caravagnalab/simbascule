@@ -30,6 +30,8 @@ plot_sigs_found = function(stats_df, which=c("rare", "common", "shared", "all"),
 
   valss = unique(round( c(stats_df[[columns[1]]], stats_df[[columns[2]]]) ))
   breakss = seq(0, max(valss), by=2)
+  print(valss)
+  print(breakss)
   if (!ratio)
     p = stats_df %>%
       ggplot() +
@@ -74,6 +76,7 @@ plot_mse_cosine = function(stats_df, colname) {
       ggplot() +
       geom_jitter(aes_string(x="as.factor(N)", y=colname, color="inf_type"),
                   size=.1, height = 0., width = 0.05) +
+
       geom_boxplot(aes_string(x="as.factor(N)", y=colname, color="inf_type"), alpha=0) +
       ggh4x::facet_nested(~G, scales="free", space=TRUE) +
       scale_color_manual(values=colors_hier, name="") +
