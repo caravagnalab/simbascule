@@ -1,0 +1,40 @@
+INFO: localdir at /localscratch/2869208.elena.buscaroli
+INFO: your job will run on local system.
+----------------------------
+ JOB ID: 2869206
+ CURRENT TASK ID: 2869208
+ CURRENT TASK NUMBER: 1
+----------------------------
+ MIN TASK ID: 0
+ MAX TASK ID: 4
+ TOTAL NUMBER OF TASKS: 5
+----------------------------
+
+CommandNotFoundError: Your shell has not been properly configured to use 'conda activate'.
+To initialize your shell, run
+
+    $ conda init <SHELL_NAME>
+
+Currently supported shells are:
+  - bash
+  - fish
+  - tcsh
+  - xonsh
+  - zsh
+  - powershell
+
+See 'conda init --help' for more information and options.
+
+IMPORTANT: You may need to close and restart your shell after running 'conda init'.
+
+
+During startup - Warning message:
+Setting LC_CTYPE failed, using "C" 
+[1] "1"
+Error in py_module_import(module, convert = convert) : 
+  ModuleNotFoundError: No module named 'rich'
+Run `reticulate::py_last_error()` for details.
+Calls: <Anonymous> ... import_from_path_immediate -> import -> py_module_import
+Execution halted
+slurmstepd: error: _cgroup_procs_check: failed on path /sys/fs/cgroup/memory/slurm/uid_6710/job_2869208/step_batch/cgroup.procs: No such file or directory
+slurmstepd: error: unable to read '/sys/fs/cgroup/memory/slurm/uid_6710/job_2869208/step_batch/cgroup.procs'

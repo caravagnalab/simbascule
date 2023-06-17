@@ -1,0 +1,36 @@
+INFO: localdir at /localscratch/2870883.elena.buscaroli
+INFO: your job will run on local system.
+----------------------------
+ JOB ID: 2870880
+ CURRENT TASK ID: 2870883
+ CURRENT TASK NUMBER: 2
+----------------------------
+ MIN TASK ID: 0
+ MAX TASK ID: 3
+ TOTAL NUMBER OF TASKS: 4
+----------------------------
+
+CommandNotFoundError: Your shell has not been properly configured to use 'conda activate'.
+To initialize your shell, run
+
+    $ conda init <SHELL_NAME>
+
+Currently supported shells are:
+  - bash
+  - fish
+  - tcsh
+  - xonsh
+  - zsh
+  - powershell
+
+See 'conda init --help' for more information and options.
+
+IMPORTANT: You may need to close and restart your shell after running 'conda init'.
+
+
+During startup - Warning message:
+Setting LC_CTYPE failed, using "C" 
+[1] "2"
+slurmstepd: error: *** JOB 2870883 ON gnode04 CANCELLED AT 2023-06-16T19:26:51 ***
+slurmstepd: error: _cgroup_procs_check: failed on path /sys/fs/cgroup/memory/slurm/uid_6710/job_2870883/step_batch/cgroup.procs: No such file or directory
+slurmstepd: error: unable to read '/sys/fs/cgroup/memory/slurm/uid_6710/job_2870883/step_batch/cgroup.procs'
