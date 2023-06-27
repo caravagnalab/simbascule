@@ -2,8 +2,8 @@ args = commandArgs(trailingOnly = TRUE)
 print(args)
 
 main_path = "/home/elena.buscaroli/GitHub/"
-fits_path = paste0(main_path, "simbasilica/nobuild/poster_bits/run_new_model_wholeCat_1606/")
-data_path = paste0(main_path, "simbasilica/nobuild/poster_bits/synthetic_datasets_1606/")
+fits_path = paste0(main_path, "simbasilica/nobuild/simulations/run_new_model_wholeCat_1606/")
+data_path = paste0(main_path, "simbasilica/nobuild/simulations/synthetic_datasets_1606/")
 
 new_model = TRUE
 
@@ -23,7 +23,7 @@ comb = tibble(
 
 
 if (args[1]=="NULL") {
-  comb_i = comb[4:nrow(comb), ] 
+  comb_i = comb[4:nrow(comb), ]
 } else {
   i = as.integer(args[1])
   comb_i = comb[i+1, ]
