@@ -39,6 +39,8 @@ generate_and_run = function(shared,
 
                             reg_weight = 0.,
                             regularizer = "cosine",
+			    new_hier = FALSE,
+			    regul_denovo = TRUE,
 
                             initializ_seed = FALSE,
                             initializ_pars_fit = FALSE,
@@ -50,6 +52,8 @@ generate_and_run = function(shared,
                             verbose = FALSE,
                             new_model = TRUE,
                             cohort = "",
+
+			    only_hier = FALSE,
                             ...) {
 
   if (!is.null(fits_path) && !dir.exists(fits_path))
@@ -117,6 +121,8 @@ generate_and_run = function(shared,
                          reg_weight = reg_weight,
                          CUDA = CUDA,
                          regularizer = regularizer,
+			 new_hier = new_hier,
+			 regul_denovo = regul_denovo,
 
                          initializ_seed = initializ_seed,
                          initializ_pars_fit = initializ_pars_fit,
@@ -131,7 +137,9 @@ generate_and_run = function(shared,
                          idd = idd,
                          cohort = cohort,
                          path = fits_path,
-                         out_name = fname)
+                         out_name = fname,
+			 
+			 only_hier = only_hier)
 
         filename1 = paste0("fit.", idd, ".", cohort, ".Rds") %>%
                            stringr::str_replace_all("\\.\\.", ".")
@@ -249,12 +257,15 @@ run_model = function(...,
                      error_file=NULL,
                      idd="",
                      path=NULL,
-                     out_name=NULL) {
+                     out_name=NULL,
+		     new_hier = FALSE,
+                     regul_denovo =TRUE,
+		     only_hier = FALSE) {
 
   msg1 = paste0("fit.", idd, "\n")
   msg2 = paste0("fit.hier.", idd, "\n")
 
-  expr_fit = (is.null(path) || !paste0("fit.", out_name) %in% list.files(path))
+  expr_fit = (is.null(path) || !paste0("fit.", out_name) %in% list.files(path) && !only_hier)
   expr_fit_hier = (is.null(path) || !paste0("fit.hier.", out_name) %in% list.files(path))
   
   x.fit = x.fit.hier = NULL
@@ -278,14 +289,16 @@ run_model = function(...,
       x.fit = try_run(error_file,
                       expr =
                         two_steps_inference(..., keep_sigs=keep_sigs,
-                                            groups=NULL)$tot,
+                                            groups=NULL, new_hier=new_hier, 
+					    regul_denovo=regul_denovo)$tot,
                       msg = msg1)
 
     if (expr_fit_hier)
       x.fit.hier = try_run(error_file,
                            expr =
                              two_steps_inference(..., keep_sigs=keep_sigs,
-                                                 groups=groups)$tot,
+                                                 groups=groups, new_hier=new_hier,
+                                                 regul_denovo=regul_denovo)$tot,
                            msg = msg2)
   }
 

@@ -7,7 +7,7 @@
 #SBATCH --gres=gpu:4
 #SBATCH --job-name=1dn_array
 #SBATCH --mem=50GB
-#SBATCH --output=1dn_array-%A-%a.log
+#SBATCH --output=/home/elena.buscaroli/GitHub/simbasilica/nobuild/poster_bits/logs_ht/1dn_array-%A-%a.log
 
 echo '----------------------------'
 echo ' JOB ID: '$SLURM_ARRAY_JOB_ID
@@ -25,4 +25,4 @@ module load R/4.2.3
 export PATH=~/miniconda3/bin:$PATH
 conda activate basilica-env
 
-Rscript /home/elena.buscaroli/GitHub/simbasilica/nobuild/poster_bits/run_newmodel_1606_dn.R  $SLURM_ARRAY_TASK_ID
+Rscript /home/elena.buscaroli/GitHub/simbasilica/nobuild/poster_bits/run_newmodel_2606_dn.R  $SLURM_ARRAY_TASK_ID

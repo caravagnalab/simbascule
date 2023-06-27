@@ -6,7 +6,7 @@
 #SBATCH --gres=gpu:2
 #SBATCH --job-name=fit_gel
 #SBATCH --mem=50GB
-#SBATCH --output=fit_gel-%A-%a.log
+#SBATCH --output=/home/elena.buscaroli/GitHub/simbasilica/nobuild/poster_bits/fits_gel/logs_ht/fit_gel-%A-%a.log
 
 echo '----------------------------'
 echo ' JOB ID: '$SLURM_ARRAY_JOB_ID

@@ -1,7 +1,7 @@
 args = commandArgs(trailingOnly = TRUE)
 print(args)
 
-main_path = "/u/cdslab/ebusca00/scratch_shared/basilica_pkgs/"
+main_path = "/home/elena.buscaroli/GitHub/"
 fits_path = paste0(main_path, "simbasilica/nobuild/poster_bits/run_new_model_wholeCat_1606/")
 data_path = paste0(main_path, "simbasilica/nobuild/poster_bits/synthetic_datasets_1606/")
 
@@ -43,7 +43,7 @@ generate_and_run(shared = shared,
                  private_fracs = list("rare"=0.05, "common"=0.3),
                  fits_path = fits_path,
                  data_path = data_path,
-                 seeds = 1:10,
+                 seeds = 10:5,
                  mut_range = 10:8000,
                  reference_catalogue = COSMIC_filt_merged,
                  input_catalogue = NULL,

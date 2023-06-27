@@ -9,7 +9,9 @@ load_deps(base_path=base_path)
 
 out_path = paste0(base_path, "simbasilica/nobuild/poster_bits/fits_gel/")
 
-tissues = c("Breast", "Colorectal", "Lung")
+# tissues = c("Breast", "Colorectal", "Lung"); out_name = "BR_CRC_L"
+tissues = c("Colorectal", "Lung"); out_name = "CRC_L.KL"
+
 counts = readRDS(paste0(base_path, "simbasilica/nobuild/poster_bits/fits_gel/input_data.rds")) %>%
   dplyr::filter(cohort == "GEL", organ %in% tissues) %>% dplyr::select(-cohort, -organ)
 
@@ -19,11 +21,11 @@ groups = readRDS(paste0(base_path, "simbasilica/nobuild/poster_bits/fits_gel/inp
 
 
 if (i == 0) {
-  fit.nh = two_steps_inference(x=counts, k=0:15, groups=NULL, seed_list=c(12,22,43,55), CUDA=TRUE)
-  saveRDS(fit.nh, paste0(out_path, "fit_gel.BR_CRC_L.nh.Rds"))
+  fit.nh = two_steps_inference(x=counts, k=0:15, py=py, groups=NULL, seed_list=c(12,22,43), CUDA=TRUE, regularizer = "KL")
+  saveRDS(fit.nh, paste0(out_path, "fit_gel.", out_name, ".nh.Rds"))
 } else if (i == 1) {
-  fit.h = two_steps_inference(x=counts, k=0:15, groups=groups, seed_list=c(12,22,43,55), CUDA=TRUE)
-  saveRDS(fit.h, paste0(out_path, "fit_gel.BR_CRC_L.h.Rds"))
+  fit.h = two_steps_inference(x=counts, k=0:15, py=py, groups=groups, seed_list=c(12,22,43), CUDA=TRUE, regularizer = "KL")
+  saveRDS(fit.h, paste0(out_path, "fit_gel.", out_name, ".h.Rds"))
 }
 
 
