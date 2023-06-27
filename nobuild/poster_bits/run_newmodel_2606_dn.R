@@ -5,8 +5,8 @@ i = as.integer(args[1])
 
 main_path = "/home/elena.buscaroli/GitHub/"
 
-fits_path = paste0(main_path, "simbasilica/nobuild/poster_bits/run_newmodel_2606_dn/")
-data_path = paste0(main_path, "simbasilica/nobuild/poster_bits/synthetic_datasets_1606/")
+fits_path = paste0(main_path, "simbasilica/nobuild/simulations/run_newmodel_2606_dn/")
+data_path = paste0(main_path, "simbasilica/nobuild/simulations/synthetic_datasets_1606/")
 new_model = TRUE
 
 reticulate::use_condaenv("basilica-env")
