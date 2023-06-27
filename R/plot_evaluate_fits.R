@@ -1,9 +1,11 @@
-plot_sigs_found = function(stats_df, which=c("rare", "common", "shared", "all"), ratio=F) {
+plot_sigs_found = function(stats_df, which=c("rare", "common", "shared", "all"), ratio=F,
+                           facet_groups=TRUE, compare_runs=TRUE, facet_nsigs=FALSE,
+                           runs_names=c("Hierarchical", "Non-hierarchical")) {
   columns = dplyr::case_when(
-    which == "rare" ~ c("n_priv_rare_found", "n_priv_rare"),
-    which == "common" ~ c("n_priv_common_found", "n_priv_common"),
+    which == "rare" ~ c("n_rare_found", "n_rare"),
+    which == "common" ~ c("n_common_found", "n_common"),
     which == "shared" ~ c("n_shared_found", "n_shared"),
-    which == "all" ~ c("inf_K", "true_K")
+    which == "all" ~ c("n_sigs_found", "n_sigs")
   )
 
   axis_lab = dplyr::case_when(
@@ -12,28 +14,38 @@ plot_sigs_found = function(stats_df, which=c("rare", "common", "shared", "all"),
   )
 
   colors_hier = c("darkorange", "dodgerblue4") %>%
-    setNames(c("Hierarchical", "Non-hierarchical"))
+    setNames(runs_names)
+
+  if (!compare_runs) {
+    keep_runs = c("Non-hierarchical")
+  } else {
+    keep_runs = stats_df$inf_type %>% unique()
+  }
 
   if (ratio)
     p = stats_df %>%
+      dplyr::filter(inf_type %in% keep_runs) %>%
       dplyr::mutate(ratio = .data[[columns[1]]] / .data[[columns[2]]]) %>%
       ggplot() +
       geom_hline(yintercept=1, linetype="dashed", linewidth=0.5, color="grey") +
+      geom_violin(aes(x=as.factor(N), y=ratio, fill=inf_type), alpha=0.5, color=NA,
+                  position=position_dodge(width=0.7)) +
       geom_jitter(aes(x=as.factor(N), y=ratio, color=inf_type),
-                  size=1, height=0., width=.05) +
-      geom_violin(aes(x=as.factor(N), y=ratio, color=inf_type), alpha=0) +
-      ggh4x::facet_nested(~G, scales="free_x", space=TRUE) +
+                  position=position_jitterdodge(jitter.width=0.1,
+                                                jitter.height=0.01,
+                                                dodge.width=0.7),
+                  size=0.8) +
       scale_color_manual(values=colors_hier, name="") +
+      scale_fill_manual(values=colors_hier, name="") +
       theme_bw() + xlab("# samples") + ylab("Ratio") +
       labs(title=paste0("Ratio between ", tolower(axis_lab), " found and true")) +
-      ylim(0, NA)
+      ylim(0-0.01, NA)
 
   valss = unique(round( c(stats_df[[columns[1]]], stats_df[[columns[2]]]) ))
   breakss = seq(0, max(valss), by=2)
-  print(valss)
-  print(breakss)
   if (!ratio)
     p = stats_df %>%
+      dplyr::filter(inf_type %in% keep_runs) %>%
       ggplot() +
       geom_abline(linetype="dashed", linewidth=0.5, color="grey") +
       geom_jitter(aes_string(x=columns[1], y=columns[2], color="inf_type"),
@@ -46,15 +58,29 @@ plot_sigs_found = function(stats_df, which=c("rare", "common", "shared", "all"),
       scale_x_continuous(breaks=breakss, limits=c(0, max(valss)+1)) +
       scale_y_continuous(breaks=breakss, limits=c(0, max(valss)+1))
 
+  if (facet_nsigs && ratio)
+    p = p + ggh4x::facet_nested(~n_sigs, scales="free_x", space=TRUE)
+  else if (facet_nsigs && !ratio)
+    p = p + ggh4x::facet_nested(~as.factor(n_sigs) + as.factor(N))
+  else if (facet_groups && ratio)
+    p = p + ggh4x::facet_nested(~G, scales="free_x", space=TRUE)
+  else if (facet_groups && !ratio)
+    p = p + ggh4x::facet_nested(~as.factor(G) + as.factor(N))
+
+  if (!compare_runs) p = p + guides(color="none", fill="none")
+
   return(p)
 }
 
 
 
-plot_mse_cosine = function(stats_df, colname) {
+plot_mse_cosine = function(stats_df, colname, facet_groups=T, compare_runs=T,
+                           runs_names=c("Hierarchical", "Non-hierarchical")) {
 
   metric = strsplit(colname, "_")[[1]][1]
   quantity = strsplit(colname, "_")[[1]][2]
+  if (length(strsplit(colname, "_")[[1]]) == 3)
+    type = paste0(strsplit(colname, "_")[[1]][3], " ") else type = ""
 
   metric = dplyr::case_when(
     metric == "mse" ~ "MSE",
@@ -69,20 +95,36 @@ plot_mse_cosine = function(stats_df, colname) {
   )
 
   colors_hier = c("darkorange", "dodgerblue4") %>%
-    setNames(c("Hierarchical", "Non-hierarchical"))
+    setNames(runs_names)
 
-  return(
-    stats_df %>%
-      ggplot() +
-      geom_jitter(aes_string(x="as.factor(N)", y=colname, color="inf_type"),
-                  size=.1, height = 0., width = 0.05) +
+  if (!compare_runs) {
+    keep_runs = c("Non-hierarchical")
+  } else {
+    keep_runs = c("Hierarchical","Non-hierarchical")
+  }
 
-      geom_boxplot(aes_string(x="as.factor(N)", y=colname, color="inf_type"), alpha=0) +
-      ggh4x::facet_nested(~G, scales="free", space=TRUE) +
-      scale_color_manual(values=colors_hier, name="") +
-      theme_bw() + xlab("# samples") + ylab(paste0(metric, " on ", quantity)) +
-      labs(title=paste0(metric, " computed between true and inferred ", quantity))
-  )
+  p = stats_df %>%
+    dplyr::filter(inf_type %in% keep_runs) %>%
+    ggplot() +
+    geom_boxplot(aes_string(x="as.factor(N)", y=colname, color="inf_type"),
+                fill="white",
+                alpha=0.5, position=position_dodge(width=0.7),
+                outlier.size=0.5, width=0.5) +
+
+    # geom_jitter(aes_string(x="as.factor(N)", y=colname, color="inf_type"),
+    #             position=position_jitterdodge(jitter.width=0.1,
+    #                                           jitter.height=0.01,
+    #                                           dodge.width=0.7), size=.2) +
+    scale_color_manual(values=colors_hier, name="") +
+    theme_bw() + xlab("# samples") + ylab(metric) + ylim(0,1) +
+    labs(title=paste0(metric, " computed between true and inferred ", type, quantity))
+
+  if (facet_groups)
+    p = p + ggh4x::facet_nested(~"# groups" + G, scales="free", space=TRUE)
+
+  if (!compare_runs) p = p + guides(color="none")
+
+  return(p)
 }
 
 
@@ -160,11 +202,11 @@ make_plots = function(fname, data_path, fits_path, save_path=NULL,
 
 
 
-plot_sigs_stats = function(stats_df, wrap=T, ratio=F) {
-  p1 = plot_sigs_found(stats_df, which="rare", ratio=ratio)
-  p2 = plot_sigs_found(stats_df, which="common", ratio=ratio)
-  p3 = plot_sigs_found(stats_df, which="shared", ratio=ratio)
-  p4 = plot_sigs_found(stats_df, which="all", ratio=ratio)
+plot_sigs_stats = function(stats_df, wrap=T, ratio=F, facet_groups=T, compare_runs=T) {
+  p1 = plot_sigs_found(stats_df, "rare", ratio, facet_groups, compare_runs)
+  p2 = plot_sigs_found(stats_df, "common", ratio, facet_groups, compare_runs)
+  p3 = plot_sigs_found(stats_df, "shared", ratio, facet_groups, compare_runs)
+  p4 = plot_sigs_found(stats_df, "all", ratio, facet_groups, compare_runs)
 
   if (wrap)
     return(patchwork::wrap_plots(p1, p2, p3, p4, ncol=2, guides="collect") &
@@ -174,17 +216,37 @@ plot_sigs_stats = function(stats_df, wrap=T, ratio=F) {
 }
 
 
-plot_metrics_stats = function(stats_df, wrap=T) {
-  p1 = plot_mse_cosine(stats_df, "mse_counts")
-  p2 = plot_mse_cosine(stats_df, "mse_expos")
-  p3 = plot_mse_cosine(stats_df, "cosine_sigs")
-  p4 = plot_mse_cosine(stats_df, "cosine_expos")
+plot_metrics_stats = function(stats_df, wrap=T, facet_groups=T, compare_runs=T) {
+  p1 = plot_mse_cosine(stats_df, "mse_counts", facet_groups, compare_runs)
+  p2 = plot_mse_cosine(stats_df, "mse_expos", facet_groups, compare_runs)
+  p3 = plot_mse_cosine(stats_df, "cosine_sigs", facet_groups, compare_runs)
+  p4 = plot_mse_cosine(stats_df, "cosine_expos", facet_groups, compare_runs)
+  p5 = plot_mse_cosine(stats_df, colname="mse_expos_rare", facet_groups, compare_runs)
 
   if (wrap)
-    return(patchwork::wrap_plots(p1, p2, p3, p4, ncol=2, guides="collect") &
+    return(patchwork::wrap_plots(p1, p2, p3, p4, p5, ncol=2, guides="collect") &
              theme(legend.position = "bottom"))
 
   return(list(p1, p2, p3, p4))
 }
 
+
+
+stats_plots = function(stats_df, save_path, out_name) {
+  stats_plots_utils(stats_df, save_path, out_name, T, T)
+  stats_plots_utils(stats_df, save_path, paste0("nh.", out_name), T, F)
+  stats_plots_utils(stats_df, save_path, paste0("nh.ng.", out_name), F, F)
+}
+
+stats_plots_utils = function(stats_df, save_path, out_name,
+                             facet_groups=T, compare_runs=T) {
+  pdf(paste0(save_path, "plots.", out_name, ".pdf"), height=8, width=14)
+  plot_sigs_stats(stats_df, wrap=T, facet_groups=facet_groups,
+                  compare_runs=compare_runs) %>% print()
+  plot_sigs_stats(stats_df, wrap=T, ratio=T, facet_groups=facet_groups,
+                  compare_runs=compare_runs) %>% print()
+  plot_metrics_stats(stats_df, wrap=T, facet_groups=facet_groups,
+                     compare_runs=compare_runs) %>% print()
+  dev.off()
+}
 
