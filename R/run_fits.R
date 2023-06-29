@@ -1,4 +1,3 @@
-
 #' Generate synthetic data and run the fit
 #'
 #' @param shared Signatures shared across groups
@@ -36,25 +35,29 @@ generate_and_run = function(shared,
                             input_catalogue = NULL,
                             keep_sigs = c("SBS1", "SBS5"),
                             hyperparameters = NULL,
+                            n_steps = 500,
 
-                            reg_weight = 0.,
+                            reg_weight = 1.,
                             regularizer = "cosine",
-			    new_hier = FALSE,
-			    regul_denovo = TRUE,
+                            new_hier = FALSE,
+                            regul_denovo = TRUE,
 
                             initializ_seed = FALSE,
-                            initializ_pars_fit = FALSE,
-                            save_runs_seed = FALSE,
+                            initializ_pars_fit = TRUE,
+                            save_runs_seed = TRUE,
                             seed_list = c(4,17,22),
 
                             CUDA = FALSE,
-                            do.fits = FALSE,
+                            do.fits = TRUE,
                             verbose = FALSE,
                             new_model = TRUE,
                             cohort = "",
 
-			    only_hier = FALSE,
+                            check_present = TRUE,
+                            inference_type = c("flat","hier","clust"),
                             ...) {
+
+  cat(paste("regularizer =", regularizer, "- reg_weight =", reg_weight, "- inference_type =", paste(inference_type, collapse=", "), "\n"))
 
   if (!is.null(fits_path) && !dir.exists(fits_path))
     dir.create(fits_path, recursive=T)
@@ -64,7 +67,6 @@ generate_and_run = function(shared,
   shared_cat = catalogue[shared,]
 
   for (i in 1:nrow(comb_matrix)) {
-    print(comb_matrix)
 
     if (is.list(private)) {
       private_common = private$common
@@ -98,66 +100,64 @@ generate_and_run = function(shared,
           input_sigs = length(keep_sigs)
 
       # min_k = max(0, length(shared) + nrow(denovo_cat) - input_sigs - 5)
-      max_k = length(shared) + nrow(denovo_cat) + 5
-      k_list = 0:max_k
+      max_k = length(shared) + nrow(denovo_cat) - length(keep_sigs) + 3
+      min_k = max(0, max_k - 6)
+      k_list = min_k:max_k
+
+      min_cl = max(comb_matrix$n_groups_vals[i][[1]] - 3, 1)
+      max_cl = comb_matrix$n_groups_vals[i][[1]] + 3
+      cluster_list = min_cl:max_cl
 
       idd = paste0("N", comb_matrix$N_vals[i][[1]], ".G", comb_matrix$n_groups_vals[i][[1]], ".s", j)
 
       cat(paste0(idd, "\n"))
+
+      cat(paste("cluster_list =", paste(cluster_list, collapse=","), "\n"))
+      cat(paste("k_list =", paste(k_list, collapse=","), "\n"))
 
       if (do.fits) {
         fname = paste0("N", comb_matrix$N_vals[i][[1]], ".G",
                        comb_matrix$n_groups_vals[i][[1]], ".s", seeds[j],
                        ".", cohort, ".Rds") %>% stringr::str_replace_all("\\.\\.", ".")
 
-        fits = run_model(x = x$x[[1]],
-                         k = k_list,
-                         py = py,
-                         reference_catalogue = reference_catalogue,
-                         input_catalogue = input_catalogue,
-                         keep_sigs = keep_sigs,
-                         hyperparameters = hyperparameters,
+        run_model(x = x$x[[1]],
+                  k = k_list,
+                  py = py,
+                  reference_catalogue = reference_catalogue,
+                  input_catalogue = input_catalogue,
+                  keep_sigs = keep_sigs,
+                  hyperparameters = hyperparameters,
 
-                         reg_weight = reg_weight,
-                         CUDA = CUDA,
-                         regularizer = regularizer,
-			 new_hier = new_hier,
-			 regul_denovo = regul_denovo,
+                  reg_weight = reg_weight,
+                  CUDA = CUDA,
+                  regularizer = regularizer,
+                  new_hier = new_hier,
+                  regul_denovo = regul_denovo,
 
-                         initializ_seed = initializ_seed,
-                         initializ_pars_fit = initializ_pars_fit,
-                         save_runs_seed = save_runs_seed,
-                         seed_list = seed_list,
+                  initializ_seed = initializ_seed,
+                  initializ_pars_fit = initializ_pars_fit,
+                  save_runs_seed = save_runs_seed,
+                  seed_list = seed_list,
 
-                         filtered_cat = TRUE,
-                         verbose = verbose,
-                         groups = x$groups[[1]] - 1,
-                         new_model = new_model,
-                         error_file = failed,
-                         idd = idd,
-                         cohort = cohort,
-                         path = fits_path,
-                         out_name = fname,
-			 
-			 only_hier = only_hier)
+                  filtered_cat = TRUE,
+                  verbose = verbose,
+                  groups = x$groups[[1]] - 1,
+                  cluster_list = cluster_list,
 
-        filename1 = paste0("fit.", idd, ".", cohort, ".Rds") %>%
-                           stringr::str_replace_all("\\.\\.", ".")
-
-        filename2 = paste0("fit.hier.", idd, ".", cohort, ".Rds") %>% 
-		          stringr::str_replace_all("\\.\\.", ".")
-
-        save_fit(fits$fit1, fits_path, filename1)
-        save_fit(fits$fit.hier, fits_path, filename2)
+                  new_model = new_model,
+                  error_file = failed,
+                  idd = idd,
+                  cohort = cohort,
+                  path = fits_path,
+                  out_name = fname,
+                  check_present = check_present,
+                  inference_type = inference_type)
       }
     }
   }
 
   close(failed)
 }
-
-
-
 
 
 #' Function to generate a synthetic dataset
@@ -216,7 +216,6 @@ single_dataset = function(N, n_groups, samples_per_group,
 
   x$private_rare = list(private_sigs$rare)
   x$private_common = list(private_sigs$common)
-  print(x)
 
   if (is.null(out_path)) return(x)
 
@@ -250,70 +249,115 @@ save_fit = function(x.fit, path, filename, check_present=FALSE) {
 run_model = function(...,
                      input_catalogue=NULL,
                      keep_sigs = c("SBS1","SBS5"),
-                     # hyperparameters = NULL,
                      filtered_cat=TRUE,
                      groups=NULL,
-                     new_model=FALSE,
+                     cluster_list=NULL,
+                     new_model=TRUE,
                      error_file=NULL,
                      idd="",
+                     cohort="",
                      path=NULL,
                      out_name=NULL,
-		     new_hier = FALSE,
+                     new_hier = FALSE,
                      regul_denovo =TRUE,
-		     only_hier = FALSE) {
+                     inference_type = c("flat","hier","clust"),
+                     check_present = TRUE) {
 
   msg1 = paste0("fit.", idd, "\n")
   msg2 = paste0("fit.hier.", idd, "\n")
+  msg3 = paste0("fit.clust.", idd, "\n")
 
-  expr_fit = (is.null(path) || !paste0("fit.", out_name) %in% list.files(path) && !only_hier)
-  expr_fit_hier = (is.null(path) || !paste0("fit.hier.", out_name) %in% list.files(path))
+  expr_fit = (!is.null(path) &&
+              !(check_present && paste0("fit.", out_name) %in% list.files(path)) && 
+              "flat" %in% inference_type)
+  expr_fit_hier = (!is.null(path) &&
+                   !(check_present && paste0("fit.hier.", out_name) %in% list.files(path)) && 
+                   "hier" %in% inference_type)
+  expr_fit_clust = (!is.null(path) &&
+                    !(check_present && paste0("fit.clust.", out_name) %in% list.files(path)) && 
+                    "clust" %in% inference_type)
+
+  x.fit = x.fit.hier = x.fit.clust = NULL
+  # if (!new_model) {
+  #   if (expr_fit)
+  #     x.fit = try_run(error_file,
+  #                     expr =
+  #                       fit(..., groups=NULL,
+  #                           input_catalogue=input_catalogue),
+  #                     msg = msg1)
+
+  #   if (expr_fit_hier)
+  #     x.fit.hier = try_run(error_file,
+  #                          expr =
+  #                            fit(..., groups=groups,
+  #                                input_catalogue=input_catalogue),
+  #                          msg = msg2)
+
+  # } else {
+
+  filename1 = paste0("fit.", idd, ".", cohort, ".Rds") %>%
+                      stringr::str_replace_all("\\.\\.", ".")
+
+  filename2 = paste0("fit.hier.", idd, ".", cohort, ".Rds") %>% 
+        stringr::str_replace_all("\\.\\.", ".")
+
+  filename3 = paste0("fit.clust.", idd, ".", cohort, ".Rds") %>% 
+        stringr::str_replace_all("\\.\\.", ".")
   
-  x.fit = x.fit.hier = NULL
-  if (!new_model) {
-    if (expr_fit)
-      x.fit = try_run(error_file,
-                      expr =
-                        fit(..., groups=NULL,
-                            input_catalogue=input_catalogue),
-                      msg = msg1)
+  if (expr_fit) {
+    cli::cli_process_start("Running non-hierarchical fit")
+    x.fit = try_run(error_file,
+                    expr =
+                      two_steps_inference(..., cohort=cohort, keep_sigs=keep_sigs,
+                                          groups=NULL, new_hier=FALSE, 
+                                          regul_denovo=regul_denovo),
+                    msg = msg1)
+    cli::cli_process_done()
 
-    if (expr_fit_hier)
-      x.fit.hier = try_run(error_file,
-                           expr =
-                             fit(..., groups=groups,
-                                 input_catalogue=input_catalogue),
-                           msg = msg2)
+    cat(paste("Flat run class:", class(x.fit), "\n"))
+    save_fit(x.fit, path, filename1, check_present=check_present)
+  }
+    
+  if (expr_fit_hier) {
+    cli::cli_process_start("Running hierarchical fit")
+    x.fit.hier = try_run(error_file,
+                          expr =
+                            two_steps_inference(..., cohort=cohort, keep_sigs=keep_sigs,
+                                                groups=groups, new_hier=new_hier,
+                                                regul_denovo=regul_denovo),
+                          msg = msg2)
+    cli::cli_process_done()
 
-  } else {
-    if (expr_fit)
-      x.fit = try_run(error_file,
-                      expr =
-                        two_steps_inference(..., keep_sigs=keep_sigs,
-                                            groups=NULL, new_hier=new_hier, 
-					    regul_denovo=regul_denovo)$tot,
-                      msg = msg1)
-
-    if (expr_fit_hier)
-      x.fit.hier = try_run(error_file,
-                           expr =
-                             two_steps_inference(..., keep_sigs=keep_sigs,
-                                                 groups=groups, new_hier=new_hier,
-                                                 regul_denovo=regul_denovo)$tot,
-                           msg = msg2)
+    cat(paste("Hierarchical run class:", class(x.fit.hier), "\n"))
+    save_fit(x.fit.hier, path, filename2, check_present=check_present)
   }
 
-  return(list("fit1"=x.fit, "fit.hier"=x.fit.hier))
+  if (expr_fit_clust) {
+    cli::cli_process_start("Running clustering fit")
+    x.fit.clust = try_run(error_file,
+                            expr =
+                              two_steps_inference(..., cohort=cohort, keep_sigs=keep_sigs,
+                                                  groups=NULL, new_hier=new_hier,
+                                                  clusters=cluster_list,
+                                                  regul_denovo=regul_denovo),
+                            msg = msg3)
+    cli::cli_process_done()
+
+    cat(paste("Clustering run class:", class(x.fit.clust), "\n"))
+    save_fit(x.fit.clust, path, filename3, check_present=check_present)
+  }
+
+  # return(list("fit1"=x.fit, "fit.hier"=x.fit.hier, "fit.clust"=x.fit.clust))
 }
 
 
 try_run = function(error_file, expr, msg) {
-
   tryCatch(expr = expr,
            error = function(e) {
              writeLines(msg, error_file)
              writeLines(paste(e))
              writeLines(paste(reticulate::py_last_error()))
-             return(c(paste(e), paste(reticulate::py_last_error()) ) )
+             return(NULL)
            })
 }
 
