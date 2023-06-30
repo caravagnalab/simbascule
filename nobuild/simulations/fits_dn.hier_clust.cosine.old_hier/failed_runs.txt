@@ -1,20 +1,20 @@
-fit.clust.N5000.G6.s1
+fit.clust.N5000.G10.s1
 
-fit.clust.N5000.G6.s2
+fit.clust.N5000.G10.s2
 
-fit.clust.N5000.G6.s3
+fit.clust.N5000.G10.s3
 
-fit.clust.N5000.G6.s4
+fit.clust.N5000.G10.s4
 
-fit.clust.N5000.G6.s5
+fit.clust.N5000.G10.s5
 
-fit.clust.N5000.G6.s6
+fit.clust.N5000.G10.s6
 
-fit.clust.N5000.G6.s7
+fit.clust.N5000.G10.s7
 
-fit.clust.N5000.G6.s8
+fit.clust.N5000.G10.s8
 
-fit.clust.N5000.G6.s9
+fit.clust.N5000.G10.s9
 
-fit.clust.N5000.G6.s10
+fit.clust.N5000.G10.s10
 
