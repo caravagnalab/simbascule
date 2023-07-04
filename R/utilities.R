@@ -126,6 +126,8 @@ compute.cosine = function(m1, m2, assigned_missing, what, subset_cols=NULL) {
                         assigned_missing$added_fp))
 
   if (what == "expos") {
+    m1[, assigned_missing$missing_fn] = 1e-10
+    m2[, assigned_missing$added_fp] = 1e-10
     m1 = as.data.frame(t(m1))
     m2 = as.data.frame(t(m2))
   }
@@ -141,7 +143,12 @@ compute.cosine = function(m1, m2, assigned_missing, what, subset_cols=NULL) {
     consider = assigned_missing$assigned_tp[tmp] %>%
       setNames(tmp)
     unassigned = intersect(unassigned, subset_cols)
-  } else { consider = assigned_missing$assigned_tp }
+  } else if (what == "expos") {
+    consider = c(assigned_missing$assigned_tp, unassigned) %>%
+      setNames(c(names(assigned_missing$assigned_tp), unassigned))
+  } else {
+    consider = assigned_missing$assigned_tp
+  }
 
   rownames(m1) = paste0("F_", rownames(m1))
   rownames(m2) = paste0("S_", rownames(m2))
