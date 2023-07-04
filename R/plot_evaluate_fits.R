@@ -1,6 +1,8 @@
 plot_sigs_found = function(stats_df, which=c("rare", "common", "shared", "all"), ratio=F,
-                           facet_groups=TRUE, compare_runs=TRUE, facet_nsigs=FALSE,
-                           runs_names=c("Hierarchical", "Non-hierarchical")) {
+                           facet_nsigs=FALSE, facet_groups=TRUE,
+                           unique_id=stats_df$unique_id %>% unique(),
+                           cols=NULL) {
+
   columns = dplyr::case_when(
     which == "rare" ~ c("n_rare_found", "n_rare"),
     which == "common" ~ c("n_common_found", "n_common"),
@@ -13,30 +15,25 @@ plot_sigs_found = function(stats_df, which=c("rare", "common", "shared", "all"),
     .default = paste0("Number of ", tolower(which), " signatures")
   )
 
-  colors_hier = c("darkorange", "dodgerblue4") %>%
-    setNames(runs_names)
-
-  if (!compare_runs) {
-    keep_runs = c("Non-hierarchical")
-  } else {
-    keep_runs = stats_df$inf_type %>% unique()
-  }
+  if (is.null(cols))
+    cols = gen_palette(length(unique_id)) %>%
+    setNames(unique_id)
 
   if (ratio)
     p = stats_df %>%
-      dplyr::filter(inf_type %in% keep_runs) %>%
+      dplyr::filter(unique_id %in% unique_id) %>%
       dplyr::mutate(ratio = .data[[columns[1]]] / .data[[columns[2]]]) %>%
       ggplot() +
       geom_hline(yintercept=1, linetype="dashed", linewidth=0.5, color="grey") +
-      geom_violin(aes(x=as.factor(N), y=ratio, fill=inf_type), alpha=0.5, color=NA,
-                  position=position_dodge(width=0.7)) +
-      geom_jitter(aes(x=as.factor(N), y=ratio, color=inf_type),
-                  position=position_jitterdodge(jitter.width=0.1,
-                                                jitter.height=0.01,
-                                                dodge.width=0.7),
+      geom_violin(aes(x=as.factor(N), y=ratio, fill=unique_id, color=unique_id, linetype=run_id),
+                  alpha=0.5, position=position_dodge(width=1)) +
+      geom_jitter(aes(x=as.factor(N), y=ratio, color=unique_id, shape=run_id),
+                  position=position_jitterdodge(jitter.width=0.05,
+                                                jitter.height=0.05,
+                                                dodge.width=1),
                   size=0.8) +
-      scale_color_manual(values=colors_hier, name="") +
-      scale_fill_manual(values=colors_hier, name="") +
+      scale_color_manual(values=cols, name="") +
+      scale_fill_manual(values=cols, name="") +
       theme_bw() + xlab("# samples") + ylab("Ratio") +
       labs(title=paste0("Ratio between ", tolower(axis_lab), " found and true")) +
       ylim(0-0.01, NA)
@@ -45,13 +42,13 @@ plot_sigs_found = function(stats_df, which=c("rare", "common", "shared", "all"),
   breakss = seq(0, max(valss), by=2)
   if (!ratio)
     p = stats_df %>%
-      dplyr::filter(inf_type %in% keep_runs) %>%
+      dplyr::filter(unique_id %in% unique_id) %>%
       ggplot() +
       geom_abline(linetype="dashed", linewidth=0.5, color="grey") +
-      geom_jitter(aes_string(x=columns[1], y=columns[2], color="inf_type"),
-                  size=1, height=0.05, width=0.) +
+      geom_jitter(aes_string(x=columns[1], y=columns[2], color="unique_id", shape="run_id"),
+                  size=1, height=0.1, width=0.1) +
       ggh4x::facet_nested(~as.factor(G) + as.factor(N)) +
-      scale_color_manual(values=colors_hier, name="") +
+      scale_color_manual(values=cols, name="") +
       theme_bw() +
       labs(title=paste0(axis_lab, " found (x) and true (y)")) +
       xlab(paste0(axis_lab, " found")) + ylab(paste0(axis_lab, " true")) +
@@ -67,15 +64,19 @@ plot_sigs_found = function(stats_df, which=c("rare", "common", "shared", "all"),
   else if (facet_groups && !ratio)
     p = p + ggh4x::facet_nested(~as.factor(G) + as.factor(N))
 
-  if (!compare_runs) p = p + guides(color="none", fill="none")
+  # if (!compare_runs) p = p + guides(color="none", fill="none")
 
   return(p)
 }
 
 
 
-plot_mse_cosine = function(stats_df, colname, facet_groups=T, compare_runs=T,
-                           runs_names=c("Hierarchical", "Non-hierarchical")) {
+plot_mse_cosine = function(stats_df, colname, facet_groups=T, cols=NULL) {
+
+  # if (purrr::is_empty(runs_id) && "run_id" %in% colnames(stats_df)) runs_id = stats_df$run_id %>% unique()
+  # if (purrr::is_empty(inf_type)) inf_type = stats_df$inf_type %>% unique()
+
+  unique_id = stats_df$unique_id %>% unique()
 
   metric = strsplit(colname, "_")[[1]][1]
   quantity = strsplit(colname, "_")[[1]][2]
@@ -94,35 +95,28 @@ plot_mse_cosine = function(stats_df, colname, facet_groups=T, compare_runs=T,
     .default = quantity
   )
 
-  colors_hier = c("darkorange", "dodgerblue4") %>%
-    setNames(runs_names)
-
-  if (!compare_runs) {
-    keep_runs = c("Non-hierarchical")
-  } else {
-    keep_runs = runs_names #c("Hierarchical","Non-hierarchical")
-  }
+  if (is.null(cols))
+    cols = gen_palette(length(unique_id)) %>%
+      setNames(unique_id)
 
   p = stats_df %>%
-    dplyr::filter(inf_type %in% keep_runs) %>%
+    # dplyr::filter(inf_type %in% inf_type,
+    #               run_id %in% runs_id) %>%
+    dplyr::filter(unique_id %in% unique_id) %>%
     ggplot() +
-    geom_boxplot(aes_string(x="as.factor(N)", y=colname, color="inf_type"),
+    geom_boxplot(aes_string(x="as.factor(N)", y=colname, color="unique_id"),
                 fill="white",
                 alpha=0.5, position=position_dodge(width=0.7),
                 outlier.size=0.5, width=0.5) +
 
-    # geom_jitter(aes_string(x="as.factor(N)", y=colname, color="inf_type"),
-    #             position=position_jitterdodge(jitter.width=0.1,
-    #                                           jitter.height=0.01,
-    #                                           dodge.width=0.7), size=.2) +
-    scale_color_manual(values=colors_hier, name="") +
+    scale_color_manual(values=cols, name="") +
     theme_bw() + xlab("# samples") + ylab(metric) + ylim(0,1) +
     labs(title=paste0(metric, " computed between true and inferred ", type, quantity))
 
   if (facet_groups)
     p = p + ggh4x::facet_nested(~"# groups" + G, scales="free", space=TRUE)
 
-  if (!compare_runs) p = p + guides(color="none")
+  # if (!compare_runs) p = p + guides(color="none")
 
   return(p)
 }
@@ -216,12 +210,12 @@ plot_sigs_stats = function(stats_df, wrap=T, ratio=F, facet_groups=T, compare_ru
 }
 
 
-plot_metrics_stats = function(stats_df, wrap=T, facet_groups=T, compare_runs=T) {
-  p1 = plot_mse_cosine(stats_df, "mse_counts", facet_groups, compare_runs)
-  p2 = plot_mse_cosine(stats_df, "mse_expos", facet_groups, compare_runs)
-  p3 = plot_mse_cosine(stats_df, "cosine_sigs", facet_groups, compare_runs)
-  p4 = plot_mse_cosine(stats_df, "cosine_expos", facet_groups, compare_runs)
-  p5 = plot_mse_cosine(stats_df, colname="mse_expos_rare", facet_groups, compare_runs)
+plot_metrics_stats = function(stats_df, wrap=T, facet_groups=T) {
+  p1 = plot_mse_cosine(stats_df, "mse_counts", facet_groups)
+  p2 = plot_mse_cosine(stats_df, "mse_expos", facet_groups)
+  p3 = plot_mse_cosine(stats_df, "cosine_sigs", facet_groups)
+  p4 = plot_mse_cosine(stats_df, "cosine_expos", facet_groups)
+  p5 = plot_mse_cosine(stats_df, colname="mse_expos_rare", facet_groups)
 
   if (wrap)
     return(patchwork::wrap_plots(p1, p2, p3, p4, p5, ncol=2, guides="collect") &
