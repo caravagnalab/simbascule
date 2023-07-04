@@ -2,17 +2,91 @@ devtools::load_all()
 load_deps()
 
 data_path ="~/GitHub/simbasilica/nobuild/simulations/synthetic_datasets_1606/"
-# fits_path = "~/GitHub/simbasilica/nobuild/poster_bits/run_new_model_wholeCat_1606/"
-fits_path = "~/GitHub/simbasilica/nobuild/simulations/fits_dn.hier_clust.cosine.new_hier/"
+save_path = "~/GitHub/simbasilica/nobuild/analysis_simul/"
+
+fits_path1 = c("~/GitHub/simbasilica/nobuild/simulations/fits_dn_1606.cosine.old_hier/",
+               "~/GitHub/simbasilica/nobuild/simulations/fits_dn_1606.noreg.old_hier/")
+
+fits_path2 = c("~/GitHub/simbasilica/nobuild/simulations/fits_dn.hier_clust.cosine.new_hier/",
+               "~/GitHub/simbasilica/nobuild/simulations/fits_dn.hier_clust.cosine.old_hier/",
+               "~/GitHub/simbasilica/nobuild/simulations/fits_dn.hier_clust.noreg.new_hier/",
+               "~/GitHub/simbasilica/nobuild/simulations/fits_dn.hier_clust.noreg.old_hier/")
+
+run_id1 = c("cosine", "noreg") %>% setNames(fits_path1)
+run_id2 = c("cosine.new", "cosine.old", "noreg.new", "noreg.old") %>%
+  setNames(fits_path2)
+
+cutoff = 0.8
+stats_df = get_stats_df(data_path=data_path, fits_path=fits_path1, cutoff=cutoff, fits_pattern=c("fit.")) %>%
+  dplyr::mutate(run_id=run_id1[fits_path]) %>%
+
+  dplyr::add_row(
+    get_stats_df(data_path=data_path, fits_path=fits_path2, cutoff=cutoff, fits_pattern=c("fit_hier.")) %>%
+      dplyr::mutate(run_id=run_id[fits_path])
+  ) %>%
+
+  dplyr::add_row(
+    get_stats_df(data_path=data_path, fits_path=fits_path2, cutoff=cutoff, fits_pattern=c("fit_clust.")) %>%
+      dplyr::mutate(run_id=run_id2[fits_path])
+  ) %>%
+  dplyr::mutate(unique_id=paste(inf_type, run_id, sep="."))
 
 
-out_name = "dn_2606"
+stats_df %>%
+  dplyr::mutate(regularizer=dplyr::case_when(
+    grepl("cosine", run_id) ~ "cosine",
+    grepl("KL", run_id) ~ "KL",
+    grepl("noreg", run_id) ~ "noreg"
+  ), model=dplyr::case_when(
+    grepl("old_hier", fits_path) ~ "old_hier",
+    grepl("new_hier", fits_path) ~ "new_hier",
+    .default = ""
+  )) %>%
+  dplyr::mutate(ratio = n_sigs_found / n_sigs) %>%
+  ggplot() +
+  geom_hline(yintercept=1, linetype="dashed", linewidth=0.5, color="grey") +
+  geom_violin(aes(x=as.factor(N), y=ratio, fill=inf_type),
+              alpha=0.5, position=position_dodge(width=0.7), color=NA) +
 
-stats_df = get_stats_df(data_path=data_path, fits_path=fits_path, cutoff=0.8)
+  geom_jitter(aes(x=as.factor(N), y=ratio, color=inf_type),
+              position=position_jitterdodge(jitter.width=0.05,
+                                            jitter.height=0.05,
+                                            dodge.width=0.7),
+              size=0.8) +
+  # scale_color_manual(values=cols, name="") +
+  # scale_fill_manual(values=cols, name="") +
+  theme_bw() + xlab("# samples") + ylab("Ratio") +
+  # labs(title=paste0("Ratio between ", tolower(axis_lab), " found and true")) +
+  ylim(0-0.01, NA) +
+  ggh4x::facet_nested(G ~ regularizer + model)
+
+
+
+saveRDS(stats_df, paste0(save_path, ""))
+
+
+
+
+# stats_df = get_stats_df(data_path=data_path, fits_path=fits_path, cutoff=0.8, fits_pattern=fits_pattern) %>%
+#   dplyr::mutate(run_id=run_id[fits_path]) %>%
+#   dplyr::mutate(unique_id=paste(inf_type, run_id, sep="."))
+#
+# stats_df2 = get_stats_df(data_path=data_path, fits_path=fits_path, cutoff=0.6, fits_pattern=fits_pattern) %>%
+#   dplyr::mutate(run_id=run_id[fits_path]) %>%
+#   dplyr::mutate(unique_id=paste(inf_type, run_id, sep="."))
 
 plot_sigs_stats(stats_df, wrap=T)
-plot_sigs_stats(stats_df, wrap=T, ratio=T)
-plot_metrics_stats(stats_df, wrap=T)
+
+stats_df %>%
+  dplyr::filter(unique_id != "fit_hier.cosine") %>%
+  dplyr::filter(run_id %in% c("cosine","cosine_new")) %>%
+  plot_sigs_stats(wrap=T, ratio=T, facet_groups=T)
+
+stats_df %>%
+  # dplyr::filter(unique_id != "fit_hier.cosine") %>%
+  # dplyr::filter(run_id %in% c("cosine","cosine_new")) %>%
+  plot_metrics_stats(wrap=T)
+
 # plot_mse_cosine(stats_df, colname="cosine_expos_rare")  # probably error
 plot_mse_cosine(stats_df, colname="mse_expos_rare")
 plot_mse_cosine(stats_df, colname="mse_counts")
