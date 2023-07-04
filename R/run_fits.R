@@ -264,17 +264,17 @@ run_model = function(...,
                      check_present = TRUE) {
 
   msg1 = paste0("fit.", idd, "\n")
-  msg2 = paste0("fit.hier.", idd, "\n")
-  msg3 = paste0("fit.clust.", idd, "\n")
+  msg2 = paste0("fit_hier.", idd, "\n")
+  msg3 = paste0("fit_clust.", idd, "\n")
 
   expr_fit = (!is.null(path) &&
               !(check_present && paste0("fit.", out_name) %in% list.files(path)) && 
               "flat" %in% inference_type)
   expr_fit_hier = (!is.null(path) &&
-                   !(check_present && paste0("fit.hier.", out_name) %in% list.files(path)) && 
+                   !(check_present && paste0("fit_hier.", out_name) %in% list.files(path)) && 
                    "hier" %in% inference_type)
   expr_fit_clust = (!is.null(path) &&
-                    !(check_present && paste0("fit.clust.", out_name) %in% list.files(path)) && 
+                    !(check_present && paste0("fit_clust.", out_name) %in% list.files(path)) && 
                     "clust" %in% inference_type)
 
   x.fit = x.fit.hier = x.fit.clust = NULL
@@ -298,10 +298,10 @@ run_model = function(...,
   filename1 = paste0("fit.", idd, ".", cohort, ".Rds") %>%
                       stringr::str_replace_all("\\.\\.", ".")
 
-  filename2 = paste0("fit.hier.", idd, ".", cohort, ".Rds") %>% 
+  filename2 = paste0("fit_hier.", idd, ".", cohort, ".Rds") %>% 
         stringr::str_replace_all("\\.\\.", ".")
 
-  filename3 = paste0("fit.clust.", idd, ".", cohort, ".Rds") %>% 
+  filename3 = paste0("fit_clust.", idd, ".", cohort, ".Rds") %>% 
         stringr::str_replace_all("\\.\\.", ".")
   
   if (expr_fit) {
