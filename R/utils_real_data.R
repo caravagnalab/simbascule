@@ -126,3 +126,35 @@ create_basilica_obj_real_data = function(base_path, counts, groupids) {
   return(real_data)
 }
 
+
+
+
+
+
+create_basilica_obj_sigprofiler = function(fitname, counts=NULL) {
+  sigs = read.csv(paste0(fitname, "/SBS96/Suggested_Solution/COSMIC_SBS96_Decomposed_Solution/Signatures/COSMIC_SBS96_Signatures.txt"), sep="\t", row.names = 1) %>%
+    t() %>% as.data.frame()
+
+  expos = read.csv(paste0(fitname, "/SBS96/Suggested_Solution/COSMIC_SBS96_Decomposed_Solution/Activities/COSMIC_SBS96_Activities.txt"), sep="\t", row.names = 1) %>%
+    as.data.frame()
+  expos = expos / rowSums(expos)
+
+
+  obj = list(); class(obj) = "basilica_obj"
+
+  obj$input$counts = counts
+  obj$fit$x = counts
+  obj$reference_signatures = sigs
+  obj$fit$input_catalogue = NULL
+  obj$fit$catalogue_signatures = sigs
+  obj$fit$exposure = expos
+
+  return(obj)
+}
+
+
+
+
+
+
+

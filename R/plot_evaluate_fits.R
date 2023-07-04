@@ -100,7 +100,7 @@ plot_mse_cosine = function(stats_df, colname, facet_groups=T, compare_runs=T,
   if (!compare_runs) {
     keep_runs = c("Non-hierarchical")
   } else {
-    keep_runs = c("Hierarchical","Non-hierarchical")
+    keep_runs = runs_names #c("Hierarchical","Non-hierarchical")
   }
 
   p = stats_df %>%

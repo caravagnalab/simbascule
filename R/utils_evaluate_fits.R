@@ -40,7 +40,10 @@ convert_sigs_names = function(x.fit, x.simul, cutoff=0.8) {
   colnames(x.fit$fit$exposure) = c(new_order_ref, new_order_dn) %>% names
   rownames(x.fit$fit$denovo_signatures) = new_order_dn %>% names
   rownames(x.fit$fit$catalogue_signatures) = new_order_ref %>% names
-  names(x.fit$color_palette) = c(new_order_ref, new_order_dn) %>% names
+  try(expr = {
+    names(x.fit$color_palette) = c(new_order_ref, new_order_dn) %>% names
+  })
+  # names(x.fit$color_palette) = c(new_order_ref, new_order_dn) %>% names
 
   return(x.fit)
 }
