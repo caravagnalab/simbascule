@@ -1,22 +1,26 @@
 get_stats_df = function(data_path, fits_path, cutoff=0.8, min_exposure=0.,
-                        data_pattern=c("simul."), fits_pattern=c("fit.")) {
-  fptrn = paste0(fits_pattern, collapse="|")
-  fits = list.files(path=fits_path, pattern=fptrn)
+                        data_pattern=c("simul."),
+                        fits_pattern=c("fit.","fit_hier.","fit_clust.")) {
+
+  fits_pattern = fits_pattern %>% stringr::str_replace_all("\\.","\\\\.")
 
   return(
-    lapply(fits_pattern, function(pattern_i) {
-      fits_i = list.files(path=fits_path, pattern=pattern_i)
+    lapply(fits_path, function(path_i) {
 
-      lapply(fits, function(fitname) {
-        print(paste(fitname, pattern_i))
-        compare_single_fit(fitname, fits_path, data_path,
-                           data_pattern=data_pattern, fits_pattern=pattern_i,
-                           cutoff=cutoff, min_exposure=min_exposure) %>%
-          dplyr::mutate(inf_type=pattern_i)
-      } )
-    } ) %>%
-      do.call(what=rbind, args=.) # %>%
-      # dplyr::mutate(inf_type=ifelse(is_hierarchical, "Hierarchical", "Non-hierarchical"))
+      lapply(fits_pattern, function(pattern_i) {
+        fits_i = list.files(path=path_i, pattern=pattern_i)
+
+        lapply(fits_i, function(fitname) {
+          print(paste(fitname, pattern_i))
+          compare_single_fit(fitname, path_i, data_path,
+                             data_pattern=data_pattern, fits_pattern=pattern_i,
+                             cutoff=cutoff, min_exposure=min_exposure) %>%
+            dplyr::mutate(inf_type=pattern_i,
+                          fits_path=path_i)
+        } ) %>% do.call(what=rbind, args=.)
+      } ) %>% do.call(what=rbind, args=.)
+    }) %>% do.call(what=rbind, args=.) %>%
+      dplyr::mutate(inf_type=stringr::str_replace_all(inf_type, "\\\\.",""))
   )
 }
 
@@ -112,6 +116,8 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
 
       "n_sigs"=true_n_sigs,
       "n_sigs_found"=inf_n_sigs,
+
+      "n_groups_found"=length(x.fit$groups %>% unique()),
 
       "shared"=list(rare_common$shared),
       "priv_common"=list(rare_common$private_common),
