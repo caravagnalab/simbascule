@@ -3,7 +3,7 @@ load_deps()
 
 data_path ="~/GitHub/simbasilica/nobuild/simulations/synthetic_datasets_1606/"
 # fits_path = "~/GitHub/simbasilica/nobuild/poster_bits/run_new_model_wholeCat_1606/"
-fits_path = "~/GitHub/simbasilica/nobuild/simulations/run_newmodel_2606_dn/"
+fits_path = "~/GitHub/simbasilica/nobuild/simulations/run_newmodel_1606_dn/"
 
 
 out_name = "dn_2606"
