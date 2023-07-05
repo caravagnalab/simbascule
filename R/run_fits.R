@@ -21,11 +21,13 @@
 #' @return nothing
 #' @export generate_and_run
 
-generate_and_run = function(shared,
-                            private,
+generate_and_run = function(comb_matrix,
+                            # shared,
+                            # private,
                             catalogue,
-                            comb_matrix,
                             py,
+                            shared = NULL,
+                            private = NULL,
                             private_fracs = list("rare"=0.05, "common"=0.3),
                             fits_path = NULL,
                             data_path = NULL,
@@ -57,18 +59,24 @@ generate_and_run = function(shared,
                             inference_type = c("flat","hier","clust"),
                             ...) {
 
+  if ("shared" %in% colnames(comb_matrix))
+    shared = comb_matrix$shared %>% unlist() %>% unique()
+
   cat(paste("regularizer =", regularizer, "- reg_weight =", reg_weight, "- inference_type =", paste(inference_type, collapse=", "), "\n"))
 
-  if (!is.null(fits_path) && !dir.exists(fits_path))
+  if (do.fits && !is.null(fits_path) && !dir.exists(fits_path)) {
     dir.create(fits_path, recursive=T)
-
-  failed = file(paste0(fits_path, "failed_runs.txt"), open="w")
+    failed = file(paste0(fits_path, "failed_runs.txt"), open="w")
+  }
 
   shared_cat = catalogue[shared,]
 
   for (i in 1:nrow(comb_matrix)) {
 
-    if (is.list(private)) {
+    if ("rare" %in% colnames(comb_matrix)) {
+      private_rare = comb_matrix[i,] %>% dplyr::pull(rare) %>% unlist()
+      private_common = comb_matrix[i,] %>% dplyr::pull(common) %>% unlist()
+    } else if (is.list(private)) {
       private_common = private$common
       private_rare = private$rare
     } else {
@@ -94,6 +102,8 @@ generate_and_run = function(shared,
         out_path = data_path,
         cohort_name = cohort
       )
+
+      if (!do.fits) next
 
       if (!is.null(input_catalogue))
         input_sigs = nrow(input_catalogue) else
@@ -156,7 +166,13 @@ generate_and_run = function(shared,
     }
   }
 
-  close(failed)
+  write.csv(comb_matrix %>%
+              dplyr::mutate(dplyr::across(dplyr::where(is.list),
+                                          function(x) paste0(x, collapse=","))),
+            file=paste0(data_path, "data_settings.csv"), row.names=F)
+
+  if (do.fits && !is.null(fits_path) && !dir.exists(fits_path))
+    close(failed)
 }
 
 
@@ -183,7 +199,7 @@ generate_and_run = function(shared,
 single_dataset = function(N, n_groups, samples_per_group,
                           reference_cat, denovo_cat,
                           private_sigs, private_fracs,
-                          cosine_limit, seed,
+                          seed, cosine_limit=NULL,
                           reference_cosine=NULL, denovo_cosine=NULL,
                           mut_range=10:8000, cohort_name="",
                           out_path=NULL) {
@@ -268,13 +284,13 @@ run_model = function(...,
   msg3 = paste0("fit_clust.", idd, "\n")
 
   expr_fit = (!is.null(path) &&
-              !(check_present && paste0("fit.", out_name) %in% list.files(path)) && 
+              !(check_present && paste0("fit.", out_name) %in% list.files(path)) &&
               "flat" %in% inference_type)
   expr_fit_hier = (!is.null(path) &&
-                   !(check_present && paste0("fit_hier.", out_name) %in% list.files(path)) && 
+                   !(check_present && paste0("fit_hier.", out_name) %in% list.files(path)) &&
                    "hier" %in% inference_type)
   expr_fit_clust = (!is.null(path) &&
-                    !(check_present && paste0("fit_clust.", out_name) %in% list.files(path)) && 
+                    !(check_present && paste0("fit_clust.", out_name) %in% list.files(path)) &&
                     "clust" %in% inference_type)
 
   x.fit = x.fit.hier = x.fit.clust = NULL
@@ -298,18 +314,18 @@ run_model = function(...,
   filename1 = paste0("fit.", idd, ".", cohort, ".Rds") %>%
                       stringr::str_replace_all("\\.\\.", ".")
 
-  filename2 = paste0("fit_hier.", idd, ".", cohort, ".Rds") %>% 
+  filename2 = paste0("fit_hier.", idd, ".", cohort, ".Rds") %>%
         stringr::str_replace_all("\\.\\.", ".")
 
-  filename3 = paste0("fit_clust.", idd, ".", cohort, ".Rds") %>% 
+  filename3 = paste0("fit_clust.", idd, ".", cohort, ".Rds") %>%
         stringr::str_replace_all("\\.\\.", ".")
-  
+
   if (expr_fit) {
     cli::cli_process_start("Running non-hierarchical fit")
     x.fit = try_run(error_file,
                     expr =
                       two_steps_inference(..., cohort=cohort, keep_sigs=keep_sigs,
-                                          groups=NULL, new_hier=FALSE, 
+                                          groups=NULL, new_hier=FALSE,
                                           regul_denovo=regul_denovo),
                     msg = msg1)
     cli::cli_process_done()
@@ -317,7 +333,7 @@ run_model = function(...,
     cat(paste("Flat run class:", class(x.fit), "\n"))
     save_fit(x.fit, path, filename1, check_present=check_present)
   }
-    
+
   if (expr_fit_hier) {
     cli::cli_process_start("Running hierarchical fit")
     x.fit.hier = try_run(error_file,
