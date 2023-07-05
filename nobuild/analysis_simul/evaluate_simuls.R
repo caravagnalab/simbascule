@@ -44,7 +44,7 @@ stats_df = get_stats_df(data_path=data_path, fits_path=fits_path1, cutoff=cutoff
 
 saveRDS(stats_df, paste0(save_path, "stats_df.sim", cutoff*100, ".0407.Rds"))
 
-
+plot_scores()
 
 pdf(paste0(save_path, "stats_report.sim", cutoff*100, ".pdf"), height=6, width=10)
 stats_df %>%
