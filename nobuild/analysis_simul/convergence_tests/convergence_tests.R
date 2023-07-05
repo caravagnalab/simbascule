@@ -23,5 +23,5 @@ x_clust.lr = two_steps_inference(x=counts,
                                  filtered_catalogue=TRUE,
                                  clusters=min_gr:max_gr,
 
-                                 reg_weight=0., seed_list=(10,))
+                                 reg_weight=0., seed_list=c(10,33,92))
 
