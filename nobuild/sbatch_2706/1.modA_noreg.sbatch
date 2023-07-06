@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --time=30:00:00
 #SBATCH --nodes=1
-#SBATCH --array=0-2
+#SBATCH --array=0-5
 #SBATCH --partition=cpuq
 #SBATCH --job-name=1.A_noreg
 #SBATCH --mem=50GB
@@ -23,5 +23,5 @@ module load R/4.2.3
 export PATH=~/miniconda3/bin:$PATH
 conda activate basilica-env
 
-Rscript /home/elena.buscaroli/GitHub/simbasilica/nobuild/run_scripts/run_dn.R $SLURM_ARRAY_TASK_ID new_hier noreg hier_clust
+Rscript /home/elena.buscaroli/GitHub/simbasilica/nobuild/run_scripts/run_dn.R $SLURM_ARRAY_TASK_ID new_hier noreg flat_clust 0507
 
