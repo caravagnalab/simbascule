@@ -1,6 +1,5 @@
 plot_sigs_found = function(stats_df, which=c("rare", "common", "shared", "all"), ratio=F,
-                           facet_nsigs=FALSE, facet_groups=TRUE,
-                           unique_id=stats_df$unique_id %>% unique(),
+                           fill="inf_type", facet=FALSE, scales="fixed", ylim=NULL,
                            cols=NULL) {
 
   columns = dplyr::case_when(
@@ -16,8 +15,8 @@ plot_sigs_found = function(stats_df, which=c("rare", "common", "shared", "all"),
   )
 
   if (is.null(cols))
-    cols = gen_palette(length(unique_id)) %>%
-    setNames(unique_id)
+    cols = gen_palette(length(stats_df[[fill]] %>% unique())) %>%
+      setNames(stats_df[[fill]] %>% unique())
 
   if (ratio)
     p = stats_df %>%
@@ -25,18 +24,17 @@ plot_sigs_found = function(stats_df, which=c("rare", "common", "shared", "all"),
       dplyr::mutate(ratio = .data[[columns[1]]] / .data[[columns[2]]]) %>%
       ggplot() +
       geom_hline(yintercept=1, linetype="dashed", linewidth=0.5, color="grey") +
-      geom_violin(aes(x=as.factor(N), y=ratio, fill=unique_id, color=unique_id, linetype=run_id),
-                  alpha=0.5, position=position_dodge(width=1)) +
-      geom_jitter(aes(x=as.factor(N), y=ratio, color=unique_id, shape=run_id),
-                  position=position_jitterdodge(jitter.width=0.05,
-                                                jitter.height=0.05,
-                                                dodge.width=1),
-                  size=0.8) +
+      geom_violin(aes_string(x="as.factor(N)", y="ratio", fill=fill, color=fill),
+                  alpha=0.5, position=position_dodge(width=0.7)) +
+      geom_jitter(aes_string(x="as.factor(N)", y="ratio", color=fill),
+                  position=position_jitterdodge(jitter.width=0.1,
+                                                jitter.height=0.,
+                                                dodge.width=0.7),
+                  size=1, alpha=0.5) +
       scale_color_manual(values=cols, name="") +
       scale_fill_manual(values=cols, name="") +
       theme_bw() + xlab("# samples") + ylab("Ratio") +
-      labs(title=paste0("Ratio between ", tolower(axis_lab), " found and true")) +
-      ylim(0-0.01, NA)
+      labs(title=paste0("Ratio between ", tolower(axis_lab), " found and true"))
 
   valss = unique(round( c(stats_df[[columns[1]]], stats_df[[columns[2]]]) ))
   breakss = seq(0, max(valss), by=2)
@@ -45,9 +43,9 @@ plot_sigs_found = function(stats_df, which=c("rare", "common", "shared", "all"),
       dplyr::filter(unique_id %in% unique_id) %>%
       ggplot() +
       geom_abline(linetype="dashed", linewidth=0.5, color="grey") +
-      geom_jitter(aes_string(x=columns[1], y=columns[2], color="unique_id", shape="run_id"),
-                  size=1, height=0.1, width=0.1) +
-      ggh4x::facet_nested(~as.factor(G) + as.factor(N)) +
+      geom_jitter(aes_string(x=columns[1], y=columns[2], color=fill),
+                  size=1, height=0, width=0.1, alpha=0.5) +
+      # ggh4x::facet_nested(~ as.factor(G) + as.factor(N)) +
       scale_color_manual(values=cols, name="") +
       theme_bw() +
       labs(title=paste0(axis_lab, " found (x) and true (y)")) +
@@ -55,14 +53,16 @@ plot_sigs_found = function(stats_df, which=c("rare", "common", "shared", "all"),
       scale_x_continuous(breaks=breakss, limits=c(0, max(valss)+1)) +
       scale_y_continuous(breaks=breakss, limits=c(0, max(valss)+1))
 
-  if (facet_nsigs && ratio)
-    p = p + ggh4x::facet_nested(~n_sigs, scales="free_x", space=TRUE)
-  else if (facet_nsigs && !ratio)
-    p = p + ggh4x::facet_nested(~as.factor(n_sigs) + as.factor(N))
-  else if (facet_groups && ratio)
-    p = p + ggh4x::facet_nested(~G, scales="free_x", space=TRUE)
-  else if (facet_groups && !ratio)
-    p = p + ggh4x::facet_nested(~as.factor(G) + as.factor(N))
+  if (facet && ratio)
+    p = p + ggh4x::facet_nested(G ~ regularizer + model, scales=scales)
+  else if (facet && !ratio)
+    p = p + ggh4x::facet_nested(G ~ regularizer + model, scales=scales)
+
+  if (!is.null(ylim)) p = p + ylim(ylim)
+  # else if (facet_groups && ratio)
+  #   p = p + ggh4x::facet_nested(~G, scales="free_x", space=TRUE)
+  # else if (facet_groups && !ratio)
+  #   p = p + ggh4x::facet_nested(~as.factor(G) + as.factor(N))
 
   # if (!compare_runs) p = p + guides(color="none", fill="none")
 
@@ -71,12 +71,8 @@ plot_sigs_found = function(stats_df, which=c("rare", "common", "shared", "all"),
 
 
 
-plot_mse_cosine = function(stats_df, colname, facet_groups=T, cols=NULL) {
-
-  # if (purrr::is_empty(runs_id) && "run_id" %in% colnames(stats_df)) runs_id = stats_df$run_id %>% unique()
-  # if (purrr::is_empty(inf_type)) inf_type = stats_df$inf_type %>% unique()
-
-  unique_id = stats_df$unique_id %>% unique()
+plot_mse_cosine = function(stats_df, colname, facet=T, fill="inf_type",
+                           cols=NULL, scales="fixed", ylim=NULL) {
 
   metric = strsplit(colname, "_")[[1]][1]
   quantity = strsplit(colname, "_")[[1]][2]
@@ -96,27 +92,27 @@ plot_mse_cosine = function(stats_df, colname, facet_groups=T, cols=NULL) {
   )
 
   if (is.null(cols))
-    cols = gen_palette(length(unique_id)) %>%
-      setNames(unique_id)
+    cols = gen_palette(length(stats_df[[fill]] %>% unique())) %>%
+      setNames(stats_df[[fill]] %>% unique())
 
   p = stats_df %>%
     # dplyr::filter(inf_type %in% inf_type,
     #               run_id %in% runs_id) %>%
-    dplyr::filter(unique_id %in% unique_id) %>%
+    # dplyr::filter(unique_id %in% unique_id) %>%
     ggplot() +
-    geom_boxplot(aes_string(x="as.factor(N)", y=colname, color="unique_id"),
+    geom_boxplot(aes_string(x="as.factor(N)", y=colname, color=fill),
                 fill="white",
                 alpha=0.5, position=position_dodge(width=0.7),
                 outlier.size=0.5, width=0.5) +
 
     scale_color_manual(values=cols, name="") +
-    theme_bw() + xlab("# samples") + ylab(metric) + ylim(0,1) +
+    theme_bw() + xlab("# samples") + ylab(metric) +
     labs(title=paste0(metric, " computed between true and inferred ", type, quantity))
 
-  if (facet_groups)
-    p = p + ggh4x::facet_nested(~"# groups" + G, scales="free", space=TRUE)
+  if (facet)
+    p = p + ggh4x::facet_nested(G ~ regularizer + model, scales=scales)
 
-  # if (!compare_runs) p = p + guides(color="none")
+  if (!is.null(ylim)) p = p + ylim(ylim)
 
   return(p)
 }
