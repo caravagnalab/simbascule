@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --time=30:00:00
 #SBATCH --nodes=1
-#SBATCH --array=3-6
+#SBATCH --array=6-11
 #SBATCH --cpus-per-task=1
 #SBATCH --partition=gpuq
 #SBATCH --gres=gpu:1
@@ -25,5 +25,5 @@ module load R/4.2.3
 export PATH=~/miniconda3/bin:$PATH
 conda activate basilica-env
 
-Rscript /home/elena.buscaroli/GitHub/simbasilica/nobuild/run_scripts/run_dn.R $SLURM_ARRAY_TASK_ID old_hier noreg hier_clust
+Rscript /home/elena.buscaroli/GitHub/simbasilica/nobuild/run_scripts/run_dn.R $SLURM_ARRAY_TASK_ID old_hier noreg flat_clust 0507
 
