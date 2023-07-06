@@ -12,7 +12,7 @@ get_stats_df = function(data_path, fits_path, cutoff=0.8, min_exposure=0.,
 
         lapply(fits_i, function(fitname) {
           print(paste(fitname, pattern_i))
-          compare_single_fit(fitname, path_i, data_path,
+          compare_single_fit(fitname=fitname, fits_path=path_i, data_path=data_path,
                              data_pattern=data_pattern, fits_pattern=pattern_i,
                              cutoff=cutoff, min_exposure=min_exposure) %>%
             dplyr::mutate(inf_type=pattern_i,
@@ -80,6 +80,33 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
                                      what="expos",
                                      subset_cols=rare_common$private_rare)
 
+  if (have_groups(x.fit)) {
+    groups_new = x.simul$groups
+
+    sigs_per_group = lapply(unique(x.simul$groups),
+                            function(gid)
+                              get_sigs_group(x.simul, groupID=gid)) %>%
+      setNames(unique(x.simul$groups))
+
+    samples_tmp = lapply(names(sigs_per_group), function(gid) {
+      signames = sigs_per_group[[gid]]
+      if (any(rare_common$private_rare %in% signames))
+        lapply(intersect(rare_common$private_rare, signames),
+               function(r) get_samples_with_sigs(x.simul, r, return_idx=TRUE) ) %>%
+        setNames(intersect(rare_common$private_rare, signames))
+    } ) %>% setNames(names(sigs_per_group)) %>% purrr::discard(is.null)
+
+    for (gid in samples_tmp) for (j in gid) groups_new[j] = max(groups_new)+1
+
+    ari_rare = aricode::ARI(groups_new, x.fit$groups)
+    nmi_rare = aricode::NMI(groups_new, x.fit$groups)
+
+    ari = aricode::ARI(x.simul$groups, x.fit$groups)
+    nmi = aricode::NMI(x.simul$groups, x.fit$groups)
+  } else {
+    ari = nmi = ari_rare = nmi_rare = NA
+  }
+
   n_rare_found = sum(assigned %in% rare_common$private_rare)
   n_common_found = sum(assigned %in% rare_common$private_common)
   n_shared_found = sum(assigned %in% rare_common$shared)
@@ -118,6 +145,10 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
       "n_sigs_found"=inf_n_sigs,
 
       "n_groups_found"=length(x.fit$groups %>% unique()),
+      "ari_rare"=ari_rare,
+      "nmi_rare"=nmi_rare,
+      "ari"=ari,
+      "nmi"=nmi,
 
       "shared"=list(rare_common$shared),
       "priv_common"=list(rare_common$private_common),
