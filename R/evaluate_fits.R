@@ -81,22 +81,7 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
                                      subset_cols=rare_common$private_rare)
 
   if (have_groups(x.fit)) {
-    groups_new = x.simul$groups
-
-    sigs_per_group = lapply(unique(x.simul$groups),
-                            function(gid)
-                              get_sigs_group(x.simul, groupID=gid)) %>%
-      setNames(unique(x.simul$groups))
-
-    samples_tmp = lapply(names(sigs_per_group), function(gid) {
-      signames = sigs_per_group[[gid]]
-      if (any(rare_common$private_rare %in% signames))
-        lapply(intersect(rare_common$private_rare, signames),
-               function(r) get_samples_with_sigs(x.simul, r, return_idx=TRUE) ) %>%
-        setNames(intersect(rare_common$private_rare, signames))
-    } ) %>% setNames(names(sigs_per_group)) %>% purrr::discard(is.null)
-
-    for (gid in samples_tmp) for (j in gid) groups_new[j] = max(groups_new)+1
+    groups_new = get_groups_rare(x.simul, x.fit, rare_common)
 
     ari_rare = aricode::ARI(groups_new, x.fit$groups)
     nmi_rare = aricode::NMI(groups_new, x.fit$groups)
