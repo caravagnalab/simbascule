@@ -41,8 +41,26 @@ convert_sigs_names = function(x.fit, x.simul, cutoff=0.8) {
   rownames(x.fit$fit$denovo_signatures) = new_order_dn %>% names
   rownames(x.fit$fit$catalogue_signatures) = new_order_ref %>% names
   try(expr = {
+    x.fit$fit$params$alpha_prior = x.fit$fit$params$alpha_prior %>%
+      dplyr::select(dplyr::contains(new_order_ref), dplyr::contains(new_order_dn))
+    colnames(x.fit$fit$params$alpha_prior) = c(new_order_ref, new_order_dn) %>% names
+  }, silent=T)
+  try(expr = {
+    x.fit$fit$params$alpha_noise = x.fit$fit$params$alpha_noise %>%
+      dplyr::select(dplyr::contains(new_order_ref), dplyr::contains(new_order_dn))
+    colnames(x.fit$fit$params$alpha_noise) = c(new_order_ref, new_order_dn) %>% names
+  }, silent=T)
+  try(expr = {
+    x.fit$fit$params$beta_d = x.fit$fit$params$beta_d[new_order_dn,]
+    rownames(x.fit$fit$params$beta_d) = new_order_dn %>% names
+  }, silent=T)
+  try(expr = {
+    x.fit$fit$params$beta_f = x.fit$fit$params$beta_f[new_order_ref,]
+    rownames(x.fit$fit$params$beta_f) = new_order_ref %>% names
+  }, silent=T)
+  try(expr = {
     names(x.fit$color_palette) = c(new_order_ref, new_order_dn) %>% names
-  })
+  }, silent=T)
   # names(x.fit$color_palette) = c(new_order_ref, new_order_dn) %>% names
 
   return(x.fit)
@@ -110,5 +128,31 @@ rare_common_sigs = function(x.simul) {
               "shared"=rare_comm %>%
                 dplyr::filter(type=="shared") %>%
                 dplyr::pull(Signature)))
+}
+
+
+
+
+get_groups_rare = function(x.simul, x.fit, rare_common=NULL) {
+  if (is.null(rare_common)) rare_common = rare_common_sigs(simul)
+
+  groups_new = x.simul$groups
+
+  sigs_per_group = lapply(unique(x.simul$groups),
+                          function(gid)
+                            get_sigs_group(x.simul, groupID=gid)) %>%
+    setNames(unique(x.simul$groups))
+
+  samples_tmp = lapply(names(sigs_per_group), function(gid) {
+    signames = sigs_per_group[[gid]]
+    if (any(rare_common$private_rare %in% signames))
+      lapply(intersect(rare_common$private_rare, signames),
+             function(r) get_samples_with_sigs(x.simul, r, return_idx=TRUE) ) %>%
+      setNames(intersect(rare_common$private_rare, signames))
+  } ) %>% setNames(names(sigs_per_group)) %>% purrr::discard(is.null)
+
+  for (gid in samples_tmp) for (j in gid) groups_new[j] = max(groups_new)+1
+
+  return(groups_new)
 }
 
