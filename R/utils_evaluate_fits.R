@@ -78,7 +78,7 @@ compare_sigs_inf_gt = function(sigs.fit, sigs.simul, cutoff=0.8) {
   assign_similar = cosine_matr %>% as.data.frame() %>%
     tibble::rownames_to_column(var="gt") %>%
     reshape2::melt(id="gt", variable.name="inf", value.name="cosine") %>%
-    dplyr::filter(cosine >= cutoff) %>%
+    dplyr::filter(cosine >= cutoff, !gt%in%common, !inf%in%common) %>%
     dplyr::group_by(gt) %>%
     dplyr::mutate(inf=as.character(inf)) %>%
     dplyr::filter(cosine == max(cosine)) %>% dplyr::arrange(gt)
