@@ -33,11 +33,13 @@ generate_and_run = function(comb_matrix,
                             data_path = NULL,
                             seeds = 1:30,
                             mut_range = 10:8000,
-                            reference_catalogue = COSMIC_filt_merged,
+                            reference_catalogue = COSMIC_filt,
                             input_catalogue = NULL,
                             keep_sigs = c("SBS1", "SBS5"),
                             hyperparameters = NULL,
-                            n_steps = 500,
+                            lr = 0.005,
+                            n_steps = 1500,
+                            enforce_sparsity = FALSE,
 
                             reg_weight = 1.,
                             regularizer = "cosine",
@@ -110,12 +112,12 @@ generate_and_run = function(comb_matrix,
           input_sigs = length(keep_sigs)
 
       # min_k = max(0, length(shared) + nrow(denovo_cat) - input_sigs - 5)
-      max_k = length(shared) + nrow(denovo_cat) - length(keep_sigs) + 3
-      min_k = max(0, max_k - 6)
+      max_k = length(shared) + nrow(denovo_cat) - length(keep_sigs) + 2
+      min_k = max(0, max_k - 4)
       k_list = min_k:max_k
 
-      min_cl = max(comb_matrix$n_groups_vals[i][[1]] - 3, 1)
-      max_cl = comb_matrix$n_groups_vals[i][[1]] + 3
+      min_cl = max(comb_matrix$n_groups_vals[i][[1]] - 2, 1)
+      max_cl = comb_matrix$n_groups_vals[i][[1]] + 2
       cluster_list = min_cl:max_cl
 
       idd = paste0("N", comb_matrix$N_vals[i][[1]], ".G", comb_matrix$n_groups_vals[i][[1]], ".s", j)
@@ -137,6 +139,9 @@ generate_and_run = function(comb_matrix,
                   input_catalogue = input_catalogue,
                   keep_sigs = keep_sigs,
                   hyperparameters = hyperparameters,
+                  n_steps = n_steps,
+                  lr = lr,
+                  enforce_sparsity = enforce_sparsity,
 
                   reg_weight = reg_weight,
                   CUDA = CUDA,
@@ -266,6 +271,7 @@ run_model = function(...,
                      input_catalogue=NULL,
                      keep_sigs = c("SBS1","SBS5"),
                      filtered_cat=TRUE,
+                     enforce_sparsity = FALSE,
                      groups=NULL,
                      cluster_list=NULL,
                      new_model=TRUE,
@@ -325,7 +331,7 @@ run_model = function(...,
     x.fit = try_run(error_file,
                     expr =
                       two_steps_inference(..., cohort=cohort, keep_sigs=keep_sigs,
-                                          groups=NULL, new_hier=FALSE,
+                                          groups=NULL, new_hier=FALSE, enforce_sparsity2 = enforce_sparsity,
                                           regul_denovo=regul_denovo),
                     msg = msg1)
     cli::cli_process_done()
@@ -339,7 +345,7 @@ run_model = function(...,
     x.fit.hier = try_run(error_file,
                           expr =
                             two_steps_inference(..., cohort=cohort, keep_sigs=keep_sigs,
-                                                groups=groups, new_hier=new_hier,
+                                                groups=groups, new_hier=new_hier, enforce_sparsity2 = enforce_sparsity,
                                                 regul_denovo=regul_denovo),
                           msg = msg2)
     cli::cli_process_done()
@@ -353,7 +359,7 @@ run_model = function(...,
     x.fit.clust = try_run(error_file,
                             expr =
                               two_steps_inference(..., cohort=cohort, keep_sigs=keep_sigs,
-                                                  groups=NULL, new_hier=new_hier,
+                                                  groups=NULL, new_hier=new_hier, enforce_sparsity2 = enforce_sparsity,
                                                   clusters=cluster_list,
                                                   regul_denovo=regul_denovo),
                             msg = msg3)
