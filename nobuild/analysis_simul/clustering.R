@@ -9,41 +9,92 @@ simul = readRDS(paste0(data_path, "simul.", idd, ".Rds")) %>% create_basilica_ob
 fit = readRDS(paste0(fits_path, "fit.", idd, ".Rds")) %>% convert_sigs_names(simul)
 fit_clust = readRDS(paste0(fits_path, "fit_clust.", idd, ".Rds")) %>% convert_sigs_names(simul)
 
-fname = ".test_lr005.modsel.1207"
+fname = ".test_lr005.modsel.1807"
 
-k_list = 4 # 2:6  # true = 4
-clusters_list = 4 # 3:5  # true = 4
+k_list = 3:5  # true = 4
+clusters_list = 2:3  # true = 2
 
 samples_rare = get_samples_with_sigs(simul, "SBS7c")
 cls = get_color_palette(simul)
+counts = get_group(simul, c(2,3))
 
-fit2 = two_steps_inference(x=get_data(simul), regularizer = "cosine", reg_weight = 0., lr=0.005,
-                           k=fit$k_list, seed_list=c(10, 33, 92), n_steps=1500,
-                           reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
-                           # hyperparameters = list("alpha_noise_var"=0.005),
-                           py=py, new_hier=FALSE, nonparametric=FALSE)
+# fits new_hier enforce_sparsity
+alpha_sigma = 0.10
+# alpha_p_conc0 = alpha_p_conc1 = 0.5
+fit_cl.new.spars = two_steps_inference(x=counts, reg_weight = 0., lr=0.005,
+                                      k=k_list, clusters=clusters_list,
+                                      seed_list=c(10, 33, 92), n_steps=2000,
+                                      reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
+                                      hyperparameters = list("alpha_sigma"=alpha_sigma),
+                                      enforce_sparsity2 = TRUE, py=py, new_hier=TRUE,
+                                      nonparametric=FALSE)
 
-fit_cl = two_steps_inference(x=get_data(simul), regularizer = "cosine", reg_weight = 0., lr=0.005,
-                             k=k_list, clusters=clusters_list, seed_list=c(10, 33, 92), n_steps=1500,
-                             reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
-                             # hyperparameters = list("alpha_noise_var"=0.005),
-                             py=py, new_hier=TRUE, nonparametric=FALSE)
+fit_cl.old.spars = two_steps_inference(x=counts, reg_weight = 0., lr=0.005,
+                                      k=k_list, clusters=clusters_list,
+                                      seed_list=c(10, 33, 92), n_steps=2000,
+                                      reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
+                                      hyperparameters = list("alpha_sigma"=alpha_sigma),
+                                      enforce_sparsity2 = TRUE, py=py, new_hier=FALSE,
+                                      nonparametric=FALSE)
 
-fit_cl.nonpar = two_steps_inference(x=get_data(simul), regularizer = "cosine", reg_weight = 0., lr=0.005,
-                                    k=k_list, clusters=max(clusters_list), seed_list=c(10, 33, 92), n_steps=1500,
-                                    reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
-                                    # hyperparameters = list("alpha_noise_var"=0.005),
-                                    py=py, new_hier=TRUE, nonparametric=TRUE)
+fit_cl.new.nospars = two_steps_inference(x=counts, reg_weight = 0., lr=0.005,
+                                       k=k_list, clusters=clusters_list,
+                                       seed_list=c(10, 33, 92), n_steps=2000,
+                                       reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
+                                       hyperparameters = list("alpha_sigma"=alpha_sigma),
+                                       enforce_sparsity2 = FALSE, py=py, new_hier=TRUE,
+                                       nonparametric=FALSE)
+
+fit_cl.old.nospars = two_steps_inference(x=counts, reg_weight = 0., lr=0.005,
+                                         k=k_list, clusters=clusters_list,
+                                         seed_list=c(10, 33, 92), n_steps=2000,
+                                         reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
+                                         hyperparameters = list("alpha_sigma"=alpha_sigma),
+                                         enforce_sparsity2 = FALSE, py=py, new_hier=FALSE,
+                                         nonparametric=FALSE)
+
+saveRDS(list("fit_cl.new.spars"=fit_cl.new.spars,
+             "fit_cl.old.spars"=fit_cl.old.spars,
+             "fit_cl.new.nospars"=fit_cl.new.nospars,
+             "fit_cl.old.nospars"=fit_cl.old.nospars,
+             "simul"=simul), paste0(save_path, idd, fname, ".Rds"))
+
+
+# fit_cl.nonpar = two_steps_inference(x=get_data(simul), regularizer = "cosine", reg_weight = 0.,
+#                                     lr=0.005, k=k_list, clusters=max(clusters_list),
+#                                     seed_list=c(10, 33, 92), n_steps=2000,
+#                                     reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
+#                                     # hyperparameters = list("alpha_noise_var"=0.005),
+#                                     py=py, new_hier=FALSE, nonparametric=TRUE)
+#
+# fit_cl2 = two_steps_inference(x=get_data(simul), regularizer = "cosine", reg_weight = 0., lr=0.005,
+#                              k=k_list, clusters=clusters_list, seed_list=c(10, 33, 92), n_steps=2000,
+#                              reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
+#                              hyperparameters = list("alpha_var"=0.2), #, "alpha_prior_var"=0.5),
+#                              py=py, new_hier=FALSE, nonparametric=FALSE)
+#
+# fit_cl3 = two_steps_inference(x=get_data(simul), regularizer = "cosine", reg_weight = 0., lr=0.005,
+#                               k=k_list, clusters=clusters_list, seed_list=c(10, 33, 92), n_steps=2000,
+#                               reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
+#                               hyperparameters = list("alpha_var"=0.2, "alpha_prior_var"=0.2),
+#                               py=py, new_hier=FALSE, nonparametric=FALSE)
+#
+# fit_cl.nonpar2 = two_steps_inference(x=get_data(simul), regularizer = "cosine", reg_weight = 0.,
+#                                      lr=0.005, k=k_list, clusters=max(clusters_list),
+#                                      seed_list=c(10, 33, 92), n_steps=2000,
+#                                      reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
+#                                      # hyperparameters = list("alpha_noise_var"=0.005),
+#                                      py=py, new_hier=FALSE, nonparametric=TRUE)
 
 saveRDS(list("param"=fit_cl, "nonparam"=fit_cl.nonpar, "simul"=simul), paste0(save_path, idd, fname, ".Rds"))
 
 
-fit_cl %>% plot_gradient_norms()
-fit_cl %>% plot_posterior_probs()
-fit_cl %>% convert_sigs_names(simul) %>% plot_exposures(cls=cls, sample_name=T)
+fit_cl2 %>% plot_gradient_norms()
+fit_cl2 %>% plot_posterior_probs()
+fit_cl2 %>% convert_sigs_names(simul) %>% plot_exposures()
 
-fit_cl %>% convert_sigs_names(simul, cutoff=0.6) %>% plot_exposures(plot_noise = T)
-fit_cl %>% convert_sigs_names(simul, cutoff=0.6) %>% plot_exposures(plot_noise = T, add_centroid = T, sampleIDs = 1)
+fit_cl %>% convert_sigs_names(simul) %>% plot_exposures(plot_noise = T)
+fit_cl %>% convert_sigs_names(simul) %>% plot_exposures(add_centroid = T)
 
 # exposures_noise_centroid.fit_cl = lapply(unique(fit_cl$groups), function(gid) {
 #   p1 = fit_cl %>% convert_sigs_names(simul) %>%

@@ -20,35 +20,45 @@ save_path = "~/GitHub/simbasilica/nobuild/analysis_simul/"
 
 
 data_path = "~/GitHub/simbasilica/nobuild/simulations/synthetic_datasets_0507/"
-fits_path1 = fits_path2 = c("~/GitHub/simbasilica/nobuild/simulations/fits_dn.flat_clust.noreg.old_hier.0507/",
-                            "~/GitHub/simbasilica/nobuild/simulations/fits_dn.flat_clust.noreg.new_hier.0507/")
-run_id1 = run_id2 = c("noreg.old_hier", "noreg.new_hier") %>% setNames(fits_path1)
+# fits_path1 = fits_path2 = c("~/GitHub/simbasilica/nobuild/simulations/fits_dn.flat_clust.noreg.old_hier.0507/",
+#                             "~/GitHub/simbasilica/nobuild/simulations/fits_dn.flat_clust.noreg.new_hier.0507/")
+# run_id1 = run_id2 = c("noreg.old_hier", "noreg.new_hier") %>% setNames(fits_path1)
 
-cutoff = 0.8; df_id = "0507"
-stats_df = readRDS(paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
+fits_path2 = c("~/GitHub/simbasilica/nobuild/simulations/fits_dn.clust.noreg.old_hier.no_sparsity/",
+               "~/GitHub/simbasilica/nobuild/simulations/fits_dn.clust.noreg.old_hier.sparsity/",
+               "~/GitHub/simbasilica/nobuild/simulations/fits_dn.clust.noreg.new_hier.no_sparsity/",
+               "~/GitHub/simbasilica/nobuild/simulations/fits_dn.clust.noreg.new_hier.sparsity/")
+run_id2 = c("noreg.old_hier.no_sparsity", "noreg.old_hier.sparsity",
+            "noreg.new_hier.no_sparsity", "noreg.new_hier.sparsity") %>% setNames(fits_path2)
 
-# stats_df = get_stats_df(data_path=data_path, fits_path=fits_path1, cutoff=cutoff, fits_pattern=c("fit.")) %>%
-#   dplyr::mutate(run_id=run_id1[fits_path]) %>%
-#
-#   # dplyr::add_row(
-#   #   get_stats_df(data_path=data_path, fits_path=fits_path2, cutoff=cutoff, fits_pattern=c("fit_hier.")) %>%
-#   #     dplyr::mutate(run_id=run_id2[fits_path])
-#   # ) %>%
-#
-#   dplyr::add_row(
-#     get_stats_df(data_path=data_path, fits_path=fits_path2, cutoff=cutoff, fits_pattern=c("fit_clust.")) %>%
-#       dplyr::mutate(run_id=run_id2[fits_path])
-#   ) %>%
-#   dplyr::mutate(unique_id=paste(inf_type, run_id, sep=".")) %>%
-#   dplyr::mutate(regularizer=dplyr::case_when(
-#     grepl("cosine", run_id) ~ "cosine",
-#     grepl("KL", run_id) ~ "KL",
-#     grepl("noreg", run_id) ~ "noreg"
-#   ), model=dplyr::case_when(
-#     grepl("old", run_id) ~ "old_hier",
-#     grepl("new", run_id) ~ "new_hier",
-#     grepl("nohier", run_id) ~ "no_hier",
-#   ))
+stats_df = get_stats_df(data_path=data_path, fits_path=fits_path2, cutoff=cutoff, fits_pattern=c("fit_clust.")) %>%
+  dplyr::mutate(run_id=run_id2[fits_path])
+
+cutoff = 0.8; df_id = "1807"
+# stats_df = readRDS(paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
+
+stats_df = get_stats_df(data_path=data_path, fits_path=fits_path1, cutoff=cutoff, fits_pattern=c("fit.")) %>%
+  dplyr::mutate(run_id=run_id1[fits_path]) %>%
+
+  # dplyr::add_row(
+  #   get_stats_df(data_path=data_path, fits_path=fits_path2, cutoff=cutoff, fits_pattern=c("fit_hier.")) %>%
+  #     dplyr::mutate(run_id=run_id2[fits_path])
+  # ) %>%
+
+  dplyr::add_row(
+    get_stats_df(data_path=data_path, fits_path=fits_path2, cutoff=cutoff, fits_pattern=c("fit_clust.")) %>%
+      dplyr::mutate(run_id=run_id2[fits_path])
+  ) %>%
+  dplyr::mutate(unique_id=paste(inf_type, run_id, sep=".")) %>%
+  dplyr::mutate(regularizer=dplyr::case_when(
+    grepl("cosine", run_id) ~ "cosine",
+    grepl("KL", run_id) ~ "KL",
+    grepl("noreg", run_id) ~ "noreg"
+  ), model=dplyr::case_when(
+    grepl("old", run_id) ~ "old_hier",
+    grepl("new", run_id) ~ "new_hier",
+    grepl("nohier", run_id) ~ "no_hier",
+  ))
 #
 #
 # saveRDS(stats_df, paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
