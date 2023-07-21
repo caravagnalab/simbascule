@@ -20,45 +20,54 @@ save_path = "~/GitHub/simbasilica/nobuild/analysis_simul/"
 
 
 data_path = "~/GitHub/simbasilica/nobuild/simulations/synthetic_datasets_0507/"
-# fits_path1 = fits_path2 = c("~/GitHub/simbasilica/nobuild/simulations/fits_dn.flat_clust.noreg.old_hier.0507/",
-#                             "~/GitHub/simbasilica/nobuild/simulations/fits_dn.flat_clust.noreg.new_hier.0507/")
-# run_id1 = run_id2 = c("noreg.old_hier", "noreg.new_hier") %>% setNames(fits_path1)
+fits_path1 = c("~/GitHub/simbasilica/nobuild/simulations/fits_dn.flat_clust.noreg.old_hier.0507/")
+run_id1 = c("noreg.old_hier") %>% setNames(fits_path1)
 
-fits_path2 = c("~/GitHub/simbasilica/nobuild/simulations/fits_dn.clust.noreg.old_hier.no_sparsity/",
-               "~/GitHub/simbasilica/nobuild/simulations/fits_dn.clust.noreg.old_hier.sparsity/",
-               "~/GitHub/simbasilica/nobuild/simulations/fits_dn.clust.noreg.new_hier.no_sparsity/",
-               "~/GitHub/simbasilica/nobuild/simulations/fits_dn.clust.noreg.new_hier.sparsity/")
-run_id2 = c("noreg.old_hier.no_sparsity", "noreg.old_hier.sparsity",
-            "noreg.new_hier.no_sparsity", "noreg.new_hier.sparsity") %>% setNames(fits_path2)
+fits_path2 = c("~/GitHub/simbasilica/nobuild/simulations/fits_dn.clust.nonparametric.noreg.old_hier.2007/",
+               "~/GitHub/simbasilica/nobuild/simulations/fits_dn.clust.parametric.noreg.old_hier.2007/")
+run_id2 = c("noreg.old_hier.nonparam", "noreg.old_hier.param") %>% setNames(fits_path2)
 
+cutoff = 0.8; df_id = "2007"
 stats_df = get_stats_df(data_path=data_path, fits_path=fits_path2, cutoff=cutoff, fits_pattern=c("fit_clust.")) %>%
-  dplyr::mutate(run_id=run_id2[fits_path])
-
-cutoff = 0.8; df_id = "1807"
-# stats_df = readRDS(paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
-
-stats_df = get_stats_df(data_path=data_path, fits_path=fits_path1, cutoff=cutoff, fits_pattern=c("fit.")) %>%
-  dplyr::mutate(run_id=run_id1[fits_path]) %>%
-
-  # dplyr::add_row(
-  #   get_stats_df(data_path=data_path, fits_path=fits_path2, cutoff=cutoff, fits_pattern=c("fit_hier.")) %>%
-  #     dplyr::mutate(run_id=run_id2[fits_path])
-  # ) %>%
+  dplyr::mutate(run_id=run_id2[fits_path],
+                unique_id=paste(inf_type, run_id, sep=".")) %>%
 
   dplyr::add_row(
-    get_stats_df(data_path=data_path, fits_path=fits_path2, cutoff=cutoff, fits_pattern=c("fit_clust.")) %>%
-      dplyr::mutate(run_id=run_id2[fits_path])
+    get_stats_df(data_path=data_path, fits_path=fits_path1, cutoff=cutoff, fits_pattern=c("fit.")) %>%
+        dplyr::mutate(run_id=run_id1[fits_path])
   ) %>%
-  dplyr::mutate(unique_id=paste(inf_type, run_id, sep=".")) %>%
-  dplyr::mutate(regularizer=dplyr::case_when(
-    grepl("cosine", run_id) ~ "cosine",
-    grepl("KL", run_id) ~ "KL",
-    grepl("noreg", run_id) ~ "noreg"
-  ), model=dplyr::case_when(
-    grepl("old", run_id) ~ "old_hier",
-    grepl("new", run_id) ~ "new_hier",
-    grepl("nohier", run_id) ~ "no_hier",
-  ))
+  dplyr::mutate(clust_type=dplyr::case_when(
+    grepl(".nonparam", run_id) ~ "non-parametric",
+    grepl(".param", run_id) ~ "parametric",
+    .default="flat")
+  )
+saveRDS(stats_df, paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
+
+# cutoff = 0.8; df_id = "1807"
+# stats_df = readRDS(paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
+
+# stats_df = get_stats_df(data_path=data_path, fits_path=fits_path1, cutoff=cutoff, fits_pattern=c("fit.")) %>%
+#   dplyr::mutate(run_id=run_id1[fits_path]) %>%
+#
+#   # dplyr::add_row(
+#   #   get_stats_df(data_path=data_path, fits_path=fits_path2, cutoff=cutoff, fits_pattern=c("fit_hier.")) %>%
+#   #     dplyr::mutate(run_id=run_id2[fits_path])
+#   # ) %>%
+#
+#   dplyr::add_row(
+#     get_stats_df(data_path=data_path, fits_path=fits_path2, cutoff=cutoff, fits_pattern=c("fit_clust.")) %>%
+#       dplyr::mutate(run_id=run_id2[fits_path])
+#   ) %>%
+#   dplyr::mutate(unique_id=paste(inf_type, run_id, sep=".")) %>%
+#   dplyr::mutate(regularizer=dplyr::case_when(
+#     grepl("cosine", run_id) ~ "cosine",
+#     grepl("KL", run_id) ~ "KL",
+#     grepl("noreg", run_id) ~ "noreg"
+#   ), model=dplyr::case_when(
+#     grepl("old", run_id) ~ "old_hier",
+#     grepl("new", run_id) ~ "new_hier",
+#     grepl("nohier", run_id) ~ "no_hier",
+#   ))
 #
 #
 # saveRDS(stats_df, paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
@@ -66,58 +75,48 @@ stats_df = get_stats_df(data_path=data_path, fits_path=fits_path1, cutoff=cutoff
 
 
 pdf(paste0(save_path, "stats_report.sim", cutoff*100, ".", df_id, ".pdf"), height=6, width=10)
-plot_sigs_found(stats_df, which="all", facet=T, ratio=T, scales="free_y")
 
-plot_sigs_found(stats_df, which="common", facet=T, ratio=T, scales="free_y")
+plot_sigs_clusters_found(stats_df, what="all", facet=T, ratio=T, scales="free_y", ylim=c(0,NA))
+plot_sigs_clusters_found(stats_df, what="common", facet=T, ratio=T, scales="free_y", ylim=c(0,NA))
+plot_sigs_clusters_found(stats_df, what="rare", facet=T, ratio=T, scales="free_y", ylim=c(0,NA))
 
-plot_sigs_found(stats_df, which="rare", facet=T, ratio=T, scales="free_y")
+plot_sigs_clusters_found(stats_df, what="all", facet=T, ratio=F, scales="free_y")
+plot_sigs_clusters_found(stats_df, what="common", facet=T, ratio=F, scales="free_y")
+plot_sigs_clusters_found(stats_df, what="rare", facet=T, ratio=F, scales="free_y")
 
-plot_mse_cosine(stats_df, "mse_counts", scales="free_y")
+plot_mse_cosine(stats_df, "mse_counts", scales="free_y", ylim=c(0,NA))
+plot_mse_cosine(stats_df, "mse_expos", scales="free_y", ylim=c(0,NA))
+plot_mse_cosine(stats_df, "mse_expos_rare", scales="free_y", ylim=c(0,NA))
 
-plot_mse_cosine(stats_df, "mse_expos", scales="free_y")
+plot_mse_cosine(stats_df, "cosine_sigs", scales="free_y", ylim=c(0,1))
+plot_mse_cosine(stats_df, "cosine_expos", scales="free_y", ylim=c(0,1))
+plot_mse_cosine(stats_df, "cosine_expos_rare", scales="free_y", ylim=c(0,1))
 
-plot_mse_cosine(stats_df, "mse_expos_rare", scales="free_y")
+plot_sigs_clusters_found(stats_df %>% dplyr::filter(clust_type!="flat"), what="clusters", facet=T, ratio=T, scales="free_y", ylim=c(0,NA))
+plot_sigs_clusters_found(stats_df %>% dplyr::filter(clust_type!="flat"), what="clusters", facet=T, ratio=F, scales="free_y")
 
-plot_mse_cosine(stats_df, "cosine_sigs", scales="free_y")
-
-plot_mse_cosine(stats_df, "cosine_expos", scales="free_y")
-
-plot_mse_cosine(stats_df, "cosine_expos_rare", scales="free_y")
-
-plot_mse_cosine(stats_df, "nmi", scales="free_y")
-
-plot_mse_cosine(stats_df, "nmi_rare", scales="free_y")
-
-plot_mse_cosine(stats_df, "ari", scales="free_y")
-
-plot_mse_cosine(stats_df, "ari_rare", scales="free_y")
+plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), "nmi", scales="free_y", ylim=c(0,1))
+plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), "nmi_rare", scales="free_y", ylim=c(0,1))
+plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), "ari", scales="free_y", ylim=c(0,1))
+plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), "ari_rare", scales="free_y", ylim=c(0,1))
 
 dev.off()
 
 
-# stats_df = get_stats_df(data_path=data_path, fits_path=fits_path, cutoff=0.8, fits_pattern=fits_pattern) %>%
-#   dplyr::mutate(run_id=run_id[fits_path]) %>%
-#   dplyr::mutate(unique_id=paste(inf_type, run_id, sep="."))
-#
-# stats_df2 = get_stats_df(data_path=data_path, fits_path=fits_path, cutoff=0.6, fits_pattern=fits_pattern) %>%
-#   dplyr::mutate(run_id=run_id[fits_path]) %>%
-#   dplyr::mutate(unique_id=paste(inf_type, run_id, sep="."))
+idd = (stats_df %>% dplyr::filter(G==1, N==150) %>% dplyr::arrange(nmi_rare) %>% dplyr::pull(idd))[1]
+fits_path = (stats_df %>% dplyr::filter(G==1, N==150) %>% dplyr::arrange(nmi_rare) %>%
+               dplyr::pull(fits_path))[1]
+simul = readRDS(paste0(data_path, "simul.", idd, ".Rds")) %>% create_basilica_obj_simul()
+fit_cl = readRDS(paste0(fits_path, "fit_clust.", idd, ".Rds")) %>% convert_sigs_names(simul)
 
-plot_sigs_stats(stats_df, wrap=T)
+aricode::ARI(fit_cl$groups, get_groups_rare(simul))
 
-stats_df %>%
-  dplyr::filter(unique_id != "fit_hier.cosine") %>%
-  dplyr::filter(run_id %in% c("cosine","cosine_new")) %>%
-  plot_sigs_stats(wrap=T, ratio=T, facet_groups=T)
+lsa::cosine(t(fit_cl$fit$params$alpha_prior)) %>% pheatmap::pheatmap(display_numbers=T)
 
-stats_df %>%
-  # dplyr::filter(unique_id != "fit_hier.cosine") %>%
-  # dplyr::filter(run_id %in% c("cosine","cosine_new")) %>%
-  plot_metrics_stats(wrap=T)
 
-# plot_mse_cosine(stats_df, colname="cosine_expos_rare")  # probably error
-plot_mse_cosine(stats_df, colname="mse_expos_rare")
-plot_mse_cosine(stats_df, colname="mse_counts")
+
+
+
 
 
 ## Sigprofiler #####

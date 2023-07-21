@@ -1,17 +1,20 @@
-plot_sigs_found = function(stats_df, which=c("rare", "common", "shared", "all"), ratio=F,
-                           fill="inf_type", facet=FALSE, scales="fixed", ylim=NULL,
-                           cols=NULL) {
+plot_sigs_clusters_found = function(stats_df, what=c("rare", "common", "shared", "all", "clusters"),
+                                    ratio=F, fill="inf_type", facet=FALSE, scales="fixed", ylim=NULL,
+                                    cols=NULL) {
+  stats_df = stats_df %>% dplyr::mutate(G_rare=G+n_rare)
 
   columns = dplyr::case_when(
-    which == "rare" ~ c("n_rare_found", "n_rare"),
-    which == "common" ~ c("n_common_found", "n_common"),
-    which == "shared" ~ c("n_shared_found", "n_shared"),
-    which == "all" ~ c("n_sigs_found", "n_sigs")
+    what == "rare" ~ c("n_rare_found", "n_rare"),
+    what == "common" ~ c("n_common_found", "n_common"),
+    what == "shared" ~ c("n_shared_found", "n_shared"),
+    what == "all" ~ c("n_sigs_found", "n_sigs"),
+    what == "clusters" ~ c("n_groups_found", "G_rare")
   )
 
   axis_lab = dplyr::case_when(
-    which == "all" ~ "Number of signatures",
-    .default = paste0("Number of ", tolower(which), " signatures")
+    what == "clusters" ~ "Number of clusters",
+    what == "all" ~ "Number of signatures",
+    .default = paste0("Number of ", tolower(what), " signatures")
   )
 
   if (is.null(cols))
@@ -116,6 +119,7 @@ plot_mse_cosine = function(stats_df, colname, facet=T, fill="inf_type",
 
   return(p)
 }
+
 
 
 
