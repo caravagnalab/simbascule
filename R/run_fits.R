@@ -69,8 +69,9 @@ generate_and_run = function(comb_matrix,
 
   if (do.fits && !is.null(fits_path) && !dir.exists(fits_path)) {
     dir.create(fits_path, recursive=T)
-    failed = file(paste0(fits_path, "failed_runs.txt"), open="w")
+    # failed = file(paste0(fits_path, "failed_runs.txt"), open="w")
   }
+  failed = file(paste0(fits_path, "failed_runs.txt"), open="w")
 
   shared_cat = catalogue[shared,]
 
