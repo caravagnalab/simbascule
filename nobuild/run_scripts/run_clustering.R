@@ -2,20 +2,24 @@ args = commandArgs(trailingOnly = TRUE)
 cat(paste("Arguments:", paste(args, collapse=", "), "\n"))
 
 i = as.integer(args[1])
-new_hier = args[2] == "new_hier"  # one between "new_hier" and "old_hier"
-enforce_sparsity = args[3] == "sparsity"
+# new_hier = args[2] == "new_hier"  # one between "new_hier" and "old_hier"
+# enforce_sparsity = args[3] == "sparsity"
+nonparametric = args[2] == "nonparametric"
 run_id = args[3]
 
+new_hier = FALSE
+enforce_sparsity = TRUE
 regularizer = "noreg"
 inference_type = "clust"
 reg_weight = 0.
 
-cat(paste("i =", i, "new_hier =", new_hier, "regularizer =", regularizer, "enforce_sparsity=", enforce_sparsity, "inference_type =", inference_type, "\n"))
+cat(paste("i =", i, "new_hier =", new_hier, "regularizer =", regularizer, "enforce_sparsity=", enforce_sparsity, 
+          "inference_type =", inference_type, "nonparametric =", args[2], "\n"))
 
 main_path = "/home/elena.buscaroli/GitHub/"
 data_path = paste0(main_path, "simbasilica/nobuild/simulations/synthetic_datasets_0507/")
 fits_path = paste0(main_path, "simbasilica/nobuild/simulations/", "fits_dn.", 
-       inference_type, ".", regularizer, ".", args[2], ".", run_id, "/")
+       inference_type, ".", args[2], ".", regularizer, ".old_hier.", run_id, "/")
 
 cat(paste0("\nSaving in directory: ", fits_path, "\n\n"))
 
@@ -66,21 +70,22 @@ generate_and_run(catalogue = COSMIC_filt,
                  reference_catalogue = COSMIC_filt[c("SBS1","SBS5"), ],
                  input_catalogue = NULL,
                  keep_sigs = c("SBS1", "SBS5"),
-                 hyperparameters = list("alpha_sigma"=0.2),
+                 hyperparameters = list("alpha_sigma"=0.05),
                  lr = 0.005,
-                 n_steps = 1500,
+                 n_steps = 2000,
 
-                 enforce_sparsity = enforce_sparsity,
+                 enforce_sparsity = TRUE,
+                 nonparametric = nonparametric,
 
-                 reg_weight = reg_weight,
-                 regularizer = regularizer,
-                 new_hier = new_hier,
+                 reg_weight = 0.,
+                 regularizer = "noreg",
+                 new_hier = FALSE,
 
                  initializ_seed = FALSE,
-                 initializ_pars_fit = TRUE,
+                 initializ_pars_fit = FALSE,
                  save_runs_seed = TRUE,
-                #  seed_list = c(10),
-                 seed_list = c(10, 33, 92),
+                 seed_list = c(10),
+              #    seed_list = c(10, 33, 92),
 
                  CUDA = TRUE,
                  do.fits = TRUE,
