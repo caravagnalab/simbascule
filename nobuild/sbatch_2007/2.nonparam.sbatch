@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --time=30:00:00
 #SBATCH --nodes=1
-#SBATCH --array=3-6
+#SBATCH --array=6-11
 #SBATCH --cpus-per-task=1
 #SBATCH --partition=gpuq
 #SBATCH --gres=gpu:1
