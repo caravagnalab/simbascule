@@ -72,6 +72,9 @@ compare_sigs_inf_gt = function(sigs.fit, sigs.simul, cutoff=0.8) {
   unique_inf = setdiff(rownames(sigs.fit), common)
   unique_gt = setdiff(rownames(sigs.simul), common)
 
+  if (length(unique_inf) == 0 || length(unique_gt) == 0)
+    return(common %>% setNames(common))
+
   total_sigs = rbind(sigs.fit[!rownames(sigs.fit) %in% common,], sigs.simul)
   cosine_matr = lsa::cosine(t(total_sigs))[rownames(sigs.simul), rownames(sigs.fit)]
 
@@ -83,14 +86,17 @@ compare_sigs_inf_gt = function(sigs.fit, sigs.simul, cutoff=0.8) {
     dplyr::mutate(inf=as.character(inf)) %>%
     dplyr::filter(cosine == max(cosine)) %>% dplyr::arrange(gt)
 
+  if (nrow(assign_similar) == 0) return(common %>% setNames(common))
+
   # if (nrow(sigs.simul) > nrow(sigs.fit))
   if (any(duplicated(assign_similar$inf)))
     assign_similar = assign_similar %>% dplyr::group_by(inf) %>%
     dplyr::filter(cosine == max(cosine)) %>% ungroup()
 
-  similar = assign_similar$inf %>% setNames(assign_similar$gt)
+  # assigned = assign_similar$inf %>% setNames(assign_similar$gt)
+  assigned = c(common, assign_similar$inf) %>% setNames(c(common, assign_similar$gt))
 
-  return(similar)
+  return(assigned)
 }
 
 
@@ -133,7 +139,7 @@ rare_common_sigs = function(x.simul) {
 
 
 
-get_groups_rare = function(x.simul, x.fit, rare_common=NULL) {
+get_groups_rare = function(x.simul, rare_common=NULL) {
   if (is.null(rare_common)) rare_common = rare_common_sigs(simul)
 
   groups_new = x.simul$groups

@@ -26,7 +26,7 @@ get_stats_df = function(data_path, fits_path, cutoff=0.8, min_exposure=0.,
 
 
 compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
-                              data_pattern="simul.", fits_pattern,
+                              fits_pattern, data_pattern="simul.",
                               filtered_catalogue=TRUE, min_exposure=0.) {
   idd = stringr::str_replace_all(fitname, pattern=paste0(fits_pattern,"|.Rds"), replacement="")
   simulname = paste0(data_pattern, idd, ".Rds")
@@ -81,7 +81,7 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
                                      subset_cols=rare_common$private_rare)
 
   if (have_groups(x.fit)) {
-    groups_new = get_groups_rare(x.simul, x.fit, rare_common)
+    groups_new = get_groups_rare(x.simul, rare_common)
 
     ari_rare = aricode::ARI(groups_new, x.fit$groups)
     nmi_rare = aricode::NMI(groups_new, x.fit$groups)

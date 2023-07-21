@@ -54,9 +54,9 @@ plot_sigs_found = function(stats_df, which=c("rare", "common", "shared", "all"),
       scale_y_continuous(breaks=breakss, limits=c(0, max(valss)+1))
 
   if (facet && ratio)
-    p = p + ggh4x::facet_nested(G ~ regularizer + model, scales=scales)
+    p = p + ggh4x::facet_nested(G ~ clust_type, scales=scales)
   else if (facet && !ratio)
-    p = p + ggh4x::facet_nested(G ~ regularizer + model, scales=scales)
+    p = p + ggh4x::facet_nested(G ~ clust_type, scales=scales)
 
   if (!is.null(ylim)) p = p + ylim(ylim)
   # else if (facet_groups && ratio)
@@ -110,7 +110,7 @@ plot_mse_cosine = function(stats_df, colname, facet=T, fill="inf_type",
     labs(title=paste0(metric, " computed between true and inferred ", type, quantity))
 
   if (facet)
-    p = p + ggh4x::facet_nested(G ~ regularizer + model, scales=scales)
+    p = p + ggh4x::facet_nested(G ~ clust_type, scales=scales)
 
   if (!is.null(ylim)) p = p + ylim(ylim)
 
