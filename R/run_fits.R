@@ -50,9 +50,10 @@ generate_and_run = function(comb_matrix,
                             initializ_seed = FALSE,
                             initializ_pars_fit = TRUE,
                             save_runs_seed = TRUE,
+                            save_all_fits = FALSE,
                             seed_list = c(4,17,22),
 
-                            CUDA = FALSE,
+                            CUDA = TRUE,
                             do.fits = TRUE,
                             verbose = FALSE,
                             new_model = TRUE,
@@ -67,11 +68,13 @@ generate_and_run = function(comb_matrix,
 
   cat(paste("regularizer =", regularizer, "- reg_weight =", reg_weight, "- inference_type =", paste(inference_type, collapse=", "), "\n"))
 
-  if (do.fits && !is.null(fits_path) && !dir.exists(fits_path)) {
+  if (do.fits && !is.null(fits_path) && !dir.exists(fits_path))
     dir.create(fits_path, recursive=T)
-    # failed = file(paste0(fits_path, "failed_runs.txt"), open="w")
-  }
-  failed = file(paste0(fits_path, "failed_runs.txt"), open="w")
+
+  failed = paste0(fits_path, "failed_runs.txt")
+  if (!file.exists(failed)) file.create(failed)
+
+  # failed = file(paste0(fits_path, "failed_runs.txt"), open="w")
 
   shared_cat = catalogue[shared,]
 
@@ -155,6 +158,7 @@ generate_and_run = function(comb_matrix,
                   initializ_seed = initializ_seed,
                   initializ_pars_fit = initializ_pars_fit,
                   save_runs_seed = save_runs_seed,
+                  save_all_fits = save_all_fits,
                   seed_list = seed_list,
 
                   filtered_cat = TRUE,
@@ -174,13 +178,17 @@ generate_and_run = function(comb_matrix,
     }
   }
 
-  write.csv(comb_matrix %>%
-              dplyr::mutate(dplyr::across(dplyr::where(is.list),
-                                          function(x) paste0(x, collapse=","))),
-            file=paste0(data_path, "data_settings.csv"), row.names=F)
+  col.names = F
+  if (!file.exists(paste0(data_path, "data_settings.csv"))) col.names = T
 
-  if (do.fits && !is.null(fits_path) && !dir.exists(fits_path))
-    close(failed)
+  write.table(comb_matrix %>%
+          dplyr::mutate(dplyr::across(dplyr::where(is.list),
+                                      function(x) paste0(x, collapse=","))),
+        file=paste0(data_path, "data_settings.csv"), row.names=F, col.names=col.names,
+        append=T, sep=",", quote=FALSE)
+
+  # if (do.fits && !is.null(fits_path) && !dir.exists(fits_path))
+  #   close(failed)
 }
 
 
@@ -304,22 +312,6 @@ run_model = function(...,
                     "clust" %in% inference_type)
 
   x.fit = x.fit.hier = x.fit.clust = NULL
-  # if (!new_model) {
-  #   if (expr_fit)
-  #     x.fit = try_run(error_file,
-  #                     expr =
-  #                       fit(..., groups=NULL,
-  #                           input_catalogue=input_catalogue),
-  #                     msg = msg1)
-
-  #   if (expr_fit_hier)
-  #     x.fit.hier = try_run(error_file,
-  #                          expr =
-  #                            fit(..., groups=groups,
-  #                                input_catalogue=input_catalogue),
-  #                          msg = msg2)
-
-  # } else {
 
   filename1 = paste0("fit.", idd, ".", cohort, ".Rds") %>%
                       stringr::str_replace_all("\\.\\.", ".")
@@ -364,7 +356,7 @@ run_model = function(...,
                             expr =
                               two_steps_inference(..., cohort=cohort, keep_sigs=keep_sigs,
                                                   groups=NULL, new_hier=new_hier, enforce_sparsity2 = enforce_sparsity,
-                                                  clusters=cluster_list, nonparametric=nonparametric, 
+                                                  clusters=cluster_list, nonparametric=nonparametric,
                                                   regul_denovo=regul_denovo),
                             msg = msg3)
     cli::cli_process_done()
@@ -380,9 +372,9 @@ run_model = function(...,
 try_run = function(error_file, expr, msg) {
   tryCatch(expr = expr,
            error = function(e) {
-             writeLines(msg, error_file)
-             writeLines(paste(e))
-             writeLines(paste(reticulate::py_last_error()))
+             write(msg, file=error_file, append=T)
+             write(paste(e), file=error_file, append=T)
+             write(paste(reticulate::py_last_error()), file=error_file, append=T)
              return(NULL)
            })
 }
