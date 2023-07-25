@@ -96,5 +96,5 @@ generate_and_run(catalogue = COSMIC_filt,
                  do.fits = TRUE,
                  verbose = FALSE,
                  check_present = FALSE,
-                 cohort = "")
+                 cohort = i)
 
