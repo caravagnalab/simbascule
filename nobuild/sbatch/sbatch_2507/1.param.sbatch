@@ -5,7 +5,7 @@
 #SBATCH --partition=cpuq
 #SBATCH --job-name=1.param
 #SBATCH --mem=20GB
-#SBATCH --output=/home/elena.buscaroli/GitHub/simbasilica/nobuild/sbatch_2507/logs_ht/1.param-%A-%a.log
+#SBATCH --output=/home/elena.buscaroli/GitHub/simbasilica/nobuild/sbatch/sbatch_2507/logs_ht/1.param-%A-%a.log
 
 echo '----------------------------'
 echo ' JOB ID: '$SLURM_ARRAY_JOB_ID
