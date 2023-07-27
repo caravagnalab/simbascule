@@ -1,7 +1,8 @@
 
-get_assigned_missing = function(x.fit, x.simul, cutoff=0.8) {
+get_assigned_missing = function(x.fit, x.simul=NULL, reference_cat=NULL, cutoff=0.8) {
   sigs.fit = get_signatures(x.fit)
-  sigs.simul = get_signatures(x.simul)
+  if (!is.null(x.simul)) sigs.simul = get_signatures(x.simul)
+  else if (!is.null(reference_cat)) sigs.simul = reference_cat
 
   assigned = compare_sigs_inf_gt(sigs.fit, sigs.simul, cutoff=cutoff)
   missing = setdiff(rownames(sigs.simul), names(assigned))
@@ -11,8 +12,8 @@ get_assigned_missing = function(x.fit, x.simul, cutoff=0.8) {
 }
 
 
-convert_sigs_names = function(x.fit, x.simul, cutoff=0.8) {
-  assigned_missing = get_assigned_missing(x.fit=x.fit, x.simul=x.simul, cutoff=cutoff)
+convert_sigs_names = function(x.fit, x.simul=NULL, reference_cat=NULL, cutoff=0.8) {
+  assigned_missing = get_assigned_missing(x.fit=x.fit, x.simul=x.simul, reference_cat=reference_cat, cutoff=cutoff)
   assigned_missing$assigned_tp = assigned_missing$assigned_tp %>% sort
 
   signames_ref = get_fixed_signames(x.fit)
@@ -140,7 +141,7 @@ rare_common_sigs = function(x.simul) {
 
 
 get_groups_rare = function(x.simul, rare_common=NULL) {
-  if (is.null(rare_common)) rare_common = rare_common_sigs(simul)
+  if (is.null(rare_common)) rare_common = rare_common_sigs(x.simul)
 
   groups_new = x.simul$groups
 
