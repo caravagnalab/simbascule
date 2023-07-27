@@ -67,18 +67,20 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
 
   cosine_sigs = compute.cosine(sigs.fit, sigs.simul,
                                # assigned_missing=assigned_missing,
-                               assigned_missing=assigned_missing_all,
+                               assigned_missing=assigned_missing,
                                what="sigs")
 
   cosine_expos = compute.cosine(expos.fit, expos.simul,
                                 # assigned_missing=assigned_missing,
-                                assigned_missing=assigned_missing_all,
+                                assigned_missing=assigned_missing,
                                 what="expos")
   cosine_expos_rare = compute.cosine(expos.fit, expos.simul,
                                      # assigned_missing=assigned_missing,
-                                     assigned_missing=assigned_missing_all,
+                                     assigned_missing=assigned_missing,
                                      what="expos",
                                      subset_cols=rare_common$private_rare)
+
+  rare_freqs = length(get_samples_with_sigs(x.simul, sigs=rare_common$private_rare[1])) / x.simul$n_samples
 
   if (have_groups(x.fit)) {
     groups_new = get_groups_rare(x.simul, rare_common)
@@ -109,6 +111,8 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
       "n_shared"=length(rare_common$shared),
       "n_common"=length(rare_common$private_common),
       "n_rare"=length(rare_common$private_rare),
+
+      "rare_freq"=rare_freqs,
 
       "n_shared_found"=n_shared_found,
       "n_common_found"=n_common_found,
