@@ -100,15 +100,17 @@ compute.mae <- function(m , mr) {
 compute.mse <- function(m_inf, m_true, subset_cols=NULL, assigned_missing=NULL) {
                         # assigned=NULL, subset_cols=NULL) {
   if (!is.null(assigned_missing)) {
-    m_true[, assigned_missing$added_fp] = 0
-    m_inf[, assigned_missing$missing_fn] = 0
+    # m_true[, assigned_missing$added_fp] = 0
+    # m_inf[, assigned_missing$missing_fn] = 0
+    m_true = m_true %>% dplyr::select(assigned_missing$assigned_tp)
+    m_inf = m_inf %>% dplyr::select(assigned_missing$assigned_tp)
   }
 
   if (!is.null(subset_cols)) {
     m_true = m_true %>%
-      dplyr::select(subset_cols)
+      dplyr::select(intersect(subset_cols, assigned_missing$assigned_tp))
     m_inf = m_inf %>%
-      dplyr::select(subset_cols)
+      dplyr::select(intersect(subset_cols, assigned_missing$assigned_tp))
   }
 
   mse = sum((m_inf - m_true)^2) / (dim(m_inf)[1] * dim(m_inf)[2])
@@ -126,10 +128,10 @@ compute.cosine = function(m1, m2, assigned_missing, what, subset_cols=NULL) {
                         assigned_missing$added_fp))
 
   if (what == "expos") {
-    m1[, assigned_missing$missing_fn] = 1e-10
-    m2[, assigned_missing$added_fp] = 1e-10
-    m1 = as.data.frame(t(m1))
-    m2 = as.data.frame(t(m2))
+    # m1[, assigned_missing$missing_fn] = 1e-10
+    # m2[, assigned_missing$added_fp] = 1e-10
+    m1 = as.data.frame(t(m1[, assigned_missing$assigned_tp]))
+    m2 = as.data.frame(t(m2[, assigned_missing$assigned_tp]))
   }
 
   if (!is.null(subset_cols)) {
@@ -144,8 +146,10 @@ compute.cosine = function(m1, m2, assigned_missing, what, subset_cols=NULL) {
       setNames(tmp)
     unassigned = intersect(unassigned, subset_cols)
   } else if (what == "expos") {
-    consider = c(assigned_missing$assigned_tp, unassigned) %>%
-      setNames(c(names(assigned_missing$assigned_tp), unassigned))
+    # consider = c(assigned_missing$assigned_tp, unassigned) %>%
+    #   setNames(c(names(assigned_missing$assigned_tp), unassigned))
+    consider = c(assigned_missing$assigned_tp) %>%
+      setNames(c(names(assigned_missing$assigned_tp)))
   } else {
     consider = assigned_missing$assigned_tp
   }
