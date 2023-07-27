@@ -85,11 +85,16 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
   if (have_groups(x.fit)) {
     groups_new = get_groups_rare(x.simul, rare_common)
 
-    ari_rare = aricode::ARI(groups_new, x.fit$groups)
-    nmi_rare = aricode::NMI(groups_new, x.fit$groups)
-
     ari = aricode::ARI(x.simul$groups, x.fit$groups)
     nmi = aricode::NMI(x.simul$groups, x.fit$groups)
+
+    if (length(unique(x.fit$groups))==1 || length(unique(groups_new))==1) {
+      groups_new = c(groups_new, "imolabella")
+      x.fit$groups = c(x.fit$groups, "imolabella")
+    }
+
+    ari_rare = aricode::ARI(groups_new, x.fit$groups)
+    nmi_rare = aricode::NMI(groups_new, x.fit$groups)
   } else {
     ari = nmi = ari_rare = nmi_rare = NA
   }
