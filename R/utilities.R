@@ -102,7 +102,7 @@ compute.mse <- function(m_inf, m_true, subset_cols=NULL, assigned_missing=NULL) 
   if (!is.null(assigned_missing)) {
     # m_true[, assigned_missing$added_fp] = 0
     # m_inf[, assigned_missing$missing_fn] = 0
-    m_true = m_true %>% dplyr::select(assigned_missing$assigned_tp)
+    m_true = m_true %>% dplyr::select(names(assigned_missing$assigned_tp))
     m_inf = m_inf %>% dplyr::select(assigned_missing$assigned_tp)
   }
 
@@ -111,6 +111,12 @@ compute.mse <- function(m_inf, m_true, subset_cols=NULL, assigned_missing=NULL) 
       dplyr::select(intersect(subset_cols, assigned_missing$assigned_tp))
     m_inf = m_inf %>%
       dplyr::select(intersect(subset_cols, assigned_missing$assigned_tp))
+  }
+
+  if (ncol(m_inf) != ncol(m_true)) {
+    common = intersect(colnames(m_inf), colnames(m_true))
+    m_inf = m_inf[, common]
+    m_true = m_true[, common]
   }
 
   mse = sum((m_inf - m_true)^2) / (dim(m_inf)[1] * dim(m_inf)[2])
@@ -127,11 +133,17 @@ compute.cosine = function(m1, m2, assigned_missing, what, subset_cols=NULL) {
   unassigned = unique(c(assigned_missing$missing_fn,
                         assigned_missing$added_fp))
 
+  m1 = as.data.frame(m1)
+  m2 = as.data.frame(m2)
+
   if (what == "expos") {
     # m1[, assigned_missing$missing_fn] = 1e-10
     # m2[, assigned_missing$added_fp] = 1e-10
+    if (any(rownames(m1) != rownames(m2)))
+      rownames(m2) = rownames(m1)
+
     m1 = as.data.frame(t(m1[, assigned_missing$assigned_tp]))
-    m2 = as.data.frame(t(m2[, assigned_missing$assigned_tp]))
+    m2 = as.data.frame(t(m2[, names(assigned_missing$assigned_tp)]))
   }
 
   if (!is.null(subset_cols)) {
