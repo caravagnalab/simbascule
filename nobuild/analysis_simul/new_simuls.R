@@ -1,18 +1,18 @@
 
-gen_data = function(N, G, sbs_catalogue, alpha_range, alpha_sigma, seed,
-                    shared_sbs=c("SBS1","SBS5")) {
-  sbs = sample(setdiff(rownames(COSMIC_filt), shared_sbs), G + floor(G/2), replace=F)
-  private_shared_sbs = sample(sbs, floor(G/2))
-  private_sbs = setdiff(sbs, private_shared_sbs)
-
-  return(
-    generate_simulation_dataset(G=G, N=N, alpha_sigma=alpha_sigma,
-                                sbs_catalogue=COSMIC_filt, private_sbs=private_sbs,
-                                private_shared_sbs=private_shared_sbs,
-                                shared_sbs=shared_sbs, alpha_range = alpha_range,
-                                py=py, seed=seed)
-  )
-}
+# gen_data = function(N, G, sbs_catalogue, alpha_range, alpha_sigma, seed,
+#                     shared_sbs=c("SBS1","SBS5")) {
+#   sbs = sample(setdiff(rownames(COSMIC_filt), shared_sbs), G + floor(G/2), replace=F)
+#   private_shared_sbs = sample(sbs, floor(G/2))
+#   private_sbs = setdiff(sbs, private_shared_sbs)
+#
+#   return(
+#     generate_simulation_dataset(G=G, N=N, alpha_sigma=alpha_sigma,
+#                                 sbs_catalogue=COSMIC_filt, private_sbs=private_sbs,
+#                                 private_shared_sbs=private_shared_sbs,
+#                                 shared_sbs=shared_sbs, alpha_range = alpha_range,
+#                                 py=py, seed=seed)
+#   )
+# }
 
 
 sbs_shared = c("SBS1","SBS5")
@@ -26,27 +26,29 @@ pheatmap::pheatmap(m)
 data1 = gen_data(N=150, G=6, sbs_catalogue=COSMIC_filt[sbs_private,], alpha_range=c(.15,0.2), alpha_sigma=0.1, seed=1)
 data2 = gen_data(N=100, G=3, sbs_catalogue=COSMIC_filt, alpha_range=c(.15,0.2), alpha_sigma=0.1, seed=1)
 
+data2 %>% create_basilica_obj_simul() %>% plot_exposures()
+
 data1$alpha_plot
 data2$alpha_plot
 
 
-test = two_steps_inference(x=data1$counts[[1]] %>% dplyr::select(-sample, -groupid),
-                           k=4:10, clusters=1:10,
-                           enforce_sparsity2=T, reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
-                           lr=0.005, n_steps=2000, py=py,
-                           hyperparameters=list("alpha_sigma"=0.1),
-                           seed_list=c(10), reg_weight=1., regularizer="KL",
-                           new_hier=FALSE, do_initial_fit=FALSE, verbose = T, regul_fixed = FALSE,
-                           save_runs_seed=TRUE, save_all_fits=TRUE, nonparametric=TRUE)
+# test = two_steps_inference(x=data1$counts[[1]] %>% dplyr::select(-sample, -groupid),
+#                            k=4:10, clusters=1:10,
+#                            enforce_sparsity2=T, reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
+#                            lr=0.005, n_steps=2000, py=py,
+#                            hyperparameters=list("alpha_sigma"=0.1),
+#                            seed_list=c(10), reg_weight=1., regularizer="KL",
+#                            new_hier=FALSE, do_initial_fit=FALSE, verbose = T, regul_fixed = FALSE,
+#                            save_runs_seed=TRUE, save_all_fits=TRUE, nonparametric=TRUE)
 
-test.cosine = two_steps_inference(x=data1$counts[[1]] %>% dplyr::select(-sample, -groupid),
-                           k=4:10, clusters=1:10,
-                           enforce_sparsity2=T, reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
-                           lr=0.005, n_steps=2000, py=py,
-                           hyperparameters=list("alpha_sigma"=0.1),
-                           seed_list=c(10), reg_weight=1., regularizer="cosine",
-                           new_hier=FALSE, do_initial_fit=TRUE, verbose = T, regul_fixed = FALSE,
-                           save_runs_seed=TRUE, save_all_fits=TRUE, nonparametric=TRUE)
+# test.cosine = two_steps_inference(x=data1$counts[[1]] %>% dplyr::select(-sample, -groupid),
+#                            k=4:10, clusters=1:10,
+#                            enforce_sparsity2=T, reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
+#                            lr=0.005, n_steps=2000, py=py,
+#                            hyperparameters=list("alpha_sigma"=0.1),
+#                            seed_list=c(10), reg_weight=1., regularizer="cosine",
+#                            new_hier=FALSE, do_initial_fit=TRUE, verbose = T, regul_fixed = FALSE,
+#                            save_runs_seed=TRUE, save_all_fits=TRUE, nonparametric=TRUE)
 
 test2 = two_steps_inference(x=data1$counts[[1]] %>% dplyr::select(-sample, -groupid),
                                   k=4:10, clusters=1:10,
@@ -57,7 +59,7 @@ test2 = two_steps_inference(x=data1$counts[[1]] %>% dplyr::select(-sample, -grou
                                   new_hier=FALSE, do_initial_fit=TRUE, verbose = T, regul_fixed = FALSE,
                                   save_runs_seed=TRUE, save_all_fits=TRUE, nonparametric=TRUE)
 
-test3 = two_steps_inference(x=data1$counts[[1]] %>% dplyr::select(-sample, -groupid),
+test3_normal = two_steps_inference(x=data1$counts[[1]] %>% dplyr::select(-sample, -groupid),
                             k=4:10, clusters=1:10,
                             enforce_sparsity2=F, reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
                             lr=0.005, n_steps=2000, py=py,
@@ -66,8 +68,37 @@ test3 = two_steps_inference(x=data1$counts[[1]] %>% dplyr::select(-sample, -grou
                             new_hier=FALSE, do_initial_fit=TRUE, verbose = T, regul_fixed = FALSE,
                             save_runs_seed=TRUE, save_all_fits=TRUE, nonparametric=TRUE)
 
+
+fit2.nospars.b = two_steps_inference(x=data2$counts[[1]] %>% dplyr::select(-sample, -groupid),
+                            k=0:6, clusters=1:6,
+                            enforce_sparsity2=T, reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
+                            lr=0.005, n_steps=2000, py=py,
+                            hyperparameters=list("alpha_sigma"=0.1),
+                            seed_list=c(10, 33, 92), reg_weight=0., regularizer="noreg",
+                            new_hier=FALSE, do_initial_fit=FALSE, verbose=T, regul_fixed = FALSE,
+                            save_runs_seed=TRUE, save_all_fits=TRUE, nonparametric=TRUE)
+
+
+fit2.flat = two_steps_inference(x=data2$counts[[1]] %>% dplyr::select(-sample, -groupid),
+                                k=0:6, clusters=NULL,
+                                enforce_sparsity2=T, reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
+                                lr=0.005, n_steps=2000, py=py,
+                                hyperparameters=list("alpha_sigma"=0.1),
+                                seed_list=c(10, 33, 92), reg_weight=0., regularizer="noreg",
+                                new_hier=FALSE, do_initial_fit=TRUE, verbose=T, regul_fixed = FALSE,
+                                save_runs_seed=TRUE, save_all_fits=TRUE, nonparametric=TRUE)
+
+fit2.flat.b = two_steps_inference(x=data2$counts[[1]] %>% dplyr::select(-sample, -groupid),
+                                k=0:6, clusters=NULL,
+                                enforce_sparsity2=F, reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
+                                lr=0.005, n_steps=2000, py=py,
+                                hyperparameters=list("alpha_sigma"=0.5),
+                                seed_list=c(10, 33, 92), reg_weight=0., regularizer="noreg",
+                                new_hier=FALSE, do_initial_fit=TRUE, verbose=T, regul_fixed = FALSE,
+                                save_runs_seed=TRUE, save_all_fits=TRUE, nonparametric=TRUE)
+
 get_assigned_missing(test2, reference_cat=data1$beta[[1]], cutoff=0.6)
-get_assigned_missing(test3, reference_cat=data1$beta[[1]])
+get_assigned_missing(test3_cauchy, reference_cat=data1$beta[[1]])
 
 
 ump = umap::umap(get_exposure(test3))
@@ -109,7 +140,7 @@ plot.umap = function(x, labels,
 }
 
 
-cls2 = gen_palette(nrow(data1$beta[[1]]) + 3) %>% setNames(c(rownames(data1$beta[[1]]), "D4","D8","D9"))
+cls2 = gen_palette(nrow(data1$beta[[1]]) + 3) %>% setNames(c(rownames(data1$beta[[1]]), "D6","D7"))
 convert_sigs_names(test2, reference_cat=data1$beta[[1]], cutoff=0.6) %>%
   plot_exposures(cls=cls2, add_centroid = T) %>% patchwork::wrap_plots(
     data1$alpha_plot[[1]] + scale_fill_manual(values=cls2), ncol=1

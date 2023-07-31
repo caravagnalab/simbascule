@@ -22,27 +22,31 @@
 #' @export generate_and_run
 
 generate_and_run = function(comb_matrix,
-                            # shared,
-                            # private,
-                            catalogue,
                             py,
-                            shared = NULL,
-                            private = NULL,
-                            private_fracs = list("rare"=0.05, "common"=0.3),
+
                             fits_path = NULL,
                             data_path = NULL,
                             seeds = 1:30,
-                            mut_range = 10:8000,
+
+                            ## data generation
+                            catalogue_sbs,
+                            alpha_range = c(.15,0.2),
+                            alpha_sigma = 0.1,
+                            pi_conc = 1,
+                            frac_rare = 1.,
+                            n_muts_range = 100:5000,
+                            shared_sbs = c("SBS1", "SBS5"),
+
+                            ## inference
                             reference_catalogue = COSMIC_filt,
-                            input_catalogue = NULL,
                             keep_sigs = c("SBS1", "SBS5"),
                             hyperparameters = NULL,
                             lr = 0.005,
-                            n_steps = 1500,
+                            n_steps = 2000,
                             nonparametric = FALSE,
                             enforce_sparsity = TRUE,
 
-                            reg_weight = 1.,
+                            reg_weight = 0.,
                             regularizer = "cosine",
                             new_hier = FALSE,
                             regul_denovo = TRUE,
@@ -56,15 +60,14 @@ generate_and_run = function(comb_matrix,
                             CUDA = TRUE,
                             do.fits = TRUE,
                             verbose = FALSE,
-                            new_model = TRUE,
                             cohort = "",
 
                             check_present = TRUE,
                             inference_type = c("flat","hier","clust"),
                             ...) {
 
-  if ("shared" %in% colnames(comb_matrix))
-    shared = comb_matrix$shared %>% unlist() %>% unique()
+  # if ("shared" %in% colnames(comb_matrix))
+  #   shared = comb_matrix$shared %>% unlist() %>% unique()
 
   cat(paste("regularizer =", regularizer, "- reg_weight =", reg_weight, "- inference_type =", paste(inference_type, collapse=", "), "\n"))
 
@@ -74,50 +77,29 @@ generate_and_run = function(comb_matrix,
   failed = paste0(fits_path, "failed_runs.txt")
   if (!file.exists(failed)) file.create(failed)
 
-  # failed = file(paste0(fits_path, "failed_runs.txt"), open="w")
-
-  shared_cat = catalogue[shared,]
-
   for (i in 1:nrow(comb_matrix)) {
-
-    if ("rare" %in% colnames(comb_matrix)) {
-      private_rare = comb_matrix[i,] %>% dplyr::pull(rare) %>% unlist()
-      private_common = comb_matrix[i,] %>% dplyr::pull(common) %>% unlist()
-    } else if (is.list(private)) {
-      private_common = private$common
-      private_rare = private$rare
-    } else {
-      private_common = sample(private, comb_matrix$n_priv_comm[i])
-      tmp = setdiff(private, private_common)
-      private_rare = sample(tmp, comb_matrix$n_priv_rare[i])
-    }
-
-    denovo_cat = catalogue[c(private_common, private_rare),]
 
     for (j in seeds) {
 
-      x = single_dataset(
-        N = comb_matrix$N_vals[i][[1]],
-        n_groups = comb_matrix$n_groups_vals[i][[1]],
-        samples_per_group = comb_matrix$samples_per_group[i][[1]],
-        reference_cat = shared_cat,
-        denovo_cat = denovo_cat,
-        private_sigs = list("rare" = private_rare, "common" = private_common),
-        private_fracs = private_fracs,
-        mut_range = mut_range,
-        seed = j,
-        out_path = data_path,
-        cohort_name = cohort
-      )
+      idd = paste0("N", comb_matrix$N_vals[i][[1]], ".G",
+                   comb_matrix$n_groups_vals[i][[1]], ".s", j)
+
+      x = generate_data_aux(N=comb_matrix$N_vals[i][[1]],
+                            G=comb_matrix$n_groups_vals[i][[1]],
+                            catalogue_sbs=catalogue_sbs,
+                            alpha_range=alpha_range,
+                            alpha_sigma=alpha_sigma,
+                            seed=j,
+                            shared_sbs=shared_sbs,
+                            pi_conc=pi_conc,
+                            frac_rare=frac_rare,
+                            n_muts_range=n_muts_range,
+                            cohort=cohort, idd=idd,
+                            out_path=data_path)
 
       if (!do.fits) next
 
-      if (!is.null(input_catalogue))
-        input_sigs = nrow(input_catalogue) else
-          input_sigs = length(keep_sigs)
-
-      # min_k = max(0, length(shared) + nrow(denovo_cat) - input_sigs - 5)
-      max_k = length(shared) + nrow(denovo_cat) - length(keep_sigs) + 2
+      max_k = nrow(x$beta[[1]]) - length(keep_sigs) + 2
       min_k = max(0, max_k - 4)
       k_list = min_k:max_k
 
@@ -125,10 +107,7 @@ generate_and_run = function(comb_matrix,
       max_cl = comb_matrix$n_groups_vals[i][[1]] + 3
       cluster_list = min_cl:max_cl
 
-      idd = paste0("N", comb_matrix$N_vals[i][[1]], ".G", comb_matrix$n_groups_vals[i][[1]], ".s", j)
-
       cat(paste0(idd, "\n"))
-
       cat(paste("cluster_list =", paste(cluster_list, collapse=","), "\n"))
       cat(paste("k_list =", paste(k_list, collapse=","), "\n"))
 
@@ -137,11 +116,10 @@ generate_and_run = function(comb_matrix,
                        comb_matrix$n_groups_vals[i][[1]], ".s", seeds[j],
                        ".", cohort, ".Rds") %>% stringr::str_replace_all("\\.\\.", ".")
 
-        run_model(x = x$x[[1]],
+        run_model(x = x$counts[[1]],
                   k = k_list,
                   py = py,
                   reference_catalogue = reference_catalogue,
-                  input_catalogue = input_catalogue,
                   keep_sigs = keep_sigs,
                   hyperparameters = hyperparameters,
                   n_steps = n_steps,
@@ -166,7 +144,6 @@ generate_and_run = function(comb_matrix,
                   groups = x$groups[[1]] - 1,
                   cluster_list = cluster_list,
 
-                  new_model = new_model,
                   error_file = failed,
                   idd = idd,
                   cohort = cohort,
@@ -182,14 +159,186 @@ generate_and_run = function(comb_matrix,
   if (!file.exists(paste0(data_path, "data_settings.csv"))) col.names = T
 
   write.table(comb_matrix %>%
-          dplyr::mutate(dplyr::across(dplyr::where(is.list),
-                                      function(x) paste0(x, collapse=","))),
-        file=paste0(data_path, "data_settings.csv"), row.names=F, col.names=col.names,
-        append=T, sep=",", quote=FALSE)
+                dplyr::mutate(dplyr::across(dplyr::where(is.list),
+                                            function(x) paste0(x, collapse=","))),
+              file=paste0(data_path, "data_settings.csv"), row.names=F, col.names=col.names,
+              append=T, sep=",", quote=FALSE)
 
-  # if (do.fits && !is.null(fits_path) && !dir.exists(fits_path))
-  #   close(failed)
 }
+
+
+
+
+
+# generate_and_run_old = function(comb_matrix,
+#                                 # shared,
+#                                 # private,
+#                                 catalogue,
+#                                 py,
+#                                 shared = NULL,
+#                                 private = NULL,
+#                                 private_fracs = list("rare"=0.05, "common"=0.3),
+#                                 fits_path = NULL,
+#                                 data_path = NULL,
+#                                 seeds = 1:30,
+#                                 mut_range = 10:8000,
+#                                 reference_catalogue = COSMIC_filt,
+#                                 input_catalogue = NULL,
+#                                 keep_sigs = c("SBS1", "SBS5"),
+#                                 hyperparameters = NULL,
+#                                 lr = 0.005,
+#                                 n_steps = 1500,
+#                                 nonparametric = FALSE,
+#                                 enforce_sparsity = TRUE,
+#
+#                                 reg_weight = 1.,
+#                                 regularizer = "cosine",
+#                                 new_hier = FALSE,
+#                                 regul_denovo = TRUE,
+#
+#                                 initializ_seed = FALSE,
+#                                 initializ_pars_fit = TRUE,
+#                                 save_runs_seed = TRUE,
+#                                 save_all_fits = FALSE,
+#                                 seed_list = c(4,17,22),
+#
+#                                 CUDA = TRUE,
+#                                 do.fits = TRUE,
+#                                 verbose = FALSE,
+#                                 new_model = TRUE,
+#                                 cohort = "",
+#
+#                                 check_present = TRUE,
+#                                 inference_type = c("flat","hier","clust"),
+#                                 ...) {
+#
+#   if ("shared" %in% colnames(comb_matrix))
+#     shared = comb_matrix$shared %>% unlist() %>% unique()
+#
+#   cat(paste("regularizer =", regularizer, "- reg_weight =", reg_weight, "- inference_type =", paste(inference_type, collapse=", "), "\n"))
+#
+#   if (do.fits && !is.null(fits_path) && !dir.exists(fits_path))
+#     dir.create(fits_path, recursive=T)
+#
+#   failed = paste0(fits_path, "failed_runs.txt")
+#   if (!file.exists(failed)) file.create(failed)
+#
+#   # failed = file(paste0(fits_path, "failed_runs.txt"), open="w")
+#
+#   shared_cat = catalogue[shared,]
+#
+#   for (i in 1:nrow(comb_matrix)) {
+#
+#     if ("rare" %in% colnames(comb_matrix)) {
+#       private_rare = comb_matrix[i,] %>% dplyr::pull(rare) %>% unlist()
+#       private_common = comb_matrix[i,] %>% dplyr::pull(common) %>% unlist()
+#     } else if (is.list(private)) {
+#       private_common = private$common
+#       private_rare = private$rare
+#     } else {
+#       private_common = sample(private, comb_matrix$n_priv_comm[i])
+#       tmp = setdiff(private, private_common)
+#       private_rare = sample(tmp, comb_matrix$n_priv_rare[i])
+#     }
+#
+#     denovo_cat = catalogue[c(private_common, private_rare),]
+#
+#     for (j in seeds) {
+#
+#       x = single_dataset(
+#         N = comb_matrix$N_vals[i][[1]],
+#         n_groups = comb_matrix$n_groups_vals[i][[1]],
+#         samples_per_group = comb_matrix$samples_per_group[i][[1]],
+#         reference_cat = shared_cat,
+#         denovo_cat = denovo_cat,
+#         private_sigs = list("rare" = private_rare, "common" = private_common),
+#         private_fracs = private_fracs,
+#         mut_range = mut_range,
+#         seed = j,
+#         out_path = data_path,
+#         cohort_name = cohort
+#       )
+#
+#       if (!do.fits) next
+#
+#       if (!is.null(input_catalogue))
+#         input_sigs = nrow(input_catalogue) else
+#           input_sigs = length(keep_sigs)
+#
+#       # min_k = max(0, length(shared) + nrow(denovo_cat) - input_sigs - 5)
+#       max_k = length(shared) + nrow(denovo_cat) - length(keep_sigs) + 2
+#       min_k = max(0, max_k - 4)
+#       k_list = min_k:max_k
+#
+#       min_cl = max(comb_matrix$n_groups_vals[i][[1]] - 3, 1)
+#       max_cl = comb_matrix$n_groups_vals[i][[1]] + 3
+#       cluster_list = min_cl:max_cl
+#
+#       idd = paste0("N", comb_matrix$N_vals[i][[1]], ".G", comb_matrix$n_groups_vals[i][[1]], ".s", j)
+#
+#       cat(paste0(idd, "\n"))
+#
+#       cat(paste("cluster_list =", paste(cluster_list, collapse=","), "\n"))
+#       cat(paste("k_list =", paste(k_list, collapse=","), "\n"))
+#
+#       if (do.fits) {
+#         fname = paste0("N", comb_matrix$N_vals[i][[1]], ".G",
+#                        comb_matrix$n_groups_vals[i][[1]], ".s", seeds[j],
+#                        ".", cohort, ".Rds") %>% stringr::str_replace_all("\\.\\.", ".")
+#
+#         run_model(x = x$x[[1]],
+#                   k = k_list,
+#                   py = py,
+#                   reference_catalogue = reference_catalogue,
+#                   input_catalogue = input_catalogue,
+#                   keep_sigs = keep_sigs,
+#                   hyperparameters = hyperparameters,
+#                   n_steps = n_steps,
+#                   lr = lr,
+#                   enforce_sparsity = enforce_sparsity,
+#                   nonparametric = nonparametric,
+#
+#                   reg_weight = reg_weight,
+#                   CUDA = CUDA,
+#                   regularizer = regularizer,
+#                   new_hier = new_hier,
+#                   regul_denovo = regul_denovo,
+#
+#                   initializ_seed = initializ_seed,
+#                   initializ_pars_fit = initializ_pars_fit,
+#                   save_runs_seed = save_runs_seed,
+#                   save_all_fits = save_all_fits,
+#                   seed_list = seed_list,
+#
+#                   filtered_cat = TRUE,
+#                   verbose = verbose,
+#                   groups = x$groups[[1]] - 1,
+#                   cluster_list = cluster_list,
+#
+#                   new_model = new_model,
+#                   error_file = failed,
+#                   idd = idd,
+#                   cohort = cohort,
+#                   path = fits_path,
+#                   out_name = fname,
+#                   check_present = check_present,
+#                   inference_type = inference_type)
+#       }
+#     }
+#   }
+#
+#   col.names = F
+#   if (!file.exists(paste0(data_path, "data_settings.csv"))) col.names = T
+#
+#   write.table(comb_matrix %>%
+#           dplyr::mutate(dplyr::across(dplyr::where(is.list),
+#                                       function(x) paste0(x, collapse=","))),
+#         file=paste0(data_path, "data_settings.csv"), row.names=F, col.names=col.names,
+#         append=T, sep=",", quote=FALSE)
+#
+#   # if (do.fits && !is.null(fits_path) && !dir.exists(fits_path))
+#   #   close(failed)
+# }
 
 
 #' Function to generate a synthetic dataset
@@ -212,55 +361,55 @@ generate_and_run = function(comb_matrix,
 #' @return The generated data
 #' @export single_dataset
 
-single_dataset = function(N, n_groups, samples_per_group,
-                          reference_cat, denovo_cat,
-                          private_sigs, private_fracs,
-                          seed, cosine_limit=NULL,
-                          reference_cosine=NULL, denovo_cosine=NULL,
-                          mut_range=10:8000, cohort_name="",
-                          out_path=NULL) {
-
-  groups = sample(1:n_groups, N, replace=T)
-  while (!all(lapply(1:n_groups, function(n) length(groups[groups==n]) %in% samples_per_group) %>% unlist()))
-    groups = sample(1:n_groups, N, replace=T)
-
-  idd = paste0("N", N, ".G", n_groups, ".s", seed)
-
-  out_name = paste0("simul.N", N, ".G", n_groups, ".s", seed, ".", cohort_name, ".Rds") %>%
-    stringr::str_replace_all("\\.\\.", ".")
-
-  if (!is.null(out_path) && paste0(out_name) %in% list.files(paste0(out_path)))
-    return(readRDS(paste0(out_path, out_name)))
-
-  x = generate.data(
-    reference_catalogue=reference_cat,
-    denovo_catalogue=denovo_cat,
-    reference_cosine=reference_cosine,
-    denovo_cosine=denovo_cosine,
-    targetX=-1,
-    inputX=NULL,
-    similarity_limit=cosine_limit,
-    groups=groups,
-    private_sigs=private_sigs,
-    private_fracs=private_fracs,
-    mut_range=mut_range,
-    seed=seed)
-
-  x$private_rare = list(private_sigs$rare)
-  x$private_common = list(private_sigs$common)
-
-  if (is.null(out_path)) return(x)
-
-  if (!dir.exists(out_path))
-    dir.create(out_path, recursive=T)
-
-  if (cohort_name == "")
-    saveRDS(x, paste0(out_path, "simul.", idd, ".Rds"))
-  else
-    saveRDS(x, paste0(out_path, "simul.", idd, ".", cohort_name, ".Rds"))
-
-  return(x)
-}
+# single_dataset = function(N, n_groups, samples_per_group,
+#                           reference_cat, denovo_cat,
+#                           private_sigs, private_fracs,
+#                           seed, cosine_limit=NULL,
+#                           reference_cosine=NULL, denovo_cosine=NULL,
+#                           mut_range=10:8000, cohort_name="",
+#                           out_path=NULL) {
+#
+#   groups = sample(1:n_groups, N, replace=T)
+#   while (!all(lapply(1:n_groups, function(n) length(groups[groups==n]) %in% samples_per_group) %>% unlist()))
+#     groups = sample(1:n_groups, N, replace=T)
+#
+#   idd = paste0("N", N, ".G", n_groups, ".s", seed)
+#
+#   out_name = paste0("simul.N", N, ".G", n_groups, ".s", seed, ".", cohort_name, ".Rds") %>%
+#     stringr::str_replace_all("\\.\\.", ".")
+#
+#   if (!is.null(out_path) && paste0(out_name) %in% list.files(paste0(out_path)))
+#     return(readRDS(paste0(out_path, out_name)))
+#
+#   x = generate.data(
+#     reference_catalogue=reference_cat,
+#     denovo_catalogue=denovo_cat,
+#     reference_cosine=reference_cosine,
+#     denovo_cosine=denovo_cosine,
+#     targetX=-1,
+#     inputX=NULL,
+#     similarity_limit=cosine_limit,
+#     groups=groups,
+#     private_sigs=private_sigs,
+#     private_fracs=private_fracs,
+#     mut_range=mut_range,
+#     seed=seed)
+#
+#   x$private_rare = list(private_sigs$rare)
+#   x$private_common = list(private_sigs$common)
+#
+#   if (is.null(out_path)) return(x)
+#
+#   if (!dir.exists(out_path))
+#     dir.create(out_path, recursive=T)
+#
+#   if (cohort_name == "")
+#     saveRDS(x, paste0(out_path, "simul.", idd, ".Rds"))
+#   else
+#     saveRDS(x, paste0(out_path, "simul.", idd, ".", cohort_name, ".Rds"))
+#
+#   return(x)
+# }
 
 
 save_fit = function(x.fit, path, filename, check_present=FALSE) {
@@ -279,14 +428,12 @@ save_fit = function(x.fit, path, filename, check_present=FALSE) {
 
 
 run_model = function(...,
-                     input_catalogue=NULL,
                      keep_sigs = c("SBS1","SBS5"),
                      filtered_cat=TRUE,
                      enforce_sparsity = TRUE,
                      nonparametric = FALSE,
                      groups=NULL,
                      cluster_list=NULL,
-                     new_model=TRUE,
                      error_file=NULL,
                      idd="",
                      cohort="",
