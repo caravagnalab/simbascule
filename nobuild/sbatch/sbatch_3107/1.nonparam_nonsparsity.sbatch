@@ -3,9 +3,9 @@
 #SBATCH --nodes=1
 #SBATCH --array=0-5
 #SBATCH --partition=cpuq
-#SBATCH --job-name=1.nonpar_spars
+#SBATCH --job-name=1.nonpar_nonspars
 #SBATCH --mem=20GB
-#SBATCH --output=/home/elena.buscaroli/GitHub/simbasilica/nobuild/sbatch/sbatch_3107/logs_ht/1.nonpar_spars-%A-%a.log
+#SBATCH --output=/home/elena.buscaroli/GitHub/simbasilica/nobuild/sbatch/sbatch_3107/logs_ht/1.nonpar_nonspars-%A-%a.log
 
 echo '----------------------------'
 echo ' JOB ID: '$SLURM_ARRAY_JOB_ID

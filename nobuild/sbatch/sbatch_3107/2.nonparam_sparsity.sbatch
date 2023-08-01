@@ -5,9 +5,9 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --partition=gpuq
 #SBATCH --gres=gpu:1
-#SBATCH --job-name=2.nonpar_spars
+#SBATCH --job-name=2.nonpar_nonspars
 #SBATCH --mem=20GB
-#SBATCH --output=/home/elena.buscaroli/GitHub/simbasilica/nobuild/sbatch/sbatch_2507/logs_ht/2.nonpar_spars-%A-%a.log
+#SBATCH --output=/home/elena.buscaroli/GitHub/simbasilica/nobuild/sbatch/sbatch_3107/logs_ht/2.nonpar_nonspars-%A-%a.log
 
 echo '----------------------------'
 echo ' JOB ID: '$SLURM_ARRAY_JOB_ID
