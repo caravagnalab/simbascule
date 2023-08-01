@@ -34,7 +34,7 @@ generate_simulation_dataset = function(G, N,
                                        catalogue_sbs, private_sbs,
                                        private_shared_sbs, py,
                                        shared_sbs=c("SBS1","SBS5"),
-                                       min_samples=1,
+                                       min_samples=2,
                                        n_muts_range=500:5000, frac_rare=1.,
                                        alpha_range=c(.15,.2), alpha_sigma=0.1,
                                        pi_conc=1, seed=1234, cohort="") {
@@ -105,7 +105,7 @@ generate_simulation_dataset = function(G, N,
   }
 
   pl_alpha = alpha %>%
-    reshape2::melt() %>%
+    reshape2::melt(id=c("sample","groupid")) %>%
     ggplot() + geom_bar(aes(x=sample, y=value, fill=variable), stat="identity") +
     facet_grid(~groupid, scales="free_x", space="free_x")
 
