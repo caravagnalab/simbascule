@@ -5,6 +5,13 @@ generate_data_aux = function(N, G, catalogue_sbs,
                              shared_sbs=c("SBS1","SBS5"),
                              cohort="", out_path=NULL,
                              idd=NULL) {
+
+  if (!is.null(idd))
+    out_name = paste0("simul.", idd, ".", cohort, ".Rds") %>% stringr::str_replace_all("\\.\\.", ".")
+
+  if (!is.null(out_path) && paste0(out_name) %in% list.files(paste0(out_path)))
+    return(readRDS(paste0(out_path, out_name)))
+
   set.seed(seed)
   sbs = sample(setdiff(rownames(catalogue_sbs), shared_sbs), G + floor(G/2), replace=F)
 

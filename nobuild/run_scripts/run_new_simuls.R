@@ -82,11 +82,12 @@ generate_and_run(comb_matrix = comb_i,
                  regularizer = regularizer,
                  new_hier = new_hier,
                  regul_denovo = TRUE,
+                 regul_fixed = TRUE,
 
                  initializ_seed = FALSE,
-                 initializ_pars_fit = TRUE,
+                 do_initial_fit = TRUE,
                  save_runs_seed = TRUE,
-                 save_all_fits = FALSE,
+                 save_all_fits = TRUE,
                  seed_list = c(4,17,22),
 
                  CUDA = TRUE,
@@ -94,7 +95,7 @@ generate_and_run(comb_matrix = comb_i,
                  verbose = FALSE,
                  cohort = i,
 
-                 check_present = TRUE,
+                 check_present = FALSE,
                  inference_type = inference_type
                  )
 
