@@ -129,27 +129,26 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
     mean_centr_simil = coss[upper.tri(coss)] %>% mean
   } else { mean_centr_simil = 0 }
 
-  all_sigs = unique(c(get_signames(x.simul), get_signames(x.fit)))
-  cls = gen_palette(n=length(all_sigs)) %>% setNames(all_sigs)
-
-  plot_counts = plot_mutations(x.fit, reconstructed=T) %>%
-    patchwork::wrap_plots(plot_mutations(x.simul, reconstructed=F), ncol=1) &
-    patchwork::plot_annotation(title="Counts fit (top) and simulated (bottom)")
-
-  plot_expos = plot_exposures(x.fit %>% filter_exposures(min_expos=min_exposure),
-                              add_centroid=TRUE, cls=cls) %>%
-    patchwork::wrap_plots(plot_exposures(x.simul, add_centroid=TRUE, cls=cls), ncol=1) &
-    patchwork::plot_annotation(title="Exposures fit (top) and simulated (bottom)")
-
-  plot_centroids = plot_exposures(x.fit %>% filter_exposures(min_expos=min_exposure),
-                                  centroids=TRUE, cls=cls) %>%
-    patchwork::wrap_plots(plot_exposures(x.simul, centroids=T, cls=cls), ncol=1) &
-    patchwork::plot_annotation(title="Centroids fit (top) and simulated (bottom)")
-
-  plot_sigs = plot_signatures(x.fit, catalogue=get_signatures(x.simul), cls=cls)
-
-
   if (save_plots) {
+    all_sigs = unique(c(get_signames(x.simul), get_signames(x.fit)))
+    cls = gen_palette(n=length(all_sigs)) %>% setNames(all_sigs)
+
+    plot_counts = plot_mutations(x.fit, reconstructed=T) %>%
+      patchwork::wrap_plots(plot_mutations(x.simul, reconstructed=F), ncol=1) &
+      patchwork::plot_annotation(title="Counts fit (top) and simulated (bottom)")
+
+    plot_expos = plot_exposures(x.fit %>% filter_exposures(min_expos=min_exposure),
+                                add_centroid=TRUE, cls=cls) %>%
+      patchwork::wrap_plots(plot_exposures(x.simul, add_centroid=TRUE, cls=cls), ncol=1) &
+      patchwork::plot_annotation(title="Exposures fit (top) and simulated (bottom)")
+
+    plot_centroids = plot_exposures(x.fit %>% filter_exposures(min_expos=min_exposure),
+                                    centroids=TRUE, cls=cls) %>%
+      patchwork::wrap_plots(plot_exposures(x.simul, centroids=T, cls=cls), ncol=1) &
+      patchwork::plot_annotation(title="Centroids fit (top) and simulated (bottom)")
+
+    plot_sigs = plot_signatures(x.fit, catalogue=get_signatures(x.simul), cls=cls)
+
     pdf(paste0(fits_path, "plots.", idd, ".pdf"), height=8, width=14)
     patchwork::wrap_plots(plot_expos, plot_centroids, widths=c(3,1), guides="collect") %>% print()
     plot_counts %>% print()
@@ -202,10 +201,10 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
       "priv_rare"=list(rare_common$private_rare),
 
       "idd"=idd,
-      "plot_counts"=list(plot_counts),
-      "plot_expos"=list(plot_expos),
-      "plot_centroids"=list(plot_centroids),
-      "plot_sigs"=list(plot_sigs)
+      # "plot_counts"=list(plot_counts),
+      # "plot_expos"=list(plot_expos),
+      # "plot_centroids"=list(plot_centroids),
+      # "plot_sigs"=list(plot_sigs)
     )
   )
 }
