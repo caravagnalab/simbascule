@@ -76,23 +76,32 @@ compare_sigs_inf_gt = function(sigs.fit, sigs.simul, cutoff=0.8) {
   if (length(unique_inf) == 0 || length(unique_gt) == 0)
     return(common %>% setNames(common))
 
-  total_sigs = rbind(sigs.fit[!rownames(sigs.fit) %in% common,], sigs.simul)
-  cosine_matr = lsa::cosine(t(total_sigs))[rownames(sigs.simul), rownames(sigs.fit)]
+  total_sigs = rbind(sigs.fit[!rownames(sigs.fit) %in% common,],
+                     sigs.simul[!rownames(sigs.simul) %in% common,])
+  cosine_matr = lsa::cosine(t(total_sigs))[unique_gt, unique_inf]
+
+  if (length(unique_inf) == 1 && length(unique_gt) == 1) {
+    cosine_matr = as.data.frame(cosine_matr)
+    rownames(cosine_matr) = unique_gt
+    colnames(cosine_matr) = unique_inf
+  }
 
   assign_similar = cosine_matr %>% as.data.frame() %>%
     tibble::rownames_to_column(var="gt") %>%
     reshape2::melt(id="gt", variable.name="inf", value.name="cosine") %>%
-    dplyr::filter(cosine >= cutoff, !gt%in%common, !inf%in%common) %>%
+    dplyr::filter(cosine >= cutoff)
+
+  if (nrow(assign_similar) == 0) return(common %>% setNames(common))
+
+  assign_similar = assign_similar %>%
     dplyr::group_by(gt) %>%
     dplyr::mutate(inf=as.character(inf)) %>%
     dplyr::filter(cosine == max(cosine)) %>% dplyr::arrange(gt)
 
-  if (nrow(assign_similar) == 0) return(common %>% setNames(common))
-
   # if (nrow(sigs.simul) > nrow(sigs.fit))
   if (any(duplicated(assign_similar$inf)))
     assign_similar = assign_similar %>% dplyr::group_by(inf) %>%
-    dplyr::filter(cosine == max(cosine)) %>% ungroup()
+      dplyr::filter(cosine == max(cosine)) %>% ungroup()
 
   # assigned = assign_similar$inf %>% setNames(assign_similar$gt)
   assigned = c(common, assign_similar$inf) %>% setNames(c(common, assign_similar$gt))
@@ -106,6 +115,11 @@ rare_common_sigs = function(x.simul) {
     return(list("private_common"=x.simul$private_sigs$private_common,
                 "private_rare"=x.simul$private_sigs$private_rare,
                 "shared"=rownames(get_fixed_signatures(x.simul))))
+
+  if ("sigs" %in% names(x.simul) && length(x.simul$sigs) > 0)
+    return(list("private_common"=x.simul$sigs$private_shared,
+                "private_rare"=x.simul$sigs$private,
+                "shared"=x.simul$sigs$shared))
 
   n_grps = length(unique(x.simul$groups))
   expos = get_exposure(x.simul, add_groups=TRUE, long=TRUE)
