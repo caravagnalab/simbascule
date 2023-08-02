@@ -6,29 +6,26 @@ main_path = "~/Github/simbasilica/nobuild/simulations/"
 save_path = "~/GitHub/simbasilica/nobuild/analysis_simul/"
 
 data_path = paste0(main_path, "synthetic_datasets_3107/")
-fits_path = c(paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.3107/"),
-               paste0(main_path, "fits_dn.clust.nonparametric.sparsity.noreg.old_hier.3107/"))
+# fits_path = c(paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.3107/"),
+#                paste0(main_path, "fits_dn.clust.nonparametric.sparsity.noreg.old_hier.3107/"))
+# run_id = c("noreg.nonparam.nonsparsity", "noreg.nonparam.sparsity") %>% setNames(fits_path)
 
-run_id = c("noreg.nonparam.nonsparsity", "noreg.nonparam.sparsity") %>% setNames(fits_path)
+fits_path = paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.0208/")
+run_id = c("noreg.nonparam.nonsparsity") %>% setNames(fits_path)
 
+cutoff = 0.8; min_expos=0.1; df_id = "0208"
+stats_df = get_stats_df(data_path=data_path, fits_path=fits_path,
+                        cutoff=cutoff, fits_pattern=c("fit_clust."),
+                        min_exposure=min_expos, save_plots=TRUE) %>%
+  dplyr::mutate(run_id=run_id[fits_path],
+                unique_id=paste(fits_pattern, run_id, sep=".")) %>%
 
-cutoff = 0.8; min_expos=0.1; df_id = "3107"
-# stats_df = get_stats_df(data_path=data_path, fits_path=fits_path,
-#                         cutoff=cutoff, fits_pattern=c("fit_clust."),
-#                         min_exposure=min_expos) %>%
-#   dplyr::mutate(run_id=run_id[fits_path],
-#                 unique_id=paste(fits_pattern, run_id, sep=".")) %>%
-#
-#   # dplyr::add_row(
-#   #   get_stats_df(data_path=data_path, fits_path=fits_path, cutoff=cutoff, fits_pattern=c("fit.")) %>%
-#   #       dplyr::mutate(run_id=run_id[fits_path])
-#   # ) %>%
-#   dplyr::mutate(clust_type=dplyr::case_when(
-#     grepl(".nonparam", run_id) ~ "non-parametric",
-#     grepl(".param", run_id) ~ "parametric",
-#     .default="flat")
-#   )
-# saveRDS(stats_df, paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
+  dplyr::mutate(clust_type=dplyr::case_when(
+    grepl(".nonparam", run_id) ~ "non-parametric",
+    grepl(".param", run_id) ~ "parametric",
+    .default="flat")
+  )
+saveRDS(stats_df, paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
 stats_df = readRDS(paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
 
 # fname = paste0(cutoff*100, ".", df_id)
@@ -38,7 +35,7 @@ stats_df = readRDS(paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".R
 
 
 spars.g1 = get_simul_fit(stats_df, return_fit=T,
-                      condition="grepl('N150.G3.s1',idd) & !grepl('.nonsparsity', run_id)")
+                      condition="grepl('N150.G1.s1',idd) & !grepl('.nonsparsity', run_id)")
 nspars.g1 = get_simul_fit(stats_df, condition="idd==spars.g1$idd & grepl('.nonsparsity', run_id)",
                        return_fit=T)
 
@@ -53,6 +50,15 @@ nspars.g1$x.fit %>% convert_sigs_names(spars.g1$x.simul) %>%
   reshape2::melt() %>%
   ggplot() + geom_bar(aes(x=rowname, y=value, fill=variable), stat="identity") +
   scale_fill_manual(values=gen_palette(nspars.g1$x.fit$color_palette %>% length()))
+
+
+simul = spars.g1$x.simul
+xnew = recompute_centroids(spars.g1$x.fit) %>% convert_sigs_names(simul)
+xnew %>% plot_exposures(centroids = T)
+xnew %>% plot_exposures(add_centroid = T)
+
+xnew %>% merge_clusters() %>% plot_exposures(add_centroid = T)
+
 
 
 x = nspars.g1$x.fit %>% convert_sigs_names(spars.g1$x.simul)
