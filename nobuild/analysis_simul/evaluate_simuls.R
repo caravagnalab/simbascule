@@ -6,14 +6,14 @@ main_path = "~/Github/simbasilica/nobuild/simulations/"
 save_path = "~/GitHub/simbasilica/nobuild/analysis_simul/"
 
 data_path = paste0(main_path, "synthetic_datasets_3107/")
-# fits_path = c(paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.3107/"),
-#                paste0(main_path, "fits_dn.clust.nonparametric.sparsity.noreg.old_hier.3107/"))
-# run_id = c("noreg.nonparam.nonsparsity", "noreg.nonparam.sparsity") %>% setNames(fits_path)
+fits_path = c(paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.3107/"),
+               paste0(main_path, "fits_dn.clust.nonparametric.sparsity.noreg.old_hier.3107/"))
+run_id = c("noreg.nonparam.nonsparsity", "noreg.nonparam.sparsity") %>% setNames(fits_path)
 
-fits_path = paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.0208/")
-run_id = c("noreg.nonparam.nonsparsity") %>% setNames(fits_path)
+# fits_path = paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.0208/")
+# run_id = c("noreg.nonparam.nonsparsity") %>% setNames(fits_path)
 
-cutoff = 0.8; min_expos=0.1; df_id = "0208"
+cutoff = 0.8; min_expos=0.; df_id = "3107"
 stats_df = get_stats_df(data_path=data_path, fits_path=fits_path,
                         cutoff=cutoff, fits_pattern=c("fit_clust."),
                         min_exposure=min_expos, save_plots=TRUE) %>%
@@ -34,8 +34,14 @@ stats_df = readRDS(paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".R
 
 
 
-spars.g1 = get_simul_fit(stats_df, return_fit=T,
-                      condition="grepl('N150.G1.s1',idd) & !grepl('.nonsparsity', run_id)")
+x.fit = get_simul_fit(stats_df, return_fit=T, condition="grepl('N150.G1.s1',idd)")$x.fit
+x.simul = get_simul_fit(stats_df, return_fit=T, condition="grepl('N150.G1.s1',idd)")$x.simul
+
+x.fit %>% plot_exposures()
+
+
+
+
 nspars.g1 = get_simul_fit(stats_df, condition="idd==spars.g1$idd & grepl('.nonsparsity', run_id)",
                        return_fit=T)
 
@@ -154,10 +160,7 @@ nspars.g6$filtered$plot_expos
 
 
 spars_umap = umap::umap(get_exposure(spars$x.fit))
-spars_umap$layout %>% as.data.frame() %>%
-  tibble::rownames_to_column() %>%
-  dplyr::mutate(groupid=spars$x.fit$groups) %>%
-  ggplot() + geom_point(aes(x=V1, y=V2, color=as.factor(groupid)))
+
 
 
 
