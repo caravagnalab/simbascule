@@ -294,3 +294,13 @@ stats_plots_utils = function(stats_df, save_path, out_name,
   dev.off()
 }
 
+
+
+plot_umap_output = function(umap_obj, groups) {
+  umap_obj$layout %>% as.data.frame() %>%
+    tibble::rownames_to_column() %>%
+    dplyr::mutate(groupid=groups) %>%
+    ggplot() + geom_point(aes(x=V1, y=V2, color=as.factor(groupid)))
+
+}
+
