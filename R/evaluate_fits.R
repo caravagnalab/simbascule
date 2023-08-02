@@ -37,12 +37,12 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
 
   x.simul = readRDS(paste0(data_path, simulname)) %>% create_basilica_obj_simul()
   x.fit = readRDS(paste0(fits_path, fitname)) %>%
-    recompute_centroids() %>% merge_clusters(cutoff=cutoff)
+    recompute_centroids() # %>% merge_clusters(cutoff=cutoff)
 
   if (x.fit$n_denovo > 0 && filtered_catalogue)
     x.fit$fit$denovo_signatures = renormalize_denovo_thr(x.fit$fit$denovo_signatures)
 
-  x.fit = x.fit %>% convert_sigs_names(x.simul, cutoff=cutoff) # %>% merge_clusters()
+  x.fit = x.fit %>% convert_sigs_names(x.simul, cutoff=cutoff)
 
   rare_common = rare_common_sigs(x.simul)
 
@@ -113,13 +113,17 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
   n_sigs_similar = nrow(similarity_fit)
 
   if (length(unique(x.fit$groups)) > 1) {
-    coss = lsa::cosine(t( get_centroids(x.fit)[paste0("G",unique(x.fit$groups)),] ))
+    coss = lsa::cosine(t( get_centroids(x.fit)[as.character(unique(x.fit$groups)),] ))
     mean_centr_simil = coss[upper.tri(coss)] %>% mean
   } else { mean_centr_simil = 0 }
 
   if (save_plots) {
     all_sigs = unique(c(get_signames(x.simul), get_signames(x.fit)))
     cls = gen_palette(n=length(all_sigs)) %>% setNames(all_sigs)
+
+    umap_expos = umap::umap(get_exposure(x.fit))
+
+    plot_umap = plot_umap_output(umap_expos, groups=get_groups(x.fit))
 
     plot_counts = plot_mutations(x.fit, reconstructed=T) %>%
       patchwork::wrap_plots(plot_mutations(x.simul, reconstructed=F), ncol=1) &
@@ -141,6 +145,7 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
     patchwork::wrap_plots(plot_expos, plot_centroids, widths=c(3,1), guides="collect") %>% print()
     plot_counts %>% print()
     plot_sigs %>% print()
+    plot_umap %>% print()
     dev.off()
   }
 
