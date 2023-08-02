@@ -37,7 +37,7 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
 
   x.simul = readRDS(paste0(data_path, simulname)) %>% create_basilica_obj_simul()
   x.fit = readRDS(paste0(fits_path, fitname)) %>%
-    get_new_best(score_name="bic")
+    recompute_centroids() %>% merge_clusters(cutoff=cutoff)
 
   if (x.fit$n_denovo > 0 && filtered_catalogue)
     x.fit$fit$denovo_signatures = renormalize_denovo_thr(x.fit$fit$denovo_signatures)
@@ -72,26 +72,19 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
 
 
   cosine_sigs = compute.cosine(sigs.fit, sigs.simul,
-                               # assigned_missing=assigned_missing,
                                assigned_missing=assigned_missing,
                                what="sigs")
 
   cosine_expos = compute.cosine(expos.fit, expos.simul,
-                                # assigned_missing=assigned_missing,
                                 assigned_missing=assigned_missing,
                                 what="expos")
   cosine_expos_rare = compute.cosine(expos.fit, expos.simul,
-                                     # assigned_missing=assigned_missing,
                                      assigned_missing=assigned_missing,
                                      what="expos",
                                      subset_cols=c(rare_common$private_rare,
                                                    rare_common$private_common))
 
-  # rare_freqs = length(get_samples_with_sigs(x.simul, sigs=rare_common$private_rare[1])) / x.simul$n_samples
-
   if (have_groups(x.fit)) {
-    # groups_new = get_groups_rare(x.simul, rare_common)
-
     groups_fit = x.fit$groups; groups_simul = x.simul$groups
     if (length(unique(groups_fit)) == 1 || length(unique(groups_simul))==1) {
       groups_fit = c(groups_fit, "imolabella")
@@ -100,15 +93,10 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
 
     ari = aricode::ARI(x.simul$groups, x.fit$groups)
     nmi = aricode::NMI(groups_fit, groups_simul)
-
-    # ari_rare = aricode::ARI(groups_new, x.fit$groups)
-    # nmi_rare = aricode::NMI(groups_new, x.fit$groups)
   } else {
     ari = nmi = ari_rare = nmi_rare = NA
   }
 
-  # n_rare_found = sum(assigned %in% rare_common$private_rare)
-  # n_common_found = sum(assigned %in% rare_common$private_common)
   n_private_found = sum(assigned %in% c(rare_common$private_rare, rare_common$private_common))
   n_shared_found = sum(assigned %in% rare_common$shared)
 
@@ -125,7 +113,7 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
   n_sigs_similar = nrow(similarity_fit)
 
   if (length(unique(x.fit$groups)) > 1) {
-    coss = lsa::cosine(t( x.fit$fit$params$alpha_prior[unique(x.fit$groups)+1,] ))
+    coss = lsa::cosine(t( get_centroids(x.fit)[paste0("G",unique(x.fit$groups)),] ))
     mean_centr_simil = coss[upper.tri(coss)] %>% mean
   } else { mean_centr_simil = 0 }
 
@@ -167,16 +155,10 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
       "n_common"=length(rare_common$private_common),
       "n_rare"=length(rare_common$private_rare),
 
-      # "rare_freq"=rare_freqs,
-
       "n_shared_found"=n_shared_found,
       "n_private_found"=n_private_found,
 
       "assigned_missing"=list(assigned_missing),
-
-      # "missing_fn"=list(assigned_missing$missing_fn),
-      # "added_fp"=list(assigned_missing$added_fp),
-      # "assigned"=list(assigned_missing$assigned_tp),
 
       "mse_counts"=mse_counts,
       "mse_expos"=mse_expos,
