@@ -1,11 +1,12 @@
-plot_sigs_clusters_found = function(stats_df, what=c("rare", "common", "shared", "all", "clusters"),
+plot_sigs_clusters_found = function(stats_df, what=c("private", "shared", "all", "similar", "clusters"),
                                     ratio=F, fill="inf_type", facet=FALSE, scales="fixed", ylim=NULL,
                                     cols=NULL) {
-  stats_df = stats_df %>% dplyr::mutate(G_rare=G+n_rare)
+  stats_df = stats_df %>% dplyr::select(-dplyr::contains("plot")) %>%
+    dplyr::mutate(G_rare=G+n_rare)
 
   columns = dplyr::case_when(
-    what == "rare" ~ c("n_rare_found", "n_rare"),
-    what == "common" ~ c("n_common_found", "n_common"),
+    what == "private" ~ c("n_private_found", "n_rare"),
+    what == "similar" ~ c("n_sigs_similar", "n_sigs_found"),
     what == "shared" ~ c("n_shared_found", "n_shared"),
     what == "all" ~ c("n_sigs_found", "n_sigs"),
     what == "clusters" ~ c("n_groups_found", "G_rare")
@@ -76,6 +77,8 @@ plot_sigs_clusters_found = function(stats_df, what=c("rare", "common", "shared",
 
 plot_mse_cosine = function(stats_df, colname, facet=T, fill="inf_type",
                            cols=NULL, scales="fixed", ylim=NULL) {
+
+  stats_df = stats_df %>% dplyr::select(-dplyr::contains("plot"))
 
   metric = strsplit(colname, "_")[[1]][1]
   quantity = strsplit(colname, "_")[[1]][2]

@@ -5,138 +5,223 @@ main_path = "~/Github/simbasilica/nobuild/simulations/"
 
 save_path = "~/GitHub/simbasilica/nobuild/analysis_simul/"
 
-data_path = paste0(main_path, "synthetic_datasets_2507/")
-fits_path = c(paste0(main_path, "fits_dn.flat_clust.parametric.noreg.old_hier.2507/"),
-               paste0(main_path, "fits_dn.flat_clust.nonparametric.noreg.old_hier.2507/"))
+data_path = paste0(main_path, "synthetic_datasets_3107/")
+fits_path = c(paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.3107/"),
+               paste0(main_path, "fits_dn.clust.nonparametric.sparsity.noreg.old_hier.3107/"))
 
-run_id = c("noreg.old_hier.param", "noreg.old_hier.nonparam") %>% setNames(fits_path)
+run_id = c("noreg.nonparam.nonsparsity", "noreg.nonparam.sparsity") %>% setNames(fits_path)
 
 
-cutoff = 0.8; df_id = "2507"
-# stats_df = get_stats_df(data_path=data_path, fits_path=fits_path, cutoff=cutoff, fits_pattern=c("fit_clust.")) %>%
-#   dplyr::mutate(run_id=run_id[fits_path],
-#                 unique_id=paste(inf_type, run_id, sep=".")) %>%
-#
-#   dplyr::add_row(
-#     get_stats_df(data_path=data_path, fits_path=fits_path, cutoff=cutoff, fits_pattern=c("fit.")) %>%
-#         dplyr::mutate(run_id=run_id[fits_path])
-#   ) %>%
-#   dplyr::mutate(clust_type=dplyr::case_when(
-#     grepl(".nonparam", run_id) ~ "non-parametric",
-#     grepl(".param", run_id) ~ "parametric",
-#     .default="flat")
-#   )
-# saveRDS(stats_df, paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
+cutoff = 0.8; min_expos=0.1; df_id = "3107"
+stats_df = get_stats_df(data_path=data_path, fits_path=fits_path,
+                        cutoff=cutoff, fits_pattern=c("fit_clust."),
+                        min_exposure=min_expos) %>%
+  dplyr::mutate(run_id=run_id[fits_path],
+                unique_id=paste(fits_pattern, run_id, sep=".")) %>%
+
+  # dplyr::add_row(
+  #   get_stats_df(data_path=data_path, fits_path=fits_path, cutoff=cutoff, fits_pattern=c("fit.")) %>%
+  #       dplyr::mutate(run_id=run_id[fits_path])
+  # ) %>%
+  dplyr::mutate(clust_type=dplyr::case_when(
+    grepl(".nonparam", run_id) ~ "non-parametric",
+    grepl(".param", run_id) ~ "parametric",
+    .default="flat")
+  )
+saveRDS(stats_df, paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
 stats_df = readRDS(paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
 
 
-stats_df %>%
-  dplyr::mutate(rare_ratio=n_rare_found/n_rare) %>%
-  ggplot() +
-  geom_jitter(aes(x=rare_freq, y=rare_ratio, color=inf_type), height=0.01, width=0.01) +
-  ylim(-0.01,1+0.01) + xlim(-0.01,1+0.01) +
-  facet_grid(G~clust_type) +
-  theme_bw()
+# stats_df %>%
+#   dplyr::mutate(rare_ratio=n_rare_found/n_rare) %>%
+#   ggplot() +
+#   geom_jitter(aes(x=rare_freq, y=rare_ratio, color=inf_type), height=0.01, width=0.01) +
+#   ylim(-0.01,1+0.01) + xlim(-0.01,1+0.01) +
+#   facet_grid(G~clust_type) +
+#   theme_bw()
 
 
 
-# pdf(paste0(save_path, "stats_report.sim", cutoff*100, ".", df_id, ".pdf"), height=6, width=10)
+pdf(paste0(save_path, "stats_report.sim", cutoff*100, ".", df_id, ".pdf"), height=6, width=14)
 
-plot_sigs_clusters_found(stats_df, what="all", facet=T, ratio=T, scales="free_y", ylim=c(0,NA))
-# plot_sigs_clusters_found(stats_df, what="common", facet=T, ratio=T, scales="free_y", ylim=c(0,NA))
-plot_sigs_clusters_found(stats_df, what="rare", facet=T, ratio=T, scales="free_y", ylim=c(0,NA))
+plot_sigs_clusters_found(stats_df, what="similar", facet=T, ratio=T,
+                         scales="free_y", ylim=c(0,NA), fill="run_id") %>%
+  patchwork::wrap_plots(
+    plot_mse_cosine(stats_df, "mean_centr_simil", scales="free_y", ylim=c(0,1), fill="run_id"),
+    guides="collect") & theme(legend.position="bottom")
 
-plot_mse_cosine(stats_df, "mse_counts", scales="free_y", ylim=c(0,NA))
-plot_mse_cosine(stats_df, "mse_expos", scales="free_y", ylim=c(0,NA))
-plot_mse_cosine(stats_df, "mse_expos_rare", scales="free_y", ylim=c(0,NA))
+plot_sigs_clusters_found(stats_df, what="all", facet=T, ratio=T,
+                         scales="free_y", ylim=c(0,NA), fill="run_id") %>%
+  patchwork::wrap_plots(plot_sigs_clusters_found(stats_df, what="private", facet=T, ratio=T,
+                                                 scales="free_y", ylim=c(0,NA), fill="run_id"),
+                        guides="collect") & theme(legend.position="bottom")
 
-plot_mse_cosine(stats_df, "cosine_sigs", scales="free_y", ylim=c(0,1))
-plot_mse_cosine(stats_df, "cosine_expos", scales="free_y", ylim=c(0,1))
-plot_mse_cosine(stats_df, "cosine_expos_rare", scales="free_y", ylim=c(0,1))
+plot_mse_cosine(stats_df, "mse_counts", scales="free_y", ylim=c(0,1), fill="run_id") %>%
+  patchwork::wrap_plots(plot_mse_cosine(stats_df, "mse_expos", scales="free_y",
+                                        ylim=c(0,1), fill="run_id"),
+                        plot_mse_cosine(stats_df, "mse_expos_rare", scales="free_y",
+                                        ylim=c(0,1), fill="run_id"), guides="collect") &
+  theme(legend.position="bottom")
 
-plot_sigs_clusters_found(stats_df %>% dplyr::filter(clust_type!="flat"), what="clusters", facet=T, ratio=T, scales="free_y", ylim=c(0,NA))
-# plot_sigs_clusters_found(stats_df %>% dplyr::filter(clust_type!="flat"), what="clusters", facet=T, ratio=F, scales="free_y")
+plot_mse_cosine(stats_df, "cosine_sigs", scales="free_y", ylim=c(0,1), fill="run_id") %>%
+  patchwork::wrap_plots(
+    plot_mse_cosine(stats_df, "cosine_expos", scales="free_y", ylim=c(0,1), fill="run_id"),
+    plot_mse_cosine(stats_df, "cosine_expos_rare", scales="free_y", ylim=c(0,1), fill="run_id"),
+    guides="collect") & theme(legend.position="bottom")
 
-plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), "nmi", scales="free_y", ylim=c(0,1))
-plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), "nmi_rare", scales="free_y", ylim=c(0,1))
-plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), "ari", scales="free_y", ylim=c(0,1))
-plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), "ari_rare", scales="free_y", ylim=c(0,1))
+plot_sigs_clusters_found(stats_df %>% dplyr::filter(clust_type!="flat"),
+                         what="clusters", facet=T, ratio=T, scales="free_y",
+                         ylim=c(0,NA), fill="run_id") %>%
+  patchwork::wrap_plots(
+    plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), "nmi",
+                    scales="free_y", ylim=c(0,1), fill="run_id"),
+    plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), "ari",
+                    scales="free_y", ylim=c(0,1), fill="run_id"),
+    guides="collect") & theme(legend.position="bottom")
 
-# dev.off()
+pl1 = stats_df %>% ggplot() +
+  geom_point(aes(x=mean_centr_simil, y=nmi)) +
+  facet_grid(G~run_id) + theme_bw()
+
+pl2 = stats_df %>% ggplot() +
+  geom_point(aes(x=n_sigs_similar/n_sigs_found, y=nmi)) +
+  facet_grid(G~run_id) + theme_bw()
+
+patchwork::wrap_plots(pl1, pl2, ncol=2)
+
+dev.off()
+
+
+
+x.fit = spars.g6$x.fit
+
+
+
+
+run_g = x.fit %>% get_centroids() %>% nrow()
+run_k = x.fit$n_denovo
+run_seed = x.fit$fit$seed
+x.fit$fit$runs_K %>% dplyr::filter(score_id=="reg_llik",
+                                   K==paste0("K_",run_k),
+                                   groups==paste0("G_",run_g),
+                                   seed==paste0("seed_",run_seed))
+
+n_pars = prod(dim(get_denovo_signatures(x.fit))) +
+  prod(dim(get_exposure(x.fit))) +
+  length(unique(get_groups(x.fit))) +
+  length(unique(get_groups(x.fit))) * length(get_signames(x.fit))
+
+llik = x.fit$fit$runs_K
+x.fit %>% get_centroids(normalize=T)
+
+
+
+spars.g1 = get_simul_fit(stats_df, return_fit=T,
+                      condition="N==150 & G==1 & !grepl('.nonsparsity', run_id) & nmi < 0.3")
+nspars.g1 = get_simul_fit(stats_df, condition="idd==spars.g1$idd & grepl('.nonsparsity', run_id)",
+                       return_fit=T)
+
+spars.g1$filtered$plot_expos
+nspars.g1$filtered$plot_expos
+
+
+spars.g6 = get_simul_fit(stats_df, return_fit=T,
+                      condition="N==500 & G==3 & !grepl('.nonsparsity', run_id)")
+nspars.g6 = get_simul_fit(stats_df, condition="idd==spars.g6$idd & grepl('.nonsparsity', run_id)",
+                       return_fit=T)
+spar
+
+p1 = spars.g6$filtered$plot_centroids[[1]]
+p2 = spars.g6$filtered$plot_expos[[1]] & theme(legend.position="none")
+patchwork::wrap_plots(p1, p2, widths=c(1,3))
+spars.g6$filtered$plot_expos %>% patchwork::wrap_plots(spars.g6$filtered$plot_centroids[[1]], widths=c(3, 1))
+spars.g6$filtered$plot_centroids
+spars.g6$filtered$plot_sigs
+
+nspars.g6$filtered$plot_expos
+
+
+
+spars_umap = umap::umap(get_exposure(spars$x.fit))
+spars_umap$layout %>% as.data.frame() %>%
+  tibble::rownames_to_column() %>%
+  dplyr::mutate(groupid=spars$x.fit$groups) %>%
+  ggplot() + geom_point(aes(x=V1, y=V2, color=as.factor(groupid)))
+
 
 
 ## Example ####
-idd_good = stats_df %>%
-  dplyr::filter(clust_type=="non-parametric", nmi_rare==max(nmi_rare, na.rm=T)) %>%
-  dplyr::pull(idd)
-idd_bad = stats_df %>%
-  dplyr::filter(clust_type=="non-parametric", nmi_rare<0.4) %>%
-  dplyr::pull(idd)
-
-simul_good = readRDS(paste0(data_path, "simul.", idd_good[3], ".Rds")) %>% create_basilica_obj_simul()
-fit_cl_good = readRDS(paste0(fits_path[2], "fit_clust.", idd_good[3], ".Rds")) %>% convert_sigs_names(simul_good)
-fit_cl_good %>% plot_fit(simul_good, add_centroid = T)
-fit_cl_good %>% plot_exposures(centroids = T)
-
-simul_bad = readRDS(paste0(data_path, "simul.", idd_bad[3], ".Rds")) %>% create_basilica_obj_simul()
-simul_bad$groups = get_groups_rare(simul_bad)
-fit_cl_bad = readRDS(paste0(fits_path[2], "fit_clust.", idd_bad[3], ".Rds")) %>% convert_sigs_names(simul_bad)
-fit_cl_bad %>% plot_fit(simul_bad, add_centroid = T)
-plot_exposures()
-
-for (gid in fit_cl_good$groups %>% unique()) {
-  samples_gid = get_group(fit_cl_good, groupIDs=gid, return_idx=T)
-  exposures_gid = get_exposure(fit_cl_good)[samples_gid,]
-  centroids_gid = (fit_cl_good$fit$params$alpha_prior /
-                     rowSums(fit_cl_good$fit$params$alpha_prior))[gid+1,]
-  lapply(1:nrow(exposures_gid), function(i) exposures_gid[i,] - centroids)
-  exposures_gid - centroids
-}
+# idd_good = stats_df %>%
+#   dplyr::filter(clust_type=="non-parametric", nmi_rare==max(nmi_rare, na.rm=T)) %>%
+#   dplyr::pull(idd)
+# idd_bad = stats_df %>%
+#   dplyr::filter(clust_type=="non-parametric", nmi_rare<0.4) %>%
+#   dplyr::pull(idd)
+#
+# simul_good = readRDS(paste0(data_path, "simul.", idd_good[3], ".Rds")) %>% create_basilica_obj_simul()
+# fit_cl_good = readRDS(paste0(fits_path[2], "fit_clust.", idd_good[3], ".Rds")) %>% convert_sigs_names(simul_good)
+# fit_cl_good %>% plot_fit(simul_good, add_centroid = T)
+# fit_cl_good %>% plot_exposures(centroids = T)
+#
+# simul_bad = readRDS(paste0(data_path, "simul.", idd_bad[3], ".Rds")) %>% create_basilica_obj_simul()
+# simul_bad$groups = get_groups_rare(simul_bad)
+# fit_cl_bad = readRDS(paste0(fits_path[2], "fit_clust.", idd_bad[3], ".Rds")) %>% convert_sigs_names(simul_bad)
+# fit_cl_bad %>% plot_fit(simul_bad, add_centroid = T)
+# plot_exposures()
+#
+# for (gid in fit_cl_good$groups %>% unique()) {
+#   samples_gid = get_group(fit_cl_good, groupIDs=gid, return_idx=T)
+#   exposures_gid = get_exposure(fit_cl_good)[samples_gid,]
+#   centroids_gid = (fit_cl_good$fit$params$alpha_prior /
+#                      rowSums(fit_cl_good$fit$params$alpha_prior))[gid+1,]
+#   lapply(1:nrow(exposures_gid), function(i) exposures_gid[i,] - centroids)
+#   exposures_gid - centroids
+# }
 
 
 ## Example #####
 
-simul = readRDS("nobuild/simulations/synthetic_datasets_2507/simul.N150.G1.s1.1.Rds") %>% create_basilica_obj_simul()
-fit_cl = readRDS("nobuild/simulations/fits_dn.flat_clust.nonparametric.noreg.old_hier.2507/fit_clust.N150.G1.s1.1.Rds")
-cls = simul$color_palette
-
-fit_cl2 = two_steps_inference(x=get_data(simul), k=fit_cl$k_list, clusters=1:5,
-                              enforce_sparsity2=T, reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
-                              lr=0.005, n_steps=2000, py=py,
-                              hyperparameters=list("alpha_sigma"=0.05),
-                              seed_list=c(10, 33, 92), reg_weight=0., regularizer="noreg",
-                              new_hier=TRUE, do_initial_fit=TRUE,
-                              save_runs_seed=TRUE, save_all_fits=TRUE, nonparametric=TRUE)
-
-
-## Real data ####
-crc = read.csv("~/GitHub/simbasilica/nobuild/processed_data/SBS_v2.03/catalogues/GEL/catalogues_Colorectal_SBS.tsv",
-               sep="\t") %>% t() %>% as.data.frame()
-
-set.seed(1234)
-crc_subsample = crc[sample(1:nrow(crc), size=150), ]
-fit_crc = two_steps_inference(x=crc_subsample, k=0:10, clusters=1:5,
-                              enforce_sparsity2=T, reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
-                              lr=0.005, n_steps=2000, py=py,
-                              hyperparameters=list("alpha_sigma"=0.05),
-                              seed_list=c(10, 33, 92), reg_weight=0., regularizer="noreg",
-                              new_hier=FALSE, save_runs_seed=TRUE,
-                              do_initial_fit=TRUE,
-                              save_all_fits=TRUE, nonparametric=TRUE)
-
-fit_crc_cat = two_steps_inference(x=crc_subsample, k=0:10, clusters=1:5,
-                                  enforce_sparsity2=T, reference_catalogue=COSMIC_filt,
-                                  lr=0.005, n_steps=2000, py=py,
-                                  hyperparameters=list("alpha_sigma"=0.05),
-                                  seed_list=c(10, 33, 92), reg_weight=0., regularizer="noreg",
-                                  new_hier=FALSE, save_runs_seed=TRUE,
-                                  do_initial_fit=TRUE,
-                                  save_all_fits=TRUE, nonparametric=TRUE)
-
-
-fit_crc %>% convert_sigs_names(reference_cat = COSMIC_filt, cutoff = 0.75) %>%
-  plot_fit(add_centroid = T)
-get_assigned_missing(fit_crc, reference_cat = COSMIC_filt_merged, cutoff = 0.75)
+# simul = readRDS("nobuild/simulations/synthetic_datasets_2507/simul.N150.G1.s1.1.Rds") %>% create_basilica_obj_simul()
+# fit_cl = readRDS("nobuild/simulations/fits_dn.flat_clust.nonparametric.noreg.old_hier.2507/fit_clust.N150.G1.s1.1.Rds")
+# cls = simul$color_palette
+#
+# fit_cl2 = two_steps_inference(x=get_data(simul), k=fit_cl$k_list, clusters=1:5,
+#                               enforce_sparsity2=T, reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
+#                               lr=0.005, n_steps=2000, py=py,
+#                               hyperparameters=list("alpha_sigma"=0.05),
+#                               seed_list=c(10, 33, 92), reg_weight=0., regularizer="noreg",
+#                               new_hier=TRUE, do_initial_fit=TRUE,
+#                               save_runs_seed=TRUE, save_all_fits=TRUE, nonparametric=TRUE)
+#
+#
+# ## Real data ####
+# crc = read.csv("~/GitHub/simbasilica/nobuild/processed_data/SBS_v2.03/catalogues/GEL/catalogues_Colorectal_SBS.tsv",
+#                sep="\t") %>% t() %>% as.data.frame()
+#
+# set.seed(1234)
+# crc_subsample = crc[sample(1:nrow(crc), size=150), ]
+# fit_crc = two_steps_inference(x=crc_subsample, k=0:10, clusters=1:5,
+#                               enforce_sparsity2=T, reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
+#                               lr=0.005, n_steps=2000, py=py,
+#                               hyperparameters=list("alpha_sigma"=0.05),
+#                               seed_list=c(10, 33, 92), reg_weight=0., regularizer="noreg",
+#                               new_hier=FALSE, save_runs_seed=TRUE,
+#                               do_initial_fit=TRUE,
+#                               save_all_fits=TRUE, nonparametric=TRUE)
+#
+# fit_crc_cat = two_steps_inference(x=crc_subsample, k=0:10, clusters=1:5,
+#                                   enforce_sparsity2=T, reference_catalogue=COSMIC_filt,
+#                                   lr=0.005, n_steps=2000, py=py,
+#                                   hyperparameters=list("alpha_sigma"=0.05),
+#                                   seed_list=c(10, 33, 92), reg_weight=0., regularizer="noreg",
+#                                   new_hier=FALSE, save_runs_seed=TRUE,
+#                                   do_initial_fit=TRUE,
+#                                   save_all_fits=TRUE, nonparametric=TRUE)
+#
+#
+# fit_crc %>% convert_sigs_names(reference_cat = COSMIC_filt, cutoff = 0.75) %>%
+#   plot_fit(add_centroid = T)
+# get_assigned_missing(fit_crc, reference_cat = COSMIC_filt_merged, cutoff = 0.75)
 
 
 ## Sigprofiler #####
