@@ -33,7 +33,7 @@ devtools::load_all(paste0(main_path, "simbasilica"))
 
 cli::cli_process_done()
 
-N = c(150, 500, 1000)
+N = c(150, 500)
 G = c(1, 3, 6)
 fracs_rare = 1.
 # fracs_rare = seq(0.01, 0.1, length.out=5) %>% round(digits=2)
@@ -81,8 +81,8 @@ generate_and_run(comb_matrix = comb_i,
                  reg_weight = reg_weight,
                  regularizer = regularizer,
                  new_hier = new_hier,
-                 regul_denovo = TRUE,
-                 regul_fixed = TRUE,
+                 regul_denovo = FALSE,
+                 regul_fixed = FALSE,
 
                  initializ_seed = FALSE,
                  do_initial_fit = TRUE,

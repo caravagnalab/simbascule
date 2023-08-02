@@ -12,11 +12,11 @@ plot_sigs_clusters_found = function(stats_df, what=c("private", "shared", "all",
     what == "clusters" ~ c("n_groups_found", "G_rare")
   )
 
-  axis_lab = dplyr::case_when(
-    what == "clusters" ~ "Number of clusters",
-    what == "all" ~ "Number of signatures",
-    .default = paste0("Number of ", tolower(what), " signatures")
-  )
+  # axis_lab = dplyr::case_when(
+  #   what == "clusters" ~ "Number of clusters",
+  #   what == "all" ~ "Number of signatures",
+  #   .default = paste0("Number of ", tolower(what), " signatures")
+  # )
 
   if (is.null(cols))
     cols = gen_palette(length(stats_df[[fill]] %>% unique())) %>%
@@ -38,7 +38,8 @@ plot_sigs_clusters_found = function(stats_df, what=c("private", "shared", "all",
       scale_color_manual(values=cols, name="") +
       scale_fill_manual(values=cols, name="") +
       theme_bw() + xlab("# samples") + ylab("Ratio") +
-      labs(title=paste0("Ratio between ", tolower(axis_lab), " found and true"))
+      labs(title=paste0("Ratio between ", stringr::str_replace_all(columns[1], "_", " "),
+                        " and ", stringr::str_replace_all(columns[2], "_", " ")))
 
   valss = unique(round( c(stats_df[[columns[1]]], stats_df[[columns[2]]]) ))
   breakss = seq(0, max(valss), by=2)
@@ -52,7 +53,8 @@ plot_sigs_clusters_found = function(stats_df, what=c("private", "shared", "all",
       # ggh4x::facet_nested(~ as.factor(G) + as.factor(N)) +
       scale_color_manual(values=cols, name="") +
       theme_bw() +
-      labs(title=paste0(axis_lab, " found (x) and true (y)")) +
+      labs(title=paste0(stringr::str_replace_all(columns[1], "_", " "), " (x) and ",
+                        stringr::str_replace_all(columns[2], "_", " "), " (y)")) +
       xlab(paste0(axis_lab, " found")) + ylab(paste0(axis_lab, " true")) +
       scale_x_continuous(breaks=breakss, limits=c(0, max(valss)+1)) +
       scale_y_continuous(breaks=breakss, limits=c(0, max(valss)+1))
@@ -83,7 +85,7 @@ plot_mse_cosine = function(stats_df, colname, facet=T, fill="inf_type",
   metric = strsplit(colname, "_")[[1]][1]
   quantity = strsplit(colname, "_")[[1]][2]
   if (length(strsplit(colname, "_")[[1]]) == 3)
-    type = paste0(strsplit(colname, "_")[[1]][3], " ") else type = ""
+    type = strsplit(colname, "_")[[1]][3] else type = ""
 
   metric = dplyr::case_when(
     metric == "mse" ~ "MSE",
@@ -94,6 +96,7 @@ plot_mse_cosine = function(stats_df, colname, facet=T, fill="inf_type",
   quantity = dplyr::case_when(
     quantity == "expos" ~ "exposures",
     quantity == "sigs" ~ "signatures",
+    is.na(quantity) ~ "",
     .default = quantity
   )
 
@@ -102,9 +105,6 @@ plot_mse_cosine = function(stats_df, colname, facet=T, fill="inf_type",
       setNames(stats_df[[fill]] %>% unique())
 
   p = stats_df %>%
-    # dplyr::filter(inf_type %in% inf_type,
-    #               run_id %in% runs_id) %>%
-    # dplyr::filter(unique_id %in% unique_id) %>%
     ggplot() +
     geom_boxplot(aes_string(x="as.factor(N)", y=colname, color=fill),
                 fill="white",
@@ -113,7 +113,7 @@ plot_mse_cosine = function(stats_df, colname, facet=T, fill="inf_type",
 
     scale_color_manual(values=cols, name="") +
     theme_bw() + xlab("# samples") + ylab(metric) +
-    labs(title=paste0(metric, " computed between true and inferred ", type, quantity))
+    labs(title=paste(metric, type, quantity))
 
   if (facet)
     p = p + ggh4x::facet_nested(G ~ clust_type, scales=scales)
@@ -121,6 +121,58 @@ plot_mse_cosine = function(stats_df, colname, facet=T, fill="inf_type",
   if (!is.null(ylim)) p = p + ylim(ylim)
 
   return(p)
+}
+
+
+report_stats = function(stats_df, fname, save_path, fill="fits_pattern") {
+  pdf(paste0(save_path, "stats_report.sim", fname, ".pdf"), height=6, width=14)
+
+  (plot_sigs_clusters_found(stats_df, what="similar", facet=T, ratio=T,
+                           scales="free_y", ylim=c(0,NA), fill=fill) %>%
+    patchwork::wrap_plots(
+      plot_mse_cosine(stats_df, "mean_centr_simil", scales="free_y", ylim=c(0,1), fill=fill),
+      guides="collect") & theme(legend.position="bottom")) %>% print()
+
+  (plot_sigs_clusters_found(stats_df, what="all", facet=T, ratio=T,
+                           scales="free_y", ylim=c(0,NA), fill=fill) %>%
+    patchwork::wrap_plots(
+      plot_sigs_clusters_found(stats_df, what="private", facet=T, ratio=T,
+                               scales="free_y", ylim=c(0,NA), fill=fill),
+      guides="collect") & theme(legend.position="bottom")) %>% print()
+
+  (plot_mse_cosine(stats_df, "mse_counts", scales="free_y", ylim=c(0,1), fill=fill) %>%
+    patchwork::wrap_plots(
+      plot_mse_cosine(stats_df, "mse_expos", scales="free_y", ylim=c(0,1), fill=fill),
+      plot_mse_cosine(stats_df, "mse_expos_rare", scales="free_y", ylim=c(0,1), fill=fill),
+      guides="collect") & theme(legend.position="bottom")) %>% print()
+
+  (plot_mse_cosine(stats_df, "cosine_sigs", scales="free_y", ylim=c(0,1), fill=fill) %>%
+    patchwork::wrap_plots(
+      plot_mse_cosine(stats_df, "cosine_expos", scales="free_y", ylim=c(0,1), fill=fill),
+      plot_mse_cosine(stats_df, "cosine_expos_rare", scales="free_y", ylim=c(0,1), fill=fill),
+      guides="collect") & theme(legend.position="bottom")) %>% print()
+
+  (plot_sigs_clusters_found(stats_df %>% dplyr::filter(clust_type!="flat"),
+                           what="clusters", facet=T, ratio=T, scales="free_y",
+                           ylim=c(0,NA), fill=fill) %>%
+    patchwork::wrap_plots(
+      plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), "nmi",
+                      scales="free_y", ylim=c(0,1), fill=fill),
+      plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), "ari",
+                      scales="free_y", ylim=c(0,1), fill=fill),
+      guides="collect") & theme(legend.position="bottom")) %>% print()
+
+  pl1 = stats_df %>% ggplot() +
+    geom_point(aes(x=mean_centr_simil, y=nmi)) +
+    facet_grid(G~run_id) + theme_bw()
+
+  pl2 = stats_df %>% ggplot() +
+    geom_point(aes(x=n_sigs_similar/n_sigs_found, y=nmi)) +
+    facet_grid(G~run_id) + theme_bw()
+
+  patchwork::wrap_plots(pl1, pl2, ncol=2) %>% print()
+
+  dev.off()
 }
 
 
@@ -197,8 +249,6 @@ make_plots = function(fname, data_path, fits_path, save_path=NULL,
 
 }
 
-
-
 plot_sigs_stats = function(stats_df, wrap=T, ratio=F, facet_groups=T, compare_runs=T) {
   p1 = plot_sigs_found(stats_df, "rare", ratio, facet_groups, compare_runs)
   p2 = plot_sigs_found(stats_df, "common", ratio, facet_groups, compare_runs)
@@ -211,7 +261,6 @@ plot_sigs_stats = function(stats_df, wrap=T, ratio=F, facet_groups=T, compare_ru
 
   return(list(p1, p2, p3, p4))
 }
-
 
 plot_metrics_stats = function(stats_df, wrap=T, facet_groups=T) {
   p1 = plot_mse_cosine(stats_df, "mse_counts", facet_groups)
@@ -226,8 +275,6 @@ plot_metrics_stats = function(stats_df, wrap=T, facet_groups=T) {
 
   return(list(p1, p2, p3, p4))
 }
-
-
 
 stats_plots = function(stats_df, save_path, out_name) {
   stats_plots_utils(stats_df, save_path, out_name, T, T)
