@@ -13,116 +13,121 @@ run_id = c("noreg.nonparam.nonsparsity", "noreg.nonparam.sparsity") %>% setNames
 
 
 cutoff = 0.8; min_expos=0.1; df_id = "3107"
-stats_df = get_stats_df(data_path=data_path, fits_path=fits_path,
-                        cutoff=cutoff, fits_pattern=c("fit_clust."),
-                        min_exposure=min_expos) %>%
-  dplyr::mutate(run_id=run_id[fits_path],
-                unique_id=paste(fits_pattern, run_id, sep=".")) %>%
-
-  # dplyr::add_row(
-  #   get_stats_df(data_path=data_path, fits_path=fits_path, cutoff=cutoff, fits_pattern=c("fit.")) %>%
-  #       dplyr::mutate(run_id=run_id[fits_path])
-  # ) %>%
-  dplyr::mutate(clust_type=dplyr::case_when(
-    grepl(".nonparam", run_id) ~ "non-parametric",
-    grepl(".param", run_id) ~ "parametric",
-    .default="flat")
-  )
-saveRDS(stats_df, paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
+# stats_df = get_stats_df(data_path=data_path, fits_path=fits_path,
+#                         cutoff=cutoff, fits_pattern=c("fit_clust."),
+#                         min_exposure=min_expos) %>%
+#   dplyr::mutate(run_id=run_id[fits_path],
+#                 unique_id=paste(fits_pattern, run_id, sep=".")) %>%
+#
+#   # dplyr::add_row(
+#   #   get_stats_df(data_path=data_path, fits_path=fits_path, cutoff=cutoff, fits_pattern=c("fit.")) %>%
+#   #       dplyr::mutate(run_id=run_id[fits_path])
+#   # ) %>%
+#   dplyr::mutate(clust_type=dplyr::case_when(
+#     grepl(".nonparam", run_id) ~ "non-parametric",
+#     grepl(".param", run_id) ~ "parametric",
+#     .default="flat")
+#   )
+# saveRDS(stats_df, paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
 stats_df = readRDS(paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
 
+# fname = paste0(cutoff*100, ".", df_id)
+# report_stats(stats_df=stats_df, fname=fname, save_path=save_path, fill="run_id")
 
-# stats_df %>%
-#   dplyr::mutate(rare_ratio=n_rare_found/n_rare) %>%
-#   ggplot() +
-#   geom_jitter(aes(x=rare_freq, y=rare_ratio, color=inf_type), height=0.01, width=0.01) +
-#   ylim(-0.01,1+0.01) + xlim(-0.01,1+0.01) +
-#   facet_grid(G~clust_type) +
-#   theme_bw()
-
-
-
-pdf(paste0(save_path, "stats_report.sim", cutoff*100, ".", df_id, ".pdf"), height=6, width=14)
-
-plot_sigs_clusters_found(stats_df, what="similar", facet=T, ratio=T,
-                         scales="free_y", ylim=c(0,NA), fill="run_id") %>%
-  patchwork::wrap_plots(
-    plot_mse_cosine(stats_df, "mean_centr_simil", scales="free_y", ylim=c(0,1), fill="run_id"),
-    guides="collect") & theme(legend.position="bottom")
-
-plot_sigs_clusters_found(stats_df, what="all", facet=T, ratio=T,
-                         scales="free_y", ylim=c(0,NA), fill="run_id") %>%
-  patchwork::wrap_plots(plot_sigs_clusters_found(stats_df, what="private", facet=T, ratio=T,
-                                                 scales="free_y", ylim=c(0,NA), fill="run_id"),
-                        guides="collect") & theme(legend.position="bottom")
-
-plot_mse_cosine(stats_df, "mse_counts", scales="free_y", ylim=c(0,1), fill="run_id") %>%
-  patchwork::wrap_plots(plot_mse_cosine(stats_df, "mse_expos", scales="free_y",
-                                        ylim=c(0,1), fill="run_id"),
-                        plot_mse_cosine(stats_df, "mse_expos_rare", scales="free_y",
-                                        ylim=c(0,1), fill="run_id"), guides="collect") &
-  theme(legend.position="bottom")
-
-plot_mse_cosine(stats_df, "cosine_sigs", scales="free_y", ylim=c(0,1), fill="run_id") %>%
-  patchwork::wrap_plots(
-    plot_mse_cosine(stats_df, "cosine_expos", scales="free_y", ylim=c(0,1), fill="run_id"),
-    plot_mse_cosine(stats_df, "cosine_expos_rare", scales="free_y", ylim=c(0,1), fill="run_id"),
-    guides="collect") & theme(legend.position="bottom")
-
-plot_sigs_clusters_found(stats_df %>% dplyr::filter(clust_type!="flat"),
-                         what="clusters", facet=T, ratio=T, scales="free_y",
-                         ylim=c(0,NA), fill="run_id") %>%
-  patchwork::wrap_plots(
-    plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), "nmi",
-                    scales="free_y", ylim=c(0,1), fill="run_id"),
-    plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), "ari",
-                    scales="free_y", ylim=c(0,1), fill="run_id"),
-    guides="collect") & theme(legend.position="bottom")
-
-pl1 = stats_df %>% ggplot() +
-  geom_point(aes(x=mean_centr_simil, y=nmi)) +
-  facet_grid(G~run_id) + theme_bw()
-
-pl2 = stats_df %>% ggplot() +
-  geom_point(aes(x=n_sigs_similar/n_sigs_found, y=nmi)) +
-  facet_grid(G~run_id) + theme_bw()
-
-patchwork::wrap_plots(pl1, pl2, ncol=2)
-
-dev.off()
-
-
-
-x.fit = spars.g6$x.fit
-
-
-
-
-run_g = x.fit %>% get_centroids() %>% nrow()
-run_k = x.fit$n_denovo
-run_seed = x.fit$fit$seed
-x.fit$fit$runs_K %>% dplyr::filter(score_id=="reg_llik",
-                                   K==paste0("K_",run_k),
-                                   groups==paste0("G_",run_g),
-                                   seed==paste0("seed_",run_seed))
-
-n_pars = prod(dim(get_denovo_signatures(x.fit))) +
-  prod(dim(get_exposure(x.fit))) +
-  length(unique(get_groups(x.fit))) +
-  length(unique(get_groups(x.fit))) * length(get_signames(x.fit))
-
-llik = x.fit$fit$runs_K
-x.fit %>% get_centroids(normalize=T)
 
 
 
 spars.g1 = get_simul_fit(stats_df, return_fit=T,
-                      condition="N==150 & G==1 & !grepl('.nonsparsity', run_id) & nmi < 0.3")
+                      condition="grepl('N150.G3.s1',idd) & !grepl('.nonsparsity', run_id)")
 nspars.g1 = get_simul_fit(stats_df, condition="idd==spars.g1$idd & grepl('.nonsparsity', run_id)",
                        return_fit=T)
 
-spars.g1$filtered$plot_expos
-nspars.g1$filtered$plot_expos
+spars.g1$x.fit %>% convert_sigs_names(spars.g1$x.simul) %>%
+  get_centroids(normalize=T) %>% tibble::rownames_to_column() %>%
+  reshape2::melt() %>%
+  ggplot() + geom_bar(aes(x=rowname, y=value, fill=variable), stat="identity") +
+  scale_fill_manual(values=gen_palette(spars.g1$x.fit$color_palette %>% length()))
+
+nspars.g1$x.fit %>% convert_sigs_names(spars.g1$x.simul) %>%
+  get_centroids(normalize=T) %>% tibble::rownames_to_column() %>%
+  reshape2::melt() %>%
+  ggplot() + geom_bar(aes(x=rowname, y=value, fill=variable), stat="identity") +
+  scale_fill_manual(values=gen_palette(nspars.g1$x.fit$color_palette %>% length()))
+
+
+x = nspars.g1$x.fit %>% convert_sigs_names(spars.g1$x.simul)
+simul = nspars.g1$x.simul
+
+x_bis = two_steps_inference(x=get_data(simul), k=x$k_list, enforce_sparsity2=F,
+                    clusters=get_centroids(x) %>% nrow(), n_steps=2000,
+                    nonparametric=TRUE, reg_weight=0., do_initial_fit=TRUE,
+                    save_all_fits=TRUE, reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),])
+
+x_bis.normal = two_steps_inference(x=get_data(simul), k=x$k_list, enforce_sparsity2=F,
+                            clusters=get_centroids(x) %>% nrow(), n_steps=2000,
+                            hyperparameters = list("alpha_sigma"=0.1),
+                            nonparametric=TRUE, reg_weight=0., do_initial_fit=TRUE,
+                            save_all_fits=TRUE, reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),])
+
+x_bis.cat = two_steps_inference(x=get_data(simul), k=x$k_list, enforce_sparsity2=F,
+                            clusters=get_centroids(x) %>% nrow(), n_steps=2000,
+                            nonparametric=TRUE, reg_weight=0., do_initial_fit=TRUE,
+                            save_all_fits=TRUE, reference_catalogue=COSMIC_filt)
+
+x_bis.spars = two_steps_inference(x=get_data(simul), k=x$k_list, enforce_sparsity2=T,
+                            clusters=get_centroids(x) %>% nrow(), n_steps=2000,
+                            nonparametric=TRUE, reg_weight=0., do_initial_fit=TRUE,
+                            save_all_fits=TRUE, reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),])
+
+
+x_bis %>% convert_sigs_names(x.simul=simul) %>%
+  plot_exposures(add_centroid=TRUE, cls=simul$color_palette) %>%
+  patchwork::wrap_plots(simul %>% plot_exposures(add_centroid = T),
+                        guides="collect", ncol=1)
+
+x_bis %>% convert_sigs_names(x.simul=simul) %>% plot_exposures() %>%
+  patchwork::wrap_plots(
+    x_bis %>% convert_sigs_names(x.simul=simul) %>% plot_exposures(centroids=TRUE),
+    widths=c(3,1), guides="collect"
+  )
+
+
+x_bis.normal %>% convert_sigs_names(x.simul=simul) %>%
+  plot_exposures(add_centroid=TRUE, cls=simul$color_palette) %>%
+  patchwork::wrap_plots(simul %>% plot_exposures(add_centroid = T),
+                        guides="collect", ncol=1)
+
+
+x_bis.cat %>% convert_sigs_names(x.simul=simul) %>%
+  plot_exposures(add_centroid=TRUE, cls=simul$color_palette) %>%
+  patchwork::wrap_plots(simul %>% plot_exposures(add_centroid = T),
+                        guides="collect", ncol=1)
+
+
+x_bis.spars %>% convert_sigs_names(x.simul=simul) %>%
+  plot_exposures(add_centroid=TRUE, cls=simul$color_palette) %>%
+  patchwork::wrap_plots(simul %>% plot_exposures(add_centroid = T),
+                        guides="collect", ncol=1)
+
+
+x_bis.spars %>% convert_sigs_names(x.simul=simul) %>% plot_exposures() %>%
+  patchwork::wrap_plots(
+    x_bis.spars %>% convert_sigs_names(x.simul=simul) %>% plot_exposures(centroids=TRUE),
+    widths=c(3,1), guides="collect"
+  )
+
+# alpha_prior = get_centroids(x, normalize = T)[3,"SBS7c"]
+#
+# alpha_sigma = 0.1
+# q_01 = alpha_prior - alpha_sigma # * alpha_prior
+# q_99 = alpha_prior + alpha_sigma # * alpha_prior
+# alpha_sigma_corr = (q_99 - q_01) / (2 * qnorm(p=0.99, mean=alpha_prior, sd=1))
+#
+# (q_99 - q_01) / (2 * qnorm(p=0.99, mean=alpha_prior, sd=1))
+# (q_99 - q_01) / (2 * quantile(rcauchy(1000, location=alpha_prior, scale=1), 0.95))
+#
+# rcauchy(40, location=alpha_prior, scale=alpha_sigma_corr) %>% hist(breaks=100)
+# rnorm(40, mean=alpha_prior, sd=alpha_sigma_corr) %>% hist(breaks=100)
 
 
 spars.g6 = get_simul_fit(stats_df, return_fit=T,
