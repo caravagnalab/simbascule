@@ -1,8 +1,8 @@
 get_stats_df = function(data_path, fits_path, cutoff=0.8, min_exposure=0.,
-                        data_pattern=c("simul."),
+                        data_pattern=c("simul."), run_id=c(""),
                         fits_pattern=c("fit.","fit_hier.","fit_clust."),
                         save_plots=FALSE) {
-
+  if (is.null(names(run_id))) names(run_id) = fits_path
   fits_pattern = fits_pattern %>% stringr::str_replace_all("\\.","\\\\.")
 
   return(
@@ -17,13 +17,17 @@ get_stats_df = function(data_path, fits_path, cutoff=0.8, min_exposure=0.,
                              data_pattern=data_pattern, fits_pattern=pattern_i,
                              cutoff=cutoff, min_exposure=min_exposure,
                              save_plots=save_plots) %>%
-            dplyr::mutate(fits_pattern=pattern_i,
+
+            dplyr::mutate(fits_pattern=stringr::str_replace_all(pattern_i, "\\\\.",""),
+                          unique_id=paste0(fits_pattern, ".", unique_id),
                           fits_path=path_i,
                           data_path=data_path)
+
         } ) %>% do.call(what=rbind, args=.)
       } ) %>% do.call(what=rbind, args=.)
     }) %>% do.call(what=rbind, args=.) %>%
-      dplyr::mutate(fits_pattern=stringr::str_replace_all(fits_pattern, "\\\\.",""))
+      dplyr::mutate(run_id=run_id[fits_path],
+                    unique_id=paste(fits_pattern, run_id, sep="."))
   )
 }
 
@@ -37,12 +41,12 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
 
   x.simul = readRDS(paste0(data_path, simulname)) %>% create_basilica_obj_simul()
 
-  x.fit = readRDS(paste0(fits_path, fitname)) %>% fix_assignments()
+  fit.init = readRDS(paste0(fits_path, fitname))
+  # if (fit.init$n_denovo > 0 && filtered_catalogue)
+  #   fit.init$fit$denovo_signatures = renormalize_denovo_thr(fit.init$fit$denovo_signatures)
+  fit.init = fit.init %>% convert_sigs_names(x.simul, cutoff=cutoff)
 
-  if (x.fit$n_denovo > 0 && filtered_catalogue)
-    x.fit$fit$denovo_signatures = renormalize_denovo_thr(x.fit$fit$denovo_signatures)
-
-  x.fit = x.fit %>% convert_sigs_names(x.simul, cutoff=cutoff)
+  x.fit = fit.init %>% fix_assignments()
 
   rare_common = rare_common_sigs(x.simul)
 
@@ -118,36 +122,22 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
   } else { mean_centr_simil = 0 }
 
   if (save_plots) {
-    all_sigs = unique(c(get_signames(x.simul), get_signames(x.fit)))
-    cls = gen_palette(n=length(all_sigs)) %>% setNames(all_sigs)
-
-    umap_expos = umap::umap(get_exposure(x.fit))
-
-    plot_umap = plot_umap_output(umap_expos, groups=get_groups(x.fit))
-
-    plot_counts = plot_mutations(x.fit, reconstructed=T) %>%
-      patchwork::wrap_plots(plot_mutations(x.simul, reconstructed=F), ncol=1) &
-      patchwork::plot_annotation(title="Counts fit (top) and simulated (bottom)")
-
-    plot_expos = plot_exposures(x.fit %>% filter_exposures(min_expos=min_exposure),
-                                add_centroid=TRUE, cls=cls) %>%
-      patchwork::wrap_plots(plot_exposures(x.simul, add_centroid=TRUE, cls=cls), ncol=1) &
-      patchwork::plot_annotation(title="Exposures fit (top) and simulated (bottom)")
-
-    plot_centroids = plot_exposures(x.fit %>% filter_exposures(min_expos=min_exposure),
-                                    centroids=TRUE, cls=cls) %>%
-      patchwork::wrap_plots(plot_exposures(x.simul, centroids=T, cls=cls), ncol=1) &
-      patchwork::plot_annotation(title="Centroids fit (top) and simulated (bottom)")
-
-    plot_sigs = plot_signatures(x.fit, catalogue=get_signatures(x.simul), cls=cls)
-
+    pp = make_plots_compare(fit1=x.fit, fit2=x.simul, name1="fit", name2="simul",
+                            min_exposure=min_exposure)
+    pp2 = make_plots_compare(fit1=x.fit, fit2=fit.init, name1="new assignments fit",
+                             name2="initial fit", min_exposure=min_exposure)
     pdf(paste0(fits_path, "plots.", idd, ".pdf"), height=8, width=14)
-    patchwork::wrap_plots(plot_expos, plot_centroids, widths=c(3,1), guides="collect") %>% print()
-    plot_counts %>% print()
-    plot_sigs %>% print()
-    plot_umap %>% print()
+    pp$expos_centr %>% print()
+    pp2$expos_centr %>% print()
+    pp$counts %>% print()
+    pp$signatures %>% print()
+    pp$umap %>% print()
+    patchwork::wrap_plots(plot_scores(x.fit),
+                          plot_gradient_norms(x.fit), ncol=2) %>% print()
     dev.off()
   }
+
+  unique_id = strsplit(fits_path, "/")[[1]] %>% tail(1)
 
   return(
     tibble::tibble(
@@ -188,6 +178,7 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
       "priv_rare"=list(rare_common$private_rare),
 
       "idd"=idd,
+      "unique_id"=unique_id
       # "plot_counts"=list(plot_counts),
       # "plot_expos"=list(plot_expos),
       # "plot_centroids"=list(plot_centroids),
@@ -196,6 +187,53 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
   )
 }
 
+
+
+make_plots_compare = function(fit1, fit2, name1="fit1", name2="fit2",
+                              min_exposure=0.) {
+  all_sigs = unique(c(get_signames(fit1), get_signames(fit2)))
+  cls = gen_palette(n=length(all_sigs)) %>% setNames(all_sigs)
+
+  ttitle = paste0(" ", name1, " (top) and ", name2, " (bottom)")
+
+  plot_umap = plot_umap_output(umap::umap(get_exposure(fit1)),
+                               groups=get_groups(fit1)) %>%
+    patchwork::wrap_plots(
+      plot_umap_output(umap::umap(get_exposure(fit2)),
+                       groups=get_groups(fit2))
+    )
+
+  plot_counts = plot_mutations(fit1, reconstructed=T) %>%
+    patchwork::wrap_plots(plot_mutations(fit2, reconstructed=F), ncol=1) &
+    patchwork::plot_annotation(title=paste0("Counts", ttitle))
+
+  plot_expos = plot_exposures(fit1 %>% filter_exposures(min_expos=min_exposure),
+                              add_centroid=TRUE, cls=cls) %>%
+    patchwork::wrap_plots(plot_exposures(fit2, add_centroid=TRUE, cls=cls),
+                          ncol=1, guides="collect") &
+    patchwork::plot_annotation(title=paste0("Exposures", ttitle))
+
+  plot_centroids = plot_exposures(fit1 %>% filter_exposures(min_expos=min_exposure),
+                                  centroids=TRUE, cls=cls) %>%
+    patchwork::wrap_plots(plot_exposures(fit2, centroids=T, cls=cls),
+                          ncol=1, guides="collect") &
+    patchwork::plot_annotation(title=paste0("Centroids", ttitle))
+
+  plot_sigs = plot_signatures(fit1, catalogue=get_signatures(fit2), cls=cls)
+
+  plot_expos_centr = patchwork::wrap_plots(plot_expos + theme(legend.position="none"),
+                                           plot_centroids,
+                                           widths=c(3,1), guides="collect") &
+    theme(legend.position="bottom") &
+    patchwork::plot_annotation(title=paste0("Exposures and centroids", ttitle))
+
+  return(list("exposures"=plot_expos,
+              "centroids"=plot_centroids,
+              "expos_centr"=plot_expos_centr,
+              "signatures"=plot_sigs,
+              "counts"=plot_counts,
+              "umap"=plot_umap))
+}
 
 
 

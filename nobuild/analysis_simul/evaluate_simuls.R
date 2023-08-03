@@ -2,33 +2,35 @@ devtools::load_all()
 load_deps()
 
 main_path = "~/Dropbox/shared_folders/2022. Basilica/simulations/"
+save_path = paste0(main_path, "stats_dataframes/")
 
-save_path = "~/GitHub/simbasilica/nobuild/analysis_simul/"
 
 data_path = paste0(main_path, "synthetic_datasets_3107/")
 # fits_path = c(paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.3107/"),
 #                paste0(main_path, "fits_dn.clust.nonparametric.sparsity.noreg.old_hier.3107/"))
 # run_id = c("noreg.nonparam.nonsparsity", "noreg.nonparam.sparsity") %>% setNames(fits_path)
 
-fits_path = paste0(main_path, "fits_dn.clust.nonparametric.sparsity.noreg.old_hier.0208/")
-# run_id = c("noreg.nonparam.nonsparsity") %>% setNames(fits_path)
+fits_path = c(paste0(main_path, "fits_dn.clust.nonparametric.sparsity.noreg.old_hier.0208/"),
+              paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.0208/"))
+run_id = c("nparam.spars", "nparam.nspars") %>% setNames(fits_path)
 
 # fits_path = paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.cauchy_0208/")
 # run_id = c("noreg.nonparam.nonsparsity.cauchy") %>% setNames(fits_path)
 
 cutoff = 0.8; min_expos=0.; df_id = "0208"
-stats_df = get_stats_df(data_path=data_path, fits_path=fits_path,
-                        cutoff=cutoff, fits_pattern=c("fit_clust."),
-                        min_exposure=min_expos, save_plots=TRUE) %>%
-  # dplyr::mutate(run_id=run_id[fits_path],
-  #               unique_id=paste(fits_pattern, run_id, sep=".")) %>%
-
-  dplyr::mutate(clust_type=dplyr::case_when(
-    grepl(".nonparam", fits_path) ~ "non-parametric",
-    grepl(".param", fits_path) ~ "parametric",
-    .default="flat")
-  )
-saveRDS(stats_df, paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
+# stats_df = get_stats_df(data_path=data_path, fits_path=fits_path,
+#                         cutoff=cutoff, fits_pattern=c("fit_clust."),
+#                         run_id=run_id,
+#                         min_exposure=min_expos, save_plots=FALSE) %>%
+#   # dplyr::mutate(run_id=run_id[fits_path],
+#   #               unique_id=paste(fits_pattern, run_id, sep=".")) %>%
+#
+#   dplyr::mutate(clust_type=dplyr::case_when(
+#     grepl(".nonparam", fits_path) ~ "non-parametric",
+#     grepl(".param", fits_path) ~ "parametric",
+#     .default="flat")
+#   )
+# saveRDS(stats_df, paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
 stats_df = readRDS(paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
 
 # fname = paste0(cutoff*100, ".", df_id)
@@ -37,10 +39,62 @@ stats_df = readRDS(paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".R
 
 
 
-x.simul = readRDS("~/GitHub/simbasilica/nobuild/simulations/synthetic_datasets_3107/simul.N150.G3.s1.1.Rds") %>%
+x.simul = readRDS(paste0(data_path, "simul.N150.G3.s4.1.Rds")) %>%
   create_basilica_obj_simul()
-x.fit = readRDS("~/GitHub/simbasilica/nobuild/simulations/fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.0208/fit_clust.N150.G3.s1.1.Rds")
+
+x = two_steps_inference(x=get_data(x.simul), k=2:6,
+                        reference_catalogue=COSMIC_filt_merged[c("SBS1","SBS5","SBS90","SBS10b"),],
+                        keep_sigs=c("SBS1","SBS5"), n_steps = 2000, nonparametric = T,
+                        clusters=6, py = py, reg_weight = 0., hyperparameters=list("alpha_sigma"=0.1))
+
+x2 = fix_assignments(xbis)
+pp = make_plots_compare(xbis %>% convert_sigs_names(x.simul), x.simul)
+pp2 = make_plots_compare(x2 %>% convert_sigs_names(x.simul), x.simul)
+
+pdf("./tmp.pdf", height = 12, width = 12)
+print(pp)
+dev.off()
+
+pdf("./tmp2.pdf", height = 12, width = 12)
+print(pp2)
+dev.off()
+
+
+x.fit = readRDS(paste0(fits_path[1], "fit_clust.N150.G3.s4.1.Rds")) %>% convert_sigs_names(x.simul)
+fit_new = x.fit %>% fix_assignments(cutoff=0.8, max_iters=20)
+pl = make_plots_compare(x.fit, fit_new, "fit", "fit fixed")
+pl$expos_centr
+
+
+sigs = get_signatures(x.fit)
+substitutions = get_contexts(x.fit) %>% dplyr::pull(subs) %>% unique()
+
+similar = data.frame()
+for (subs in substitutions) {
+  sigs_s = sigs[, grepl(subs, colnames(sigs))]
+  # sigs_s = sigs_s / rowSums(sigs_s)
+
+  cosine = lsa::cosine(t(sigs_s))
+  cosine[is.nan(cosine)] = 0  # lower.tri(cosine, diag=T) |
+
+  similar = similar %>% dplyr::bind_rows(
+    cosine %>% as.data.frame() %>% tibble::rownames_to_column(var="sigs1") %>%
+      reshape2::melt(variable.name="sigs2", value.name="cosine") %>%
+      dplyr::filter(sigs1 %in% get_fixed_signames(x.fit),
+                    sigs2 %in% get_dn_signames(x.fit),
+                    cosine > cutoff) %>%
+      dplyr::mutate(subs=subs)
+  )
+}
+
+
+
+
+
+
 new_fit = fix_assignments(x.fit)
+
+plots = make_plots_compare(x.fit, new_fit, "fit init", "fit fixed")
 
 cls = gen_palette(n=unique(c(get_signames(x.simul), get_signames(x.fit))) %>% length()) %>%
   setNames(unique(c(get_signames(x.simul), get_signames(x.fit))))
