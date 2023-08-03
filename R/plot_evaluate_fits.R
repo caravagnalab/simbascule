@@ -9,7 +9,7 @@ plot_sigs_clusters_found = function(stats_df, what=c("private", "shared", "all",
     what == "similar" ~ c("n_sigs_similar", "n_sigs_found"),
     what == "shared" ~ c("n_shared_found", "n_shared"),
     what == "all" ~ c("n_sigs_found", "n_sigs"),
-    what == "clusters" ~ c("n_groups_found", "G_rare")
+    what == "clusters" ~ c("n_groups_found", "G")
   )
 
   # axis_lab = dplyr::case_when(
