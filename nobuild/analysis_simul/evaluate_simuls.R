@@ -1,28 +1,31 @@
 devtools::load_all()
 load_deps()
 
-main_path = "~/Github/simbasilica/nobuild/simulations/"
+main_path = "~/Dropbox/shared_folders/2022. Basilica/simulations/"
 
 save_path = "~/GitHub/simbasilica/nobuild/analysis_simul/"
 
 data_path = paste0(main_path, "synthetic_datasets_3107/")
-fits_path = c(paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.3107/"),
-               paste0(main_path, "fits_dn.clust.nonparametric.sparsity.noreg.old_hier.3107/"))
-run_id = c("noreg.nonparam.nonsparsity", "noreg.nonparam.sparsity") %>% setNames(fits_path)
+# fits_path = c(paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.3107/"),
+#                paste0(main_path, "fits_dn.clust.nonparametric.sparsity.noreg.old_hier.3107/"))
+# run_id = c("noreg.nonparam.nonsparsity", "noreg.nonparam.sparsity") %>% setNames(fits_path)
 
-# fits_path = paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.0208/")
+fits_path = paste0(main_path, "fits_dn.clust.nonparametric.sparsity.noreg.old_hier.0208/")
 # run_id = c("noreg.nonparam.nonsparsity") %>% setNames(fits_path)
 
-cutoff = 0.8; min_expos=0.; df_id = "3107"
+# fits_path = paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.cauchy_0208/")
+# run_id = c("noreg.nonparam.nonsparsity.cauchy") %>% setNames(fits_path)
+
+cutoff = 0.8; min_expos=0.; df_id = "0208"
 stats_df = get_stats_df(data_path=data_path, fits_path=fits_path,
                         cutoff=cutoff, fits_pattern=c("fit_clust."),
                         min_exposure=min_expos, save_plots=TRUE) %>%
-  dplyr::mutate(run_id=run_id[fits_path],
-                unique_id=paste(fits_pattern, run_id, sep=".")) %>%
+  # dplyr::mutate(run_id=run_id[fits_path],
+  #               unique_id=paste(fits_pattern, run_id, sep=".")) %>%
 
   dplyr::mutate(clust_type=dplyr::case_when(
-    grepl(".nonparam", run_id) ~ "non-parametric",
-    grepl(".param", run_id) ~ "parametric",
+    grepl(".nonparam", fits_path) ~ "non-parametric",
+    grepl(".param", fits_path) ~ "parametric",
     .default="flat")
   )
 saveRDS(stats_df, paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
@@ -32,6 +35,20 @@ stats_df = readRDS(paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".R
 # report_stats(stats_df=stats_df, fname=fname, save_path=save_path, fill="run_id")
 
 
+
+
+x.simul = readRDS("~/GitHub/simbasilica/nobuild/simulations/synthetic_datasets_3107/simul.N150.G3.s1.1.Rds") %>%
+  create_basilica_obj_simul()
+x.fit = readRDS("~/GitHub/simbasilica/nobuild/simulations/fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.0208/fit_clust.N150.G3.s1.1.Rds")
+new_fit = fix_assignments(x.fit)
+
+cls = gen_palette(n=unique(c(get_signames(x.simul), get_signames(x.fit))) %>% length()) %>%
+  setNames(unique(c(get_signames(x.simul), get_signames(x.fit))))
+new_fit %>% convert_sigs_names(x.simul) %>% plot_exposures(add_centroid=TRUE, cls=cls) %>%
+  patchwork::wrap_plots(x.fit %>% convert_sigs_names(x.simul) %>%
+                          plot_exposures(add_centroid=TRUE, cls=cls),
+                        x.simul %>% plot_exposures(add_centroid=TRUE, cls=cls),
+                        ncol=1, guides="collect")
 
 
 x.fit = get_simul_fit(stats_df, return_fit=T, condition="grepl('N150.G1.s1',idd)")$x.fit

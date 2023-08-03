@@ -36,8 +36,8 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
   simulname = paste0(data_pattern, idd, ".Rds")
 
   x.simul = readRDS(paste0(data_path, simulname)) %>% create_basilica_obj_simul()
-  x.fit = readRDS(paste0(fits_path, fitname)) %>%
-    recompute_centroids() # %>% merge_clusters(cutoff=cutoff)
+
+  x.fit = readRDS(paste0(fits_path, fitname)) %>% fix_assignments()
 
   if (x.fit$n_denovo > 0 && filtered_catalogue)
     x.fit$fit$denovo_signatures = renormalize_denovo_thr(x.fit$fit$denovo_signatures)
