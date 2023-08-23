@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --time=30:00:00
 #SBATCH --nodes=1
-#SBATCH --array=8
+#SBATCH --array=6-8
 #SBATCH --cpus-per-task=1
 #SBATCH --partition=gpuq
 #SBATCH --gres=gpu:1
@@ -29,6 +29,6 @@ Rscript /home/elena.buscaroli/GitHub/simbasilica/nobuild/run_scripts/run_new_sim
   $SLURM_ARRAY_TASK_ID \
   nonparametric \
   sparsity \
-  clust \
+  flat \
   0208
 
