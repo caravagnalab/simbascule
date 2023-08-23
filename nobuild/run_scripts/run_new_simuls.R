@@ -16,7 +16,7 @@ cat(paste("i =", i, "new_hier =", new_hier, "regularizer =", regularizer, "enfor
 
 main_path = "~/GitHub/"
 data_path = paste0(main_path, "simbasilica/nobuild/simulations/synthetic_datasets_3107/")
-fits_path = paste0(main_path, "simbasilica/nobuild/simulations/", "fits_dn.",
+fits_path = paste0("~/signatures/simulations/", "fits_dn.",
                    inference_type, ".", args[2], ".", args[3], ".", regularizer, ".old_hier.", run_id, "/")
 
 cat(paste0("\nSaving in directory: ", fits_path, "\n\n"))
@@ -33,7 +33,7 @@ devtools::load_all(paste0(main_path, "simbasilica"))
 
 cli::cli_process_done()
 
-N = c(150, 500)
+N = c(150, 500, 1000)
 G = c(1, 3, 6)
 fracs_rare = 1.
 # fracs_rare = seq(0.01, 0.1, length.out=5) %>% round(digits=2)
@@ -59,7 +59,7 @@ generate_and_run(comb_matrix = comb_i,
 
                  fits_path = fits_path,
                  data_path = data_path,
-                 seeds = 1:5,
+                 seeds = 1:30,
 
                  catalogue_sbs = catalogue_sbs,
                  alpha_range = c(.15,0.2),
@@ -95,7 +95,7 @@ generate_and_run(comb_matrix = comb_i,
                  verbose = FALSE,
                  cohort = i,
 
-                 check_present = FALSE,
+                 check_present = TRUE,
                  inference_type = inference_type
                  )
 
