@@ -5,7 +5,7 @@
 #SBATCH --partition=cpuq
 #SBATCH --job-name=npar_nspars
 #SBATCH --mem=20GB
-#SBATCH --output=/home/elena.buscaroli/GitHub/simbasilica/nobuild/sbatch/npar_nspars-%A-%a.log
+#SBATCH --output=/home/elena.buscaroli/GitHub/simbasilica/nobuild/sbatch/logs_ht/npar_nspars-%A-%a.log
 
 echo '----------------------------'
 echo ' JOB ID: '$SLURM_ARRAY_JOB_ID
