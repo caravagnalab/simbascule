@@ -65,6 +65,8 @@ generate_and_run = function(comb_matrix,
                             cohort = "",
 
                             check_present = TRUE,
+                            check_linear_comb = FALSE,
+
                             inference_type = c("flat","hier","clust"),
                             ...) {
 
@@ -151,6 +153,7 @@ generate_and_run = function(comb_matrix,
                   path = fits_path,
                   out_name = fname,
                   check_present = check_present,
+                  check_linear_comb = check_linear_comb,
                   inference_type = inference_type)
       }
     }
@@ -200,7 +203,7 @@ run_model = function(...,
                      regul_denovo =TRUE,
                      inference_type = c("flat","hier","clust"),
                      check_present = TRUE,
-                     check_linear_comb = TRUE) {
+                     check_linear_comb = FALSE) {
 
   msg1 = paste0("fit.", idd, "\n")
   msg3 = paste0("fit_clust.", idd, "\n")
