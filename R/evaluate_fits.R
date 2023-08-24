@@ -32,18 +32,16 @@ get_stats_df = function(data_path, fits_path, cutoff=0.8, min_exposure=0.,
 }
 
 
-compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
-                              fits_pattern, data_pattern="simul.",
-                              filtered_catalogue=TRUE, min_exposure=0.,
-                              save_plots=FALSE) {
+compare_single_fit = function(fitname, fits_path, data_path, fits_pattern,
+                              data_pattern="simul.",
+                              cutoff=0.8, filtered_catalogue=TRUE,
+                              min_exposure=0., save_plots=FALSE) {
   idd = stringr::str_replace_all(fitname, pattern=paste0(fits_pattern,"|.Rds"), replacement="")
   simulname = paste0(data_pattern, idd, ".Rds")
 
   x.simul = readRDS(paste0(data_path, simulname)) %>% create_basilica_obj_simul()
 
   fit.init = readRDS(paste0(fits_path, fitname))
-  # if (fit.init$n_denovo > 0 && filtered_catalogue)
-  #   fit.init$fit$denovo_signatures = renormalize_denovo_thr(fit.init$fit$denovo_signatures)
   fit.init = fit.init %>% convert_sigs_names(x.simul, cutoff=cutoff)
 
   x.fit = fit.init %>% fix_assignments()
@@ -89,16 +87,12 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
                                                    rare_common$private_common))
 
   if (have_groups(x.fit)) {
-    groups_fit = x.fit$groups; groups_simul = x.simul$groups
-    if (length(unique(groups_fit)) == 1 || length(unique(groups_simul))==1) {
-      groups_fit = c(groups_fit, "imolabella")
-      groups_simul = c(groups_simul, "imolabella")
-    }
+    ari_nmi = compute_ari_nmi(x.simul=x.simul, x.fit=x.fit)
+    ari_nmi_km = compute_ari_nmi(x.simul=x.simul, x.fit=get_obj_initial_params(x.fit))
+    ari_nmi_km_em = compute_ari_nmi(x.simul=x.simul, x.fit=fix_assignments(get_obj_initial_params(x.fit)))
 
-    ari = aricode::ARI(x.simul$groups, x.fit$groups)
-    nmi = aricode::NMI(groups_fit, groups_simul)
   } else {
-    ari = nmi = ari_rare = nmi_rare = NA
+    ari_nmi = ari_nmi_km = ari_nmi_km_em = list(NA, NA)
   }
 
   n_private_found = sum(assigned %in% c(rare_common$private_rare, rare_common$private_common))
@@ -170,8 +164,12 @@ compare_single_fit = function(fitname, fits_path, data_path, cutoff=0.8,
       "mean_centr_simil"=mean_centr_simil,
 
       "n_groups_found"=length(x.fit$groups %>% unique()),
-      "ari"=ari,
-      "nmi"=nmi,
+      "ari"=ari_nmi[[1]],
+      "nmi"=ari_nmi[[2]],
+      "ari_km"=ari_nmi_km[[1]],
+      "nmi_km"=ari_nmi_km[[2]],
+      "ari_km_em"=ari_nmi_km_em[[1]],
+      "nmi_km_em"=ari_nmi_km_em[[2]],
 
       "shared"=list(rare_common$shared),
       "priv_common"=list(rare_common$private_common),

@@ -70,7 +70,8 @@ generate_and_run(comb_matrix = comb_i,
                  shared_sbs = shared_sbs,
 
                  ## inference
-                 reference_catalogue = COSMIC_filt[c("SBS1", "SBS5"), ],
+                 reference_catalogue = COSMIC_filt,
+                 subset_reference = c("SBS1", "SBS5"),
                  keep_sigs = c("SBS1", "SBS5"),
                  hyperparameters = list("alpha_sigma"=0.1),
                  lr = 0.005,

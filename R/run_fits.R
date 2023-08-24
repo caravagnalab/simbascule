@@ -39,6 +39,7 @@ generate_and_run = function(comb_matrix,
 
                             ## inference
                             reference_catalogue = COSMIC_filt,
+                            subset_reference = c("SBS1", "SBS5"),
                             keep_sigs = c("SBS1", "SBS5"),
                             hyperparameters = NULL,
                             lr = 0.005,
@@ -66,9 +67,6 @@ generate_and_run = function(comb_matrix,
                             check_present = TRUE,
                             inference_type = c("flat","hier","clust"),
                             ...) {
-
-  # if ("shared" %in% colnames(comb_matrix))
-  #   shared = comb_matrix$shared %>% unlist() %>% unique()
 
   cat(paste("regularizer =", regularizer, "- reg_weight =", reg_weight, "- inference_type =", paste(inference_type, collapse=", "), "\n"))
 
@@ -122,6 +120,7 @@ generate_and_run = function(comb_matrix,
                   k = k_list,
                   py = py,
                   reference_catalogue = reference_catalogue,
+                  subset_reference = subset_reference,
                   keep_sigs = keep_sigs,
                   hyperparameters = hyperparameters,
                   n_steps = n_steps,
@@ -169,7 +168,7 @@ generate_and_run = function(comb_matrix,
 }
 
 
-save_fit = function(x.fit, path, filename, check_present=FALSE) {
+save_fit = function(x.fit, path, filename, check_present=FALSE, check_linear_comb=FALSE) {
   if (is.null(path)) return()
 
   if (is.null(x.fit)) return()
@@ -177,7 +176,7 @@ save_fit = function(x.fit, path, filename, check_present=FALSE) {
   if (!dir.exists(path))
     dir.create(path, recursive=T)
 
-  if (check_present && filename %in% list.files(paste0(path)))
+  if (check_present && !check_linear_comb && filename %in% list.files(paste0(path)))
     return()
 
   saveRDS(x.fit, paste0(path, filename))
@@ -185,91 +184,133 @@ save_fit = function(x.fit, path, filename, check_present=FALSE) {
 
 
 run_model = function(...,
-                     keep_sigs = c("SBS1","SBS5"),
-                     filtered_cat=TRUE,
+                     reference_catalogue = COSMIC_filt,
+                     subset_reference = c("SBS1","SBS5"),
+                     filtered_cat = TRUE,
                      enforce_sparsity = TRUE,
                      nonparametric = FALSE,
-                     groups=NULL,
-                     cluster_list=NULL,
-                     error_file=NULL,
-                     idd="",
-                     cohort="",
-                     path=NULL,
-                     out_name=NULL,
+                     groups = NULL,
+                     cluster_list = NULL,
+                     error_file = NULL,
+                     idd = "",
+                     cohort = "",
+                     path = NULL,
+                     out_name = NULL,
                      new_hier = FALSE,
                      regul_denovo =TRUE,
                      inference_type = c("flat","hier","clust"),
-                     check_present = TRUE) {
+                     check_present = TRUE,
+                     check_linear_comb = TRUE) {
 
   msg1 = paste0("fit.", idd, "\n")
-  msg2 = paste0("fit_hier.", idd, "\n")
   msg3 = paste0("fit_clust.", idd, "\n")
 
-  expr_fit = (!is.null(path) &&
-              !(check_present && paste0("fit.", out_name) %in% list.files(path)) &&
-              "flat" %in% inference_type)
-  expr_fit_hier = (!is.null(path) &&
-                   !(check_present && paste0("fit_hier.", out_name) %in% list.files(path)) &&
-                   "hier" %in% inference_type)
-  expr_fit_clust = (!is.null(path) &&
-                    !(check_present && paste0("fit_clust.", out_name) %in% list.files(path)) &&
-                    "clust" %in% inference_type)
+  expr_fit = (!is.null(path) && "flat" %in% inference_type)
+  expr_fit_clust = (!is.null(path) && "clust" %in% inference_type)
 
-  x.fit = x.fit.hier = x.fit.clust = NULL
+  x.fit = x.fit.clust = NULL
 
   filename1 = paste0("fit.", idd, ".", cohort, ".Rds") %>%
                       stringr::str_replace_all("\\.\\.", ".")
-
-  filename2 = paste0("fit_hier.", idd, ".", cohort, ".Rds") %>%
-        stringr::str_replace_all("\\.\\.", ".")
-
   filename3 = paste0("fit_clust.", idd, ".", cohort, ".Rds") %>%
         stringr::str_replace_all("\\.\\.", ".")
 
   if (expr_fit) {
     cli::cli_process_start("Running non-hierarchical fit")
-    x.fit = try_run(error_file,
-                    expr =
-                      two_steps_inference(..., cohort=cohort, keep_sigs=keep_sigs,
-                                          groups=NULL, new_hier=FALSE, enforce_sparsity2 = enforce_sparsity,
-                                          nonparametric=FALSE, regul_denovo=regul_denovo),
-                    msg = msg1)
+
+    x.fit = run_single_fit(..., pattern="fit.",
+                           reference_catalogue = reference_catalogue,
+                           subset_reference = subset_reference,
+                           cohort=cohort,
+                           groups=NULL, new_hier=FALSE,
+                           enforce_sparsity = enforce_sparsity,
+                           nonparametric=FALSE, regul_denovo=regul_denovo,
+                           check_present=check_present,
+                           check_linear_comb=check_linear_comb, msg=msg1)
+
     cli::cli_process_done()
 
     cat(paste("Flat run class:", class(x.fit), "\n"))
-    save_fit(x.fit, path, filename1, check_present=check_present)
-  }
-
-  if (expr_fit_hier) {
-    cli::cli_process_start("Running hierarchical fit")
-    x.fit.hier = try_run(error_file,
-                          expr =
-                            two_steps_inference(..., cohort=cohort, keep_sigs=keep_sigs,
-                                                groups=groups, new_hier=new_hier, enforce_sparsity2=enforce_sparsity,
-                                                nonparametric=FALSE, regul_denovo=regul_denovo),
-                          msg = msg2)
-    cli::cli_process_done()
-
-    cat(paste("Hierarchical run class:", class(x.fit.hier), "\n"))
-    save_fit(x.fit.hier, path, filename2, check_present=check_present)
+    save_fit(x.fit, path, filename1, check_present=check_present,
+             check_linear_comb=check_linear_comb)
   }
 
   if (expr_fit_clust) {
     cli::cli_process_start("Running clustering fit")
-    x.fit.clust = try_run(error_file,
-                            expr =
-                              two_steps_inference(..., cohort=cohort, keep_sigs=keep_sigs,
-                                                  groups=NULL, new_hier=new_hier, enforce_sparsity2 = enforce_sparsity,
-                                                  clusters=cluster_list, nonparametric=nonparametric,
-                                                  regul_denovo=regul_denovo),
-                            msg = msg3)
+
+    x.fit.clust = run_single_fit(..., pattern="fit_clust.",
+                           reference_catalogue=reference_catalogue,
+                           subset_reference=subset_reference,
+                           cohort=cohort, keep_sigs=keep_sigs,
+                           groups=NULL, new_hier=new_hier,
+                           enforce_sparsity=enforce_sparsity,
+                           clusters=cluster_list, nonparametric=nonparametric,
+                           regul_denovo=regul_denovo,
+                           check_present=check_present,
+                           check_linear_comb=check_linear_comb, msg=msg3)
+
     cli::cli_process_done()
 
     cat(paste("Clustering run class:", class(x.fit.clust), "\n"))
-    save_fit(x.fit.clust, path, filename3, check_present=check_present)
+    save_fit(x.fit.clust, path, filename3, check_present=check_present,
+             check_linear_comb=check_linear_comb)
+  }
+}
+
+
+run_single_fit = function(...,
+                          pattern,
+                          reference_catalogue = COSMIC_filt,
+                          subset_reference = c("SBS1","SBS5"),
+                          filtered_cat = TRUE,
+                          enforce_sparsity = TRUE,
+                          nonparametric = FALSE,
+                          groups = NULL,
+                          cluster_list = NULL,
+                          error_file = NULL,
+                          idd = "",
+                          cohort = "",
+                          path = NULL,
+                          out_name = NULL,
+                          new_hier = FALSE,
+                          regul_denovo =TRUE,
+                          check_present = TRUE,
+                          check_linear_comb = TRUE,
+                          msg = "") {
+
+  if (check_present && paste0(pattern, out_name) %in% list.files(path)) {
+    if (!check_linear_comb) return(NULL)
+
+    x.fit = readRDS(paste0(path, pattern, out_name))
+  } else {
+    x.fit = try_run(error_file,
+                    expr =
+                      fit(...,
+                          reference_catalogue=reference_catalogue[subset_reference,],
+                          cohort=cohort, keep_sigs=keep_sigs,
+                          groups=NULL, new_hier=FALSE,
+                          enforce_sparsity=enforce_sparsity,
+                          nonparametric=FALSE, regul_denovo=regul_denovo),
+                    msg = msg)
   }
 
-  # return(list("fit1"=x.fit, "fit.hier"=x.fit.hier, "fit.clust"=x.fit.clust))
+  if (check_linear_comb) {
+    lc = filter_signatures_QP(sign1=get_denovo_signatures(x.fit),
+                              sign2=reference_catalogue, return_weights=FALSE)
+    new_sigs = unique(c(subset_reference, unlist(lc)))
+    x.fit_new = try_run(error_file,
+                    expr =
+                      fit(...,
+                          reference_catalogue=reference_catalogue[new_sigs, ],
+                          cohort=cohort, keep_sigs=keep_sigs,
+                          groups=NULL, new_hier=FALSE,
+                          enforce_sparsity=enforce_sparsity,
+                          nonparametric=FALSE, regul_denovo=regul_denovo),
+                    msg = paste(msg, "checking linear comb"))
+    x.fit$lc_check = x.fit_new
+  }
+
+  return(x.fit)
 }
 
 

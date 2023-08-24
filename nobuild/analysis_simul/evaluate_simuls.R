@@ -1,29 +1,21 @@
 devtools::load_all()
 load_deps()
 
-main_path = "~/Dropbox/shared_folders/2022. Basilica/simulations/"
+main_path = "~/Dropbox/shared/2022. Basilica/simulations/"
 save_path = paste0(main_path, "stats_dataframes/")
-
-
 data_path = paste0(main_path, "synthetic_datasets_3107/")
-# fits_path = c(paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.3107/"),
-#                paste0(main_path, "fits_dn.clust.nonparametric.sparsity.noreg.old_hier.3107/"))
-# run_id = c("noreg.nonparam.nonsparsity", "noreg.nonparam.sparsity") %>% setNames(fits_path)
 
 fits_path = c(paste0(main_path, "fits_dn.clust.nonparametric.sparsity.noreg.old_hier.0208/"),
-              paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.0208/"))
-run_id = c("nparam.spars", "nparam.nspars") %>% setNames(fits_path)
+              paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.0208/"),
+              paste0(main_path, "fits_dn.flat.nonparametric.sparsity.noreg.old_hier.0208/"),
+              paste0(main_path, "fits_dn.flat.nonparametric.nonsparsity.noreg.old_hier.0208/"))
+run_id = c("nparam.spars", "nparam.nspars", "flat.spars", "flat.nspars") %>% setNames(fits_path)
 
-# fits_path = paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.cauchy_0208/")
-# run_id = c("noreg.nonparam.nonsparsity.cauchy") %>% setNames(fits_path)
-
-cutoff = 0.8; min_expos=0.; df_id = "0208"
+cutoff = 0.8; min_expos=0.; df_id = "2408"
 # stats_df = get_stats_df(data_path=data_path, fits_path=fits_path,
-#                         cutoff=cutoff, fits_pattern=c("fit_clust."),
+#                         cutoff=cutoff, fits_pattern=c("fit.", "fit_clust."),
 #                         run_id=run_id,
 #                         min_exposure=min_expos, save_plots=FALSE) %>%
-#   # dplyr::mutate(run_id=run_id[fits_path],
-#   #               unique_id=paste(fits_pattern, run_id, sep=".")) %>%
 #
 #   dplyr::mutate(clust_type=dplyr::case_when(
 #     grepl(".nonparam", fits_path) ~ "non-parametric",
@@ -31,208 +23,10 @@ cutoff = 0.8; min_expos=0.; df_id = "0208"
 #     .default="flat")
 #   )
 # saveRDS(stats_df, paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
-stats_df = readRDS(paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
-
 # fname = paste0(cutoff*100, ".", df_id)
 # report_stats(stats_df=stats_df, fname=fname, save_path=save_path, fill="run_id")
 
-
-
-
-x.simul = readRDS(paste0(data_path, "simul.N150.G3.s4.1.Rds")) %>%
-  create_basilica_obj_simul()
-
-x = two_steps_inference(x=get_data(x.simul), k=2:6,
-                        reference_catalogue=COSMIC_filt_merged[c("SBS1","SBS5","SBS90","SBS10b"),],
-                        keep_sigs=c("SBS1","SBS5"), n_steps = 2000, nonparametric = T,
-                        clusters=6, py = py, reg_weight = 0., hyperparameters=list("alpha_sigma"=0.1))
-
-x2 = fix_assignments(xbis)
-pp = make_plots_compare(xbis %>% convert_sigs_names(x.simul), x.simul)
-pp2 = make_plots_compare(x2 %>% convert_sigs_names(x.simul), x.simul)
-
-pdf("./tmp.pdf", height = 12, width = 12)
-print(pp)
-dev.off()
-
-pdf("./tmp2.pdf", height = 12, width = 12)
-print(pp2)
-dev.off()
-
-
-x.fit = readRDS(paste0(fits_path[1], "fit_clust.N150.G3.s4.1.Rds")) %>% convert_sigs_names(x.simul)
-fit_new = x.fit %>% fix_assignments(cutoff=0.8, max_iters=20)
-pl = make_plots_compare(x.fit, fit_new, "fit", "fit fixed")
-pl$expos_centr
-
-
-sigs = get_signatures(x.fit)
-substitutions = get_contexts(x.fit) %>% dplyr::pull(subs) %>% unique()
-
-similar = data.frame()
-for (subs in substitutions) {
-  sigs_s = sigs[, grepl(subs, colnames(sigs))]
-  # sigs_s = sigs_s / rowSums(sigs_s)
-
-  cosine = lsa::cosine(t(sigs_s))
-  cosine[is.nan(cosine)] = 0  # lower.tri(cosine, diag=T) |
-
-  similar = similar %>% dplyr::bind_rows(
-    cosine %>% as.data.frame() %>% tibble::rownames_to_column(var="sigs1") %>%
-      reshape2::melt(variable.name="sigs2", value.name="cosine") %>%
-      dplyr::filter(sigs1 %in% get_fixed_signames(x.fit),
-                    sigs2 %in% get_dn_signames(x.fit),
-                    cosine > cutoff) %>%
-      dplyr::mutate(subs=subs)
-  )
-}
-
-
-
-
-
-
-new_fit = fix_assignments(x.fit)
-
-plots = make_plots_compare(x.fit, new_fit, "fit init", "fit fixed")
-
-cls = gen_palette(n=unique(c(get_signames(x.simul), get_signames(x.fit))) %>% length()) %>%
-  setNames(unique(c(get_signames(x.simul), get_signames(x.fit))))
-new_fit %>% convert_sigs_names(x.simul) %>% plot_exposures(add_centroid=TRUE, cls=cls) %>%
-  patchwork::wrap_plots(x.fit %>% convert_sigs_names(x.simul) %>%
-                          plot_exposures(add_centroid=TRUE, cls=cls),
-                        x.simul %>% plot_exposures(add_centroid=TRUE, cls=cls),
-                        ncol=1, guides="collect")
-
-
-x.fit = get_simul_fit(stats_df, return_fit=T, condition="grepl('N150.G1.s1',idd)")$x.fit
-x.simul = get_simul_fit(stats_df, return_fit=T, condition="grepl('N150.G1.s1',idd)")$x.simul
-
-x.fit %>% plot_exposures()
-
-
-
-
-nspars.g1 = get_simul_fit(stats_df, condition="idd==spars.g1$idd & grepl('.nonsparsity', run_id)",
-                       return_fit=T)
-
-spars.g1$x.fit %>% convert_sigs_names(spars.g1$x.simul) %>%
-  get_centroids(normalize=T) %>% tibble::rownames_to_column() %>%
-  reshape2::melt() %>%
-  ggplot() + geom_bar(aes(x=rowname, y=value, fill=variable), stat="identity") +
-  scale_fill_manual(values=gen_palette(spars.g1$x.fit$color_palette %>% length()))
-
-nspars.g1$x.fit %>% convert_sigs_names(spars.g1$x.simul) %>%
-  get_centroids(normalize=T) %>% tibble::rownames_to_column() %>%
-  reshape2::melt() %>%
-  ggplot() + geom_bar(aes(x=rowname, y=value, fill=variable), stat="identity") +
-  scale_fill_manual(values=gen_palette(nspars.g1$x.fit$color_palette %>% length()))
-
-
-simul = spars.g1$x.simul
-xnew = recompute_centroids(spars.g1$x.fit) %>% convert_sigs_names(simul)
-xnew %>% plot_exposures(centroids = T)
-xnew %>% plot_exposures(add_centroid = T)
-
-xnew %>% merge_clusters() %>% plot_exposures(add_centroid = T)
-
-
-
-x = nspars.g1$x.fit %>% convert_sigs_names(spars.g1$x.simul)
-simul = nspars.g1$x.simul
-
-x_bis = two_steps_inference(x=get_data(simul), k=x$k_list, enforce_sparsity2=F,
-                    clusters=get_centroids(x) %>% nrow(), n_steps=2000,
-                    nonparametric=TRUE, reg_weight=0., do_initial_fit=TRUE,
-                    save_all_fits=TRUE, reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),])
-
-x_bis.normal = two_steps_inference(x=get_data(simul), k=x$k_list, enforce_sparsity2=F,
-                            clusters=get_centroids(x) %>% nrow(), n_steps=2000,
-                            hyperparameters = list("alpha_sigma"=0.1),
-                            nonparametric=TRUE, reg_weight=0., do_initial_fit=TRUE,
-                            save_all_fits=TRUE, reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),])
-
-x_bis.cat = two_steps_inference(x=get_data(simul), k=x$k_list, enforce_sparsity2=F,
-                            clusters=get_centroids(x) %>% nrow(), n_steps=2000,
-                            nonparametric=TRUE, reg_weight=0., do_initial_fit=TRUE,
-                            save_all_fits=TRUE, reference_catalogue=COSMIC_filt)
-
-x_bis.spars = two_steps_inference(x=get_data(simul), k=x$k_list, enforce_sparsity2=T,
-                            clusters=get_centroids(x) %>% nrow(), n_steps=2000,
-                            nonparametric=TRUE, reg_weight=0., do_initial_fit=TRUE,
-                            save_all_fits=TRUE, reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),])
-
-
-x_bis %>% convert_sigs_names(x.simul=simul) %>%
-  plot_exposures(add_centroid=TRUE, cls=simul$color_palette) %>%
-  patchwork::wrap_plots(simul %>% plot_exposures(add_centroid = T),
-                        guides="collect", ncol=1)
-
-x_bis %>% convert_sigs_names(x.simul=simul) %>% plot_exposures() %>%
-  patchwork::wrap_plots(
-    x_bis %>% convert_sigs_names(x.simul=simul) %>% plot_exposures(centroids=TRUE),
-    widths=c(3,1), guides="collect"
-  )
-
-
-x_bis.normal %>% convert_sigs_names(x.simul=simul) %>%
-  plot_exposures(add_centroid=TRUE, cls=simul$color_palette) %>%
-  patchwork::wrap_plots(simul %>% plot_exposures(add_centroid = T),
-                        guides="collect", ncol=1)
-
-
-x_bis.cat %>% convert_sigs_names(x.simul=simul) %>%
-  plot_exposures(add_centroid=TRUE, cls=simul$color_palette) %>%
-  patchwork::wrap_plots(simul %>% plot_exposures(add_centroid = T),
-                        guides="collect", ncol=1)
-
-
-x_bis.spars %>% convert_sigs_names(x.simul=simul) %>%
-  plot_exposures(add_centroid=TRUE, cls=simul$color_palette) %>%
-  patchwork::wrap_plots(simul %>% plot_exposures(add_centroid = T),
-                        guides="collect", ncol=1)
-
-
-x_bis.spars %>% convert_sigs_names(x.simul=simul) %>% plot_exposures() %>%
-  patchwork::wrap_plots(
-    x_bis.spars %>% convert_sigs_names(x.simul=simul) %>% plot_exposures(centroids=TRUE),
-    widths=c(3,1), guides="collect"
-  )
-
-# alpha_prior = get_centroids(x, normalize = T)[3,"SBS7c"]
-#
-# alpha_sigma = 0.1
-# q_01 = alpha_prior - alpha_sigma # * alpha_prior
-# q_99 = alpha_prior + alpha_sigma # * alpha_prior
-# alpha_sigma_corr = (q_99 - q_01) / (2 * qnorm(p=0.99, mean=alpha_prior, sd=1))
-#
-# (q_99 - q_01) / (2 * qnorm(p=0.99, mean=alpha_prior, sd=1))
-# (q_99 - q_01) / (2 * quantile(rcauchy(1000, location=alpha_prior, scale=1), 0.95))
-#
-# rcauchy(40, location=alpha_prior, scale=alpha_sigma_corr) %>% hist(breaks=100)
-# rnorm(40, mean=alpha_prior, sd=alpha_sigma_corr) %>% hist(breaks=100)
-
-
-spars.g6 = get_simul_fit(stats_df, return_fit=T,
-                      condition="N==500 & G==3 & !grepl('.nonsparsity', run_id)")
-nspars.g6 = get_simul_fit(stats_df, condition="idd==spars.g6$idd & grepl('.nonsparsity', run_id)",
-                       return_fit=T)
-spar
-
-p1 = spars.g6$filtered$plot_centroids[[1]]
-p2 = spars.g6$filtered$plot_expos[[1]] & theme(legend.position="none")
-patchwork::wrap_plots(p1, p2, widths=c(1,3))
-spars.g6$filtered$plot_expos %>% patchwork::wrap_plots(spars.g6$filtered$plot_centroids[[1]], widths=c(3, 1))
-spars.g6$filtered$plot_centroids
-spars.g6$filtered$plot_sigs
-
-nspars.g6$filtered$plot_expos
-
-
-
-spars_umap = umap::umap(get_exposure(spars$x.fit))
-
-
+stats_df = readRDS(paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
 
 
 ## Example ####

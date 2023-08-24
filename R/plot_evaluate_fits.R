@@ -162,15 +162,33 @@ report_stats = function(stats_df, fname, save_path, fill="fits_pattern") {
                       scales="free_y", ylim=c(0,1), fill=fill),
       guides="collect") & theme(legend.position="bottom")) %>% print()
 
-  pl1 = stats_df %>% ggplot() +
-    geom_point(aes(x=mean_centr_simil, y=nmi)) +
-    facet_grid(G~fits_path) + theme_bw()
+  (plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), "nmi",
+                   scales="free_y", ylim=c(0,1), fill=fill) %>%
+      patchwork::wrap_plots(
+        plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), "nmi_km",
+                        scales="free_y", ylim=c(0,1), fill=fill),
+        plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), "nmi_km_em",
+                        scales="free_y", ylim=c(0,1), fill=fill),
+        guides="collect", nrow=1) & theme(legend.position="bottom")) %>% print()
 
-  pl2 = stats_df %>% ggplot() +
-    geom_point(aes(x=n_sigs_similar/n_sigs_found, y=nmi)) +
-    facet_grid(G~fits_path) + theme_bw()
+  (plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), "ari",
+                   scales="free_y", ylim=c(0,1), fill=fill) %>%
+      patchwork::wrap_plots(
+        plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), "ari_km",
+                        scales="free_y", ylim=c(0,1), fill=fill),
+        plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), "ari_km_em",
+                        scales="free_y", ylim=c(0,1), fill=fill),
+        guides="collect", nrow=1) & theme(legend.position="bottom")) %>% print()
 
-  patchwork::wrap_plots(pl1, pl2, ncol=2) %>% print()
+  # pl1 = stats_df %>% ggplot() +
+  #   geom_point(aes(x=mean_centr_simil, y=nmi)) +
+  #   facet_grid(G~fits_path) + theme_bw()
+
+  # pl2 = stats_df %>% ggplot() +
+  #   geom_point(aes(x=n_sigs_similar/n_sigs_found, y=nmi)) +
+  #   facet_grid(G~fits_path) + theme_bw()
+
+  # patchwork::wrap_plots(pl1, pl2, ncol=2) %>% print()
 
   dev.off()
 }
@@ -301,6 +319,5 @@ plot_umap_output = function(umap_obj, groups) {
     tibble::rownames_to_column() %>%
     dplyr::mutate(groupid=groups) %>%
     ggplot() + geom_point(aes(x=V1, y=V2, color=as.factor(groupid)))
-
 }
 

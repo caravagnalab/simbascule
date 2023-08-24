@@ -12,6 +12,36 @@ get_assigned_missing = function(x.fit, x.simul=NULL, reference_cat=NULL, cutoff=
 }
 
 
+rename_expos = function(exposures, old_names) {
+  exposures = exposures %>% dplyr::select(dplyr::contains(old_names))
+  colnames(exposures) = old_names %>% names
+  return(exposures)
+}
+
+rename_sigs = function(signatures, old_names) {
+  signatures = signatures[old_names, ]
+  rownames(signatures) = old_names %>% names
+  return(signatures)
+}
+
+
+rename_params = function(params_list, new_order_ref, new_order_dn) {
+  for (parname in names(params_list)) {
+    if (is.null(params_list[[parname]])) next
+    if (grepl("alpha", parname))
+      params_list[[parname]] = rename_expos(exposures=params_list[[parname]],
+                                            old_names=c(new_order_ref, new_order_dn))
+    else if (grepl("beta_d", parname))
+      params_list[[parname]] = rename_sigs(signatures=params_list[[parname]],
+                                           old_names=new_order_dn)
+    else if (grepl("beta_f", parname))
+      params_list[[parname]] = rename_sigs(signatures=params_list[[parname]],
+                                           old_names=new_order_ref)
+  }
+  return(params_list)
+}
+
+
 convert_sigs_names = function(x.fit, x.simul=NULL, reference_cat=NULL, cutoff=0.8) {
   assigned_missing = get_assigned_missing(x.fit=x.fit, x.simul=x.simul, reference_cat=reference_cat, cutoff=cutoff)
   assigned_missing$assigned_tp = assigned_missing$assigned_tp %>% sort
@@ -29,40 +59,25 @@ convert_sigs_names = function(x.fit, x.simul=NULL, reference_cat=NULL, cutoff=0.
   new_order_ref = c(assigned_missing$assigned_tp[which_ref], added_ref)
   new_order_dn = c(assigned_missing$assigned_tp[which_dn], added_dn)
 
-  # reorder
-  x.fit$fit$exposure = x.fit %>% get_exposure() %>%
-    dplyr::select(dplyr::contains(new_order_ref), dplyr::contains(new_order_dn))
-
-  x.fit$fit$denovo_signatures = get_denovo_signatures(x.fit)[new_order_dn,]
-  x.fit$fit$catalogue_signatures = get_catalogue_signatures(x.fit)[new_order_ref,]
+  # rename elements
+  x.fit$fit$exposure = rename_expos(exposures=get_exposure(x.fit),
+                                    old_names=c(new_order_ref, new_order_dn))
+  x.fit$fit$denovo_signatures = rename_sigs(signatures=get_denovo_signatures(x.fit),
+                                            old_names=new_order_dn)
+  x.fit$fit$catalogue_signatures = rename_sigs(signatures=get_catalogue_signatures(x.fit),
+                                            old_names=new_order_ref)
   x.fit$color_palette = x.fit$color_palette[c(new_order_ref, new_order_dn)]
 
-  # modify names
-  colnames(x.fit$fit$exposure) = c(new_order_ref, new_order_dn) %>% names
-  rownames(x.fit$fit$denovo_signatures) = new_order_dn %>% names
-  rownames(x.fit$fit$catalogue_signatures) = new_order_ref %>% names
-  try(expr = {
-    x.fit$fit$params$alpha_prior = x.fit$fit$params$alpha_prior %>%
-      dplyr::select(dplyr::contains(new_order_ref), dplyr::contains(new_order_dn))
-    colnames(x.fit$fit$params$alpha_prior) = c(new_order_ref, new_order_dn) %>% names
-  }, silent=T)
-  try(expr = {
-    x.fit$fit$params$alpha_noise = x.fit$fit$params$alpha_noise %>%
-      dplyr::select(dplyr::contains(new_order_ref), dplyr::contains(new_order_dn))
-    colnames(x.fit$fit$params$alpha_noise) = c(new_order_ref, new_order_dn) %>% names
-  }, silent=T)
-  try(expr = {
-    x.fit$fit$params$beta_d = x.fit$fit$params$beta_d[new_order_dn,]
-    rownames(x.fit$fit$params$beta_d) = new_order_dn %>% names
-  }, silent=T)
-  try(expr = {
-    x.fit$fit$params$beta_f = x.fit$fit$params$beta_f[new_order_ref,]
-    rownames(x.fit$fit$params$beta_f) = new_order_ref %>% names
-  }, silent=T)
+  x.fit$fit$params = rename_params(params_list=x.fit$fit$params,
+                                   new_order_ref=new_order_ref,
+                                   new_order_dn=new_order_dn)
+  x.fit$fit$init_params = rename_params(params_list=x.fit$fit$init_params,
+                                        new_order_ref=new_order_ref,
+                                        new_order_dn=new_order_dn)
+
   try(expr = {
     names(x.fit$color_palette) = c(new_order_ref, new_order_dn) %>% names
   }, silent=T)
-  # names(x.fit$color_palette) = c(new_order_ref, new_order_dn) %>% names
 
   return(x.fit)
 }
@@ -177,3 +192,15 @@ get_groups_rare = function(x.simul, rare_common=NULL) {
   return(groups_new)
 }
 
+
+compute_ari_nmi = function(x.simul, x.fit) {
+  groups_fit = x.fit$groups; groups_simul = x.simul$groups
+  if (length(unique(groups_fit)) == 1 || length(unique(groups_simul)) == 1) {
+    groups_fit = c(groups_fit, "imolabella")
+    groups_simul = c(groups_simul, "imolabella")
+  }
+
+  ari = aricode::ARI(as.character(groups_fit), as.character(groups_simul))
+  nmi = aricode::NMI(as.character(groups_fit), as.character(groups_simul))
+  return(c(ari, nmi))
+}
