@@ -27,6 +27,6 @@ Rscript /home/elena.buscaroli/GitHub/simbasilica/nobuild/run_scripts/run_new_sim
   $SLURM_ARRAY_TASK_ID \
   nonparametric \
   sparsity \
-  flat \
+  clust \
   0208
 
