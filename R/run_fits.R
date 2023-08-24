@@ -146,7 +146,7 @@ generate_and_run = function(comb_matrix,
                   groups = x$groups[[1]] - 1,
                   cluster_list = cluster_list,
 
-                  error_file = failed,
+                  # error_file = failed,
                   idd = idd,
                   cohort = cohort,
                   path = fits_path,

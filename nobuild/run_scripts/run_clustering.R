@@ -13,12 +13,12 @@ regularizer = "noreg"
 inference_type = "clust"
 reg_weight = 0.
 
-cat(paste("i =", i, "new_hier =", new_hier, "regularizer =", regularizer, "enforce_sparsity=", enforce_sparsity, 
+cat(paste("i =", i, "new_hier =", new_hier, "regularizer =", regularizer, "enforce_sparsity=", enforce_sparsity,
           "inference_type =", inference_type, "nonparametric =", nonparametric, "\n"))
 
 main_path = "/home/elena.buscaroli/GitHub/"
 data_path = paste0(main_path, "simbasilica/nobuild/simulations/synthetic_datasets_0507/")
-fits_path = paste0(main_path, "simbasilica/nobuild/simulations/", "fits_dn.", 
+fits_path = paste0(main_path, "simbasilica/nobuild/simulations/", "fits_dn.",
        inference_type, ".", args[2], ".", regularizer, ".old_hier.", run_id, "/")
 
 cat(paste0("\nSaving in directory: ", fits_path, "\n\n"))
@@ -84,7 +84,6 @@ generate_and_run(catalogue = COSMIC_filt,
                  initializ_seed = FALSE,
                  initializ_pars_fit = FALSE,
                  save_runs_seed = TRUE,
-               #   seed_list = c(10),
                  seed_list = c(10, 33, 92),
 
                  CUDA = TRUE,
