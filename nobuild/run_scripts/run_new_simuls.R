@@ -15,7 +15,7 @@ cat(paste("i =", i, "new_hier =", new_hier, "regularizer =", regularizer, "enfor
           "inference_type =", inference_type, "nonparametric =", nonparametric, "\n"))
 
 main_path = "~/GitHub/"
-data_path = paste0(main_path, "simbasilica/nobuild/simulations/synthetic_datasets_3107/")
+data_path = "~/signatures/simulations/synthetic_datasets_3107/"
 fits_path = paste0("~/signatures/simulations/", "fits_dn.",
                    inference_type, ".", args[2], ".", args[3], ".", regularizer, ".old_hier.", run_id, "/")
 
