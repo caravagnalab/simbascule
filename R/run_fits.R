@@ -101,7 +101,7 @@ generate_and_run = function(comb_matrix,
 
       if (!do.fits) next
 
-      max_k = nrow(x$beta[[1]]) - length(keep_sigs) + 2
+      max_k = nrow(x$beta[[1]]) - length(subset_reference) + 2
       min_k = max(0, max_k - 4)
       k_list = min_k:max_k
 
@@ -170,22 +170,6 @@ generate_and_run = function(comb_matrix,
 
 }
 
-
-save_fit = function(x.fit, path, filename, check_present=FALSE, check_linear_comb=FALSE) {
-  if (is.null(path)) return()
-
-  if (is.null(x.fit)) return()
-
-  if (!dir.exists(path))
-    dir.create(path, recursive=T)
-
-  if (check_present && !check_linear_comb && filename %in% list.files(paste0(path)))
-    return()
-
-  saveRDS(x.fit, paste0(path, filename))
-}
-
-
 run_model = function(...,
                      k_list,
                      reference_catalogue = COSMIC_filt,
@@ -241,11 +225,11 @@ run_model = function(...,
     cli::cli_process_start("Running clustering fit")
 
     x.fit.clust = run_single_fit(..., pattern="fit_clust.", path=path,
-                                 k_list = k_list,
+                                 out_name=out_name, k_list = k_list,
                                  reference_catalogue=reference_catalogue,
-                                 subset_reference=subset_reference, out_name=out_name,
-                                 cohort=cohort,
-                                 groups=NULL, new_hier=new_hier, error_file=error_file,
+                                 subset_reference=subset_reference, 
+                                 cohort=cohort, groups=NULL, new_hier=new_hier, 
+                                 error_file=error_file,
                                  nonparametric=nonparametric,
                                  regul_denovo=regul_denovo,
                                  check_present=check_present,
@@ -297,14 +281,18 @@ run_single_fit = function(...,
                     msg = msg)
   }
 
-  cat("AFTER READING FILE RDS")
+  cat("AFTER READING FILE RDS\n")
 
   if (check_linear_comb) {
     lc = filter_signatures_QP(sign1=get_denovo_signatures(x.fit),
-                              sign2=reference_catalogue, return_weights=FALSE)
+                              sign2=reference_catalogue, 
+                              return_weights=FALSE, 
+                              filt_pi=0.1)
     new_sigs = unique(c(subset_reference, unlist(lc)))
-    new_min_k = length(setdiff(unlist(lc), subset_reference))
-    k_list[1] = max(0, k_list[1] - new_min_k)
+    new_min_k = max(0, k_list[1] - length(setdiff(unlist(lc), subset_reference)))
+    k_list = new_min_k:k_list[length(k_list)]
+    cat(paste(paste(new_sigs, collapse=","), "\n"))
+    cat(paste(paste(k_list, collapse=","), "\n"))
     x.fit_new = try_run(error_file,
                     expr =
                       fit(..., k = k_list,
@@ -326,11 +314,26 @@ run_single_fit = function(...,
 try_run = function(error_file, expr, msg) {
   tryCatch(expr = expr,
            error = function(e) {
-	     print(paste(e))
-             write(msg, file=error_file, append=T)
-             write(paste(e), file=error_file, append=T)
-             write(paste(reticulate::py_last_error()), file=error_file, append=T)
-             return(NULL)
+            print(paste(e))
+            write(msg, file=error_file, append=T)
+            write(paste(e), file=error_file, append=T)
+            write(paste(reticulate::py_last_error()), file=error_file, append=T)
+            return(NULL)
            })
+}
+
+
+save_fit = function(x.fit, path, filename, check_present=FALSE, check_linear_comb=FALSE) {
+  if (is.null(path)) return()
+
+  if (is.null(x.fit)) return()
+
+  if (!dir.exists(path))
+    dir.create(path, recursive=T)
+
+  if (check_present && !check_linear_comb && filename %in% list.files(paste0(path)))
+    return()
+
+  saveRDS(x.fit, paste0(path, filename))
 }
 

@@ -1,5 +1,5 @@
 args = commandArgs(trailingOnly = TRUE)
-cat(paste("Arguments:", paste(args, collapse=", "), "\n"))
+cat(paste("\nArguments:", paste(args, collapse=", "), "\n"))
 
 i = as.integer(args[1])
 nonparametric = args[2] == "nonparametric"
@@ -96,7 +96,7 @@ generate_and_run(comb_matrix = comb_i,
                  cohort = i,
 
                  check_present = TRUE,
-		 check_linear_comb = TRUE,
+                 check_linear_comb = TRUE,
                  inference_type = inference_type
                  )
 
