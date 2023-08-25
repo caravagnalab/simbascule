@@ -142,12 +142,12 @@ generate_and_run = function(comb_matrix,
                   save_all_fits = save_all_fits,
                   seed_list = seed_list,
 
-                  filtered_cat = TRUE,
+                  filtered_catalogue = TRUE,
                   verbose = verbose,
                   groups = x$groups[[1]] - 1,
                   cluster_list = cluster_list,
 
-                  # error_file = failed,
+                  error_file = failed,
                   idd = idd,
                   cohort = cohort,
                   path = fits_path,
@@ -189,8 +189,6 @@ save_fit = function(x.fit, path, filename, check_present=FALSE, check_linear_com
 run_model = function(...,
                      reference_catalogue = COSMIC_filt,
                      subset_reference = c("SBS1","SBS5"),
-                     filtered_cat = TRUE,
-                     enforce_sparsity = TRUE,
                      nonparametric = FALSE,
                      groups = NULL,
                      cluster_list = NULL,
@@ -221,12 +219,11 @@ run_model = function(...,
   if (expr_fit) {
     cli::cli_process_start("Running non-hierarchical fit")
 
-    x.fit = run_single_fit(..., pattern="fit.",
+    x.fit = run_single_fit(..., pattern="fit.", path=path,
                            reference_catalogue = reference_catalogue,
                            subset_reference = subset_reference,
-                           cohort=cohort,
-                           groups=NULL, new_hier=FALSE,
-                           enforce_sparsity = enforce_sparsity,
+                           cohort=cohort, error_file=error_file,
+                           groups=NULL, new_hier=FALSE, out_name=out_name,
                            nonparametric=FALSE, regul_denovo=regul_denovo,
                            check_present=check_present,
                            check_linear_comb=check_linear_comb, msg=msg1)
@@ -241,13 +238,12 @@ run_model = function(...,
   if (expr_fit_clust) {
     cli::cli_process_start("Running clustering fit")
 
-    x.fit.clust = run_single_fit(..., pattern="fit_clust.",
+    x.fit.clust = run_single_fit(..., pattern="fit_clust.", path=path,
                            reference_catalogue=reference_catalogue,
-                           subset_reference=subset_reference,
-                           cohort=cohort, keep_sigs=keep_sigs,
-                           groups=NULL, new_hier=new_hier,
-                           enforce_sparsity=enforce_sparsity,
-                           clusters=cluster_list, nonparametric=nonparametric,
+                           subset_reference=subset_reference, out_name=out_name,
+                           cohort=cohort,
+                           groups=NULL, new_hier=new_hier, error_file=error_file,
+                           nonparametric=nonparametric,
                            regul_denovo=regul_denovo,
                            check_present=check_present,
                            check_linear_comb=check_linear_comb, msg=msg3)
@@ -265,8 +261,6 @@ run_single_fit = function(...,
                           pattern,
                           reference_catalogue = COSMIC_filt,
                           subset_reference = c("SBS1","SBS5"),
-                          filtered_cat = TRUE,
-                          enforce_sparsity = TRUE,
                           nonparametric = FALSE,
                           groups = NULL,
                           cluster_list = NULL,
@@ -290,12 +284,16 @@ run_single_fit = function(...,
                     expr =
                       fit(...,
                           reference_catalogue=reference_catalogue[subset_reference,],
-                          cohort=cohort, keep_sigs=keep_sigs,
-                          groups=NULL, new_hier=FALSE,
-                          enforce_sparsity=enforce_sparsity,
-                          nonparametric=FALSE, regul_denovo=regul_denovo),
+                          nonparametric = nonparametric,
+                          groups = groups,
+                          clusters = cluster_list,
+                          cohort = cohort,
+                          new_hier = new_hier,
+                          regul_denovo = regul_denovo),
                     msg = msg)
   }
+
+  cat("AFTER READING FILE RDS")
 
   if (check_linear_comb) {
     lc = filter_signatures_QP(sign1=get_denovo_signatures(x.fit),
@@ -305,10 +303,12 @@ run_single_fit = function(...,
                     expr =
                       fit(...,
                           reference_catalogue=reference_catalogue[new_sigs, ],
-                          cohort=cohort, keep_sigs=keep_sigs,
-                          groups=NULL, new_hier=FALSE,
-                          enforce_sparsity=enforce_sparsity,
-                          nonparametric=FALSE, regul_denovo=regul_denovo),
+                          nonparametric = nonparametric,
+                          groups = groups,
+                          clusters = cluster_list,
+                          cohort = cohort,
+                          new_hier = new_hier,
+                          regul_denovo = regul_denovo),
                     msg = paste(msg, "checking linear comb"))
     x.fit$lc_check = x.fit_new
   }
@@ -320,6 +320,7 @@ run_single_fit = function(...,
 try_run = function(error_file, expr, msg) {
   tryCatch(expr = expr,
            error = function(e) {
+	     print(paste(e))
              write(msg, file=error_file, append=T)
              write(paste(e), file=error_file, append=T)
              write(paste(reticulate::py_last_error()), file=error_file, append=T)

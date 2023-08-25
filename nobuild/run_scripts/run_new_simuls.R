@@ -31,12 +31,13 @@ py = reticulate::import_from_path(module = "pybasilica", path = paste0(main_path
 devtools::load_all(paste0(main_path, "basilica"))
 devtools::load_all(paste0(main_path, "simbasilica"))
 
+library(lsa)
+
 cli::cli_process_done()
 
 N = c(150, 500, 1000)
 G = c(1, 3, 6)
 fracs_rare = 1.
-# fracs_rare = seq(0.01, 0.1, length.out=5) %>% round(digits=2)
 
 shared_sbs = c("SBS1","SBS5")
 private_sbs = c("SBS4","SBS13","SBS10b","SBS7c","SBS7d",
@@ -46,8 +47,6 @@ catalogue_sbs = COSMIC_filt[c(shared_sbs, private_sbs),]
 set.seed(1234)
 comb = expand.grid(N_vals=N, n_groups_vals=G, fracs_rare=fracs_rare) %>%
   dplyr::arrange(N_vals)
-# comb = expand.grid(N_vals=N, n_groups_vals=G)
-
 
 comb_i = comb[i+1,]
 inference_type = c(strsplit(inference_type, "_")[[1]])
@@ -97,6 +96,7 @@ generate_and_run(comb_matrix = comb_i,
                  cohort = i,
 
                  check_present = TRUE,
+		 check_linear_comb = TRUE,
                  inference_type = inference_type
                  )
 
