@@ -119,7 +119,7 @@ generate_and_run = function(comb_matrix,
                        ".", cohort, ".Rds") %>% stringr::str_replace_all("\\.\\.", ".")
 
         run_model(x = x$counts[[1]],
-                  k = k_list,
+                  k_list = k_list,
                   py = py,
                   reference_catalogue = reference_catalogue,
                   subset_reference = subset_reference,
@@ -187,6 +187,7 @@ save_fit = function(x.fit, path, filename, check_present=FALSE, check_linear_com
 
 
 run_model = function(...,
+                     k_list,
                      reference_catalogue = COSMIC_filt,
                      subset_reference = c("SBS1","SBS5"),
                      nonparametric = FALSE,
@@ -220,6 +221,7 @@ run_model = function(...,
     cli::cli_process_start("Running non-hierarchical fit")
 
     x.fit = run_single_fit(..., pattern="fit.", path=path,
+                           k_list = k_list,
                            reference_catalogue = reference_catalogue,
                            subset_reference = subset_reference,
                            cohort=cohort, error_file=error_file,
@@ -239,14 +241,15 @@ run_model = function(...,
     cli::cli_process_start("Running clustering fit")
 
     x.fit.clust = run_single_fit(..., pattern="fit_clust.", path=path,
-                           reference_catalogue=reference_catalogue,
-                           subset_reference=subset_reference, out_name=out_name,
-                           cohort=cohort,
-                           groups=NULL, new_hier=new_hier, error_file=error_file,
-                           nonparametric=nonparametric,
-                           regul_denovo=regul_denovo,
-                           check_present=check_present,
-                           check_linear_comb=check_linear_comb, msg=msg3)
+                                 k_list = k_list,
+                                 reference_catalogue=reference_catalogue,
+                                 subset_reference=subset_reference, out_name=out_name,
+                                 cohort=cohort,
+                                 groups=NULL, new_hier=new_hier, error_file=error_file,
+                                 nonparametric=nonparametric,
+                                 regul_denovo=regul_denovo,
+                                 check_present=check_present,
+                                 check_linear_comb=check_linear_comb, msg=msg3)
 
     cli::cli_process_done()
 
@@ -258,6 +261,7 @@ run_model = function(...,
 
 
 run_single_fit = function(...,
+                          k_list,
                           pattern,
                           reference_catalogue = COSMIC_filt,
                           subset_reference = c("SBS1","SBS5"),
@@ -282,7 +286,7 @@ run_single_fit = function(...,
   } else {
     x.fit = try_run(error_file,
                     expr =
-                      fit(...,
+                      fit(..., k = k_list,
                           reference_catalogue=reference_catalogue[subset_reference,],
                           nonparametric = nonparametric,
                           groups = groups,
@@ -299,9 +303,11 @@ run_single_fit = function(...,
     lc = filter_signatures_QP(sign1=get_denovo_signatures(x.fit),
                               sign2=reference_catalogue, return_weights=FALSE)
     new_sigs = unique(c(subset_reference, unlist(lc)))
+    new_min_k = length(setdiff(unlist(lc), subset_reference))
+    k_list[1] = max(0, k_list[1] - new_min_k)
     x.fit_new = try_run(error_file,
                     expr =
-                      fit(...,
+                      fit(..., k = k_list,
                           reference_catalogue=reference_catalogue[new_sigs, ],
                           nonparametric = nonparametric,
                           groups = groups,
