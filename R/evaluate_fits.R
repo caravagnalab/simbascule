@@ -1,7 +1,7 @@
 get_stats_df = function(data_path, fits_path, cutoff=0.8, min_exposure=0.,
                         data_pattern=c("simul."), run_id=c(""),
                         fits_pattern=c("fit.","fit_hier.","fit_clust."),
-                        save_plots=FALSE) {
+                        save_plots=FALSE, check_plots=TRUE) {
   if (is.null(names(run_id))) names(run_id) = fits_path
   fits_pattern = fits_pattern %>% stringr::str_replace_all("\\.","\\\\.")
 
@@ -16,7 +16,7 @@ get_stats_df = function(data_path, fits_path, cutoff=0.8, min_exposure=0.,
           compare_single_fit(fitname=fitname, fits_path=path_i, data_path=data_path,
                              data_pattern=data_pattern, fits_pattern=pattern_i,
                              cutoff=cutoff, min_exposure=min_exposure,
-                             save_plots=save_plots) %>%
+                             save_plots=save_plots, check_plots=check_plots) %>%
 
             dplyr::mutate(fits_pattern=stringr::str_replace_all(pattern_i, "\\\\.",""),
                           unique_id=paste0(fits_pattern, ".", unique_id),
@@ -35,14 +35,19 @@ get_stats_df = function(data_path, fits_path, cutoff=0.8, min_exposure=0.,
 compare_single_fit = function(fitname, fits_path, data_path, fits_pattern,
                               data_pattern="simul.",
                               cutoff=0.8, filtered_catalogue=TRUE,
-                              min_exposure=0., save_plots=FALSE) {
+                              min_exposure=0.,
+                              save_plots=FALSE, check_plots=TRUE) {
   idd = stringr::str_replace_all(fitname, pattern=paste0(fits_pattern,"|.Rds"), replacement="")
   simulname = paste0(data_pattern, idd, ".Rds")
 
   x.simul = readRDS(paste0(data_path, simulname)) %>% create_basilica_obj_simul()
 
-  fit.init = readRDS(paste0(fits_path, fitname)) %>% get_adjusted_fit_lc()
-  fit.init = fit.init %>% convert_sigs_names(x.simul, cutoff=cutoff)
+  fit.nolc = readRDS(paste0(fits_path, fitname)) %>%
+    convert_sigs_names(x.simul, cutoff=cutoff) %>%
+    fix_assignments()
+
+  fit.init = fit.nolc %>% get_adjusted_fit_lc() %>%
+    convert_sigs_names(x.simul, cutoff=cutoff)
 
   x.fit = fit.init %>% fix_assignments()
 
@@ -115,18 +120,25 @@ compare_single_fit = function(fitname, fits_path, data_path, fits_pattern,
     mean_centr_simil = coss[upper.tri(coss)] %>% mean
   } else { mean_centr_simil = 0 }
 
-  if (save_plots) {
-    pp = make_plots_compare(fit1=x.fit, fit2=x.simul, name1="fit", name2="simul",
-                            min_exposure=min_exposure)
-    pp2 = make_plots_compare(fit1=x.fit, fit2=fit.init, name1="new assignments fit",
-                             name2="initial fit", min_exposure=min_exposure)
+  if (save_plots &&
+      !(check_plots && paste0("plots.", idd, ".pdf") %in% list.files(fits_path))) {
+
+    all_sigs = c(get_signames(x.fit), get_signames(fit.nolc), get_signames(x.simul)) %>% unique()
+    colors_ref = COSMIC_color_palette(catalogue=COSMIC_filt)[all_sigs] %>%
+      purrr::discard(is.na)
+    colors_dn = gen_palette(n=length(setdiff(all_sigs, names(colors_ref)))) %>%
+      setNames(setdiff(all_sigs, names(colors_ref)))
+    cls = c(colors_ref, colors_dn)
+
+    pp = make_plots_compare(fit1=x.fit, fit2=x.simul, name1="fit linear comb", name2="simul",
+                            min_exposure=min_exposure, cls=cls)
     pdf(paste0(fits_path, "plots.", idd, ".pdf"), height=8, width=14)
-    pp$expos_centr %>% print()
-    pp2$expos_centr %>% print()
-    pp$counts %>% print()
-    pp$signatures %>% print()
-    pp$umap %>% print()
-    patchwork::wrap_plots(plot_scores(x.fit),
+
+    plot_fit(x.fit, x.simul, cls=cls, title="Fit with lcomb vs Simulated") %>% print()
+    plot_fit(fit.nolc, x.simul, cls=cls, title="Fit no lcomb vs Simulated") %>% print()
+    plot_fit(x.fit, fit.init, cls=cls, title="Fit with lcomb vs Fit initial") %>% print()
+    patchwork::wrap_plots(pp$umap,
+                          plot_scores(x.fit),
                           plot_gradient_norms(x.fit), ncol=2) %>% print()
     dev.off()
   }
@@ -177,10 +189,6 @@ compare_single_fit = function(fitname, fits_path, data_path, fits_pattern,
 
       "idd"=idd,
       "unique_id"=unique_id
-      # "plot_counts"=list(plot_counts),
-      # "plot_expos"=list(plot_expos),
-      # "plot_centroids"=list(plot_centroids),
-      # "plot_sigs"=list(plot_sigs)
     )
   )
 }
@@ -188,9 +196,11 @@ compare_single_fit = function(fitname, fits_path, data_path, fits_pattern,
 
 
 make_plots_compare = function(fit1, fit2, name1="fit1", name2="fit2",
-                              min_exposure=0.) {
-  all_sigs = unique(c(get_signames(fit1), get_signames(fit2)))
-  cls = gen_palette(n=length(all_sigs)) %>% setNames(all_sigs)
+                              min_exposure=0., cls=NULL) {
+  if (is.null(cls)) {
+    all_sigs = unique(c(get_signames(fit1), get_signames(fit2)))
+    cls = gen_palette(n=length(all_sigs)) %>% setNames(all_sigs)
+  }
 
   ttitle = paste0(" ", name1, " (top) and ", name2, " (bottom)")
 
@@ -199,7 +209,7 @@ make_plots_compare = function(fit1, fit2, name1="fit1", name2="fit2",
     patchwork::wrap_plots(
       plot_umap_output(umap::umap(get_exposure(fit2)),
                        groups=get_groups(fit2))
-    )
+    ) & theme(legend.position="bottom")
 
   plot_counts = plot_mutations(fit1, reconstructed=T) %>%
     patchwork::wrap_plots(plot_mutations(fit2, reconstructed=F), ncol=1) &

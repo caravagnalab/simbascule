@@ -15,7 +15,8 @@ cutoff = 0.8; min_expos=0.; df_id = "lc.2408"
 stats_df = get_stats_df(data_path=data_path, fits_path=fits_path,
                         cutoff=cutoff, fits_pattern=c("fit.", "fit_clust."),
                         run_id=run_id,
-                        min_exposure=min_expos, save_plots=FALSE) %>%
+                        min_exposure=min_expos,
+                        save_plots=TRUE, check_plots=FALSE) %>%
 
   dplyr::mutate(clust_type=dplyr::case_when(
     grepl(".nonparam", fits_path) ~ "non-parametric",

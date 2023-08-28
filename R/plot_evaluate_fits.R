@@ -318,6 +318,8 @@ plot_umap_output = function(umap_obj, groups) {
   umap_obj$layout %>% as.data.frame() %>%
     tibble::rownames_to_column() %>%
     dplyr::mutate(groupid=groups) %>%
-    ggplot() + geom_point(aes(x=V1, y=V2, color=as.factor(groupid)))
+    ggplot() +
+    geom_point(aes(x=V1, y=V2, color=as.factor(groupid))) +
+    theme_bw()
 }
 
