@@ -32,6 +32,65 @@ get_stats_df = function(data_path, fits_path, cutoff=0.8, min_exposure=0.,
 }
 
 
+stats_fit_quality = function(x.fit, x.simul, suffix_name="") {
+  rare_common = rare_common_sigs(x.simul)
+
+  sigs.fit = get_signatures(x.fit); sigs.simul = get_signatures(x.simul)
+
+  expos.fit = get_exposure(x.fit); expos.simul = get_exposure(x.simul)
+
+  assigned_missing = get_assigned_missing(x.fit=x.fit, x.simul=x.simul, cutoff=cutoff)
+  assigned = assigned_missing$assigned_tp
+  unassigned = c(assigned_missing$missing_fn, assigned_missing$added_fp)
+
+  assigned_missing_all = get_assigned_missing(x.fit=x.fit, x.simul=x.simul,
+                                              cutoff=0.)
+
+  mse_counts = compute.mse(m_true=x.simul$input$counts, m_inf=get_data(x.fit, reconstructed=T))
+  mse_expos = compute.mse(m_true=expos.simul, m_inf=expos.fit,
+                          assigned_missing=assigned_missing)
+
+  cosine_sigs = compute.cosine(sigs.fit, sigs.simul,
+                               assigned_missing=assigned_missing,
+                               what="sigs")
+  cosine_expos = compute.cosine(expos.fit, expos.simul,
+                                assigned_missing=assigned_missing,
+                                what="expos")
+
+  ari_nmi = ari_nmi_km = ari_nmi_km_em = list(NA, NA)
+  if (have_groups(x.fit)) {
+    ari_nmi = compute_ari_nmi(x.simul=x.simul, x.fit=x.fit)
+    ari_nmi_km = compute_ari_nmi(x.simul=x.simul, x.fit=get_obj_initial_params(x.fit))
+    ari_nmi_km_em = compute_ari_nmi(x.simul=x.simul, x.fit=fix_assignments(get_obj_initial_params(x.fit)))
+  }
+
+  res = tibble::tibble(
+    "assigned_missing"=list(assigned_missing),
+    "shared_found"=sum(assigned %in% rare_common$shared),
+    "private_found"=sum(assigned %in% c(rare_common$private_rare, rare_common$private_common)),
+
+    "mse_counts"=mse_counts,
+    "mse_expos"=mse_expos,
+
+    "cosine_sigs"=cosine_sigs,
+    "cosine_expos"=cosine_expos,
+
+    "sigs_found"=length(get_signames(x.fit)),
+
+    "groups_found"=length(x.fit$groups %>% unique()),
+    "ari"=ari_nmi[[1]],
+    "nmi"=ari_nmi[[2]],
+    "ari_km"=ari_nmi_km[[1]],
+    "nmi_km"=ari_nmi_km[[2]],
+    "ari_km_em"=ari_nmi_km_em[[1]],
+    "nmi_km_em"=ari_nmi_km_em[[2]],
+  )
+
+  colnames(res) = paste(colnames(res), suffix_name, sep="_")
+  return(res)
+}
+
+
 compare_single_fit = function(fitname, fits_path, data_path, fits_pattern,
                               data_pattern="simul.",
                               cutoff=0.8, filtered_catalogue=TRUE,
@@ -42,101 +101,35 @@ compare_single_fit = function(fitname, fits_path, data_path, fits_pattern,
 
   x.simul = readRDS(paste0(data_path, simulname)) %>% create_basilica_obj_simul()
 
-  fit.nolc = readRDS(paste0(fits_path, fitname)) %>%
+  x.fit.nolc = readRDS(paste0(fits_path, fitname)) %>%
     convert_sigs_names(x.simul, cutoff=cutoff) %>%
     fix_assignments()
 
-  fit.init = fit.nolc %>% get_adjusted_fit_lc() %>%
+  x.fit.noadj = readRDS(paste0(fits_path, fitname)) %>%
+    get_adjusted_fit_lc() %>%
     convert_sigs_names(x.simul, cutoff=cutoff)
 
-  x.fit = fit.init %>% fix_assignments()
+  x.fit = x.fit.noadj %>% fix_assignments()
 
   rare_common = rare_common_sigs(x.simul)
-
-  sigs.fit = get_signatures(x.fit)
-  sigs.simul = get_signatures(x.simul)
-
-  expos.fit = get_exposure(x.fit)
-  expos.simul = get_exposure(x.simul)
-
-  assigned_missing = get_assigned_missing(x.fit=x.fit, x.simul=x.simul, cutoff=cutoff)
-  assigned = assigned_missing$assigned_tp
-  unassigned = c(assigned_missing$missing_fn, assigned_missing$added_fp)
-
-  assigned_missing_all = get_assigned_missing(x.fit=x.fit, x.simul=x.simul,
-                                              cutoff=0.)
-
-  mse_counts = compute.mse(m_true=x.simul$input$counts,
-                           m_inf=get_data(x.fit, reconstructed=T))
-  mse_expos = compute.mse(m_true=expos.simul,
-                          m_inf=expos.fit,
-                          assigned_missing=assigned_missing)
-  mse_expos_rare = compute.mse(m_true=expos.simul,
-                               m_inf=expos.fit,
-                               assigned_missing=assigned_missing,
-                               subset_cols=c(rare_common$private_rare,
-                                             rare_common$private_common))
-
-
-  cosine_sigs = compute.cosine(sigs.fit, sigs.simul,
-                               assigned_missing=assigned_missing,
-                               what="sigs")
-
-  cosine_expos = compute.cosine(expos.fit, expos.simul,
-                                assigned_missing=assigned_missing,
-                                what="expos")
-  cosine_expos_rare = compute.cosine(expos.fit, expos.simul,
-                                     assigned_missing=assigned_missing,
-                                     what="expos",
-                                     subset_cols=c(rare_common$private_rare,
-                                                   rare_common$private_common))
-
-  if (have_groups(x.fit)) {
-    ari_nmi = compute_ari_nmi(x.simul=x.simul, x.fit=x.fit)
-    ari_nmi_km = compute_ari_nmi(x.simul=x.simul, x.fit=get_obj_initial_params(x.fit))
-    ari_nmi_km_em = compute_ari_nmi(x.simul=x.simul, x.fit=fix_assignments(get_obj_initial_params(x.fit)))
-
-  } else {
-    ari_nmi = ari_nmi_km = ari_nmi_km_em = list(NA, NA)
-  }
-
-  n_private_found = sum(assigned %in% c(rare_common$private_rare, rare_common$private_common))
-  n_shared_found = sum(assigned %in% rare_common$shared)
-
-  true_n_sigs = nrow(sigs.simul)
-  inf_n_sigs = nrow(sigs.fit)
-
-  similarity_fit = lsa::cosine(t(get_signatures(x.fit))) %>% as.data.frame() %>%
-    tibble::rownames_to_column(var="sigs1") %>%
-    reshape2::melt(variable.name="sigs2") %>% dplyr::mutate(sigs2=as.character(sigs2)) %>%
-    dplyr::rowwise() %>%
-    dplyr::mutate(combb=paste(sort(c(sigs1,sigs2)), collapse=",")) %>%
-    dplyr::filter(sigs1 != sigs2, value > cutoff) %>%
-    dplyr::select(-sigs1,-sigs2) %>% unique()
-  n_sigs_similar = nrow(similarity_fit)
-
-  if (length(unique(x.fit$groups)) > 1) {
-    coss = lsa::cosine(t( get_centroids(x.fit)[as.character(unique(x.fit$groups)),] ))
-    mean_centr_simil = coss[upper.tri(coss)] %>% mean
-  } else { mean_centr_simil = 0 }
 
   if (save_plots &&
       !(check_plots && paste0("plots.", idd, ".pdf") %in% list.files(fits_path))) {
 
-    all_sigs = c(get_signames(x.fit), get_signames(fit.nolc), get_signames(x.simul)) %>% unique()
-    colors_ref = COSMIC_color_palette(catalogue=COSMIC_filt)[all_sigs] %>%
-      purrr::discard(is.na)
+    all_sigs = c(get_signames(x.fit), get_signames(x.fit.nolc), get_signames(x.simul)) %>% unique()
+    colors_ref = COSMIC_color_palette(catalogue=COSMIC_filt)[all_sigs] %>% purrr::discard(is.na)
     colors_dn = gen_palette(n=length(setdiff(all_sigs, names(colors_ref)))) %>%
       setNames(setdiff(all_sigs, names(colors_ref)))
     cls = c(colors_ref, colors_dn)
 
-    pp = make_plots_compare(fit1=x.fit, fit2=x.simul, name1="fit linear comb", name2="simul",
+    pp = make_plots_compare(fit1=x.fit, fit2=x.simul,
+                            name1="fit linear comb", name2="simul",
                             min_exposure=min_exposure, cls=cls)
-    pdf(paste0(fits_path, "plots.", idd, ".pdf"), height=8, width=14)
 
-    plot_fit(x.fit, x.simul, cls=cls, title="Fit with lcomb vs Simulated") %>% print()
-    plot_fit(fit.nolc, x.simul, cls=cls, title="Fit no lcomb vs Simulated") %>% print()
-    plot_fit(x.fit, fit.init, cls=cls, title="Fit with lcomb vs Fit initial") %>% print()
+    pdf(paste0(fits_path, "plots.", idd, ".pdf"), height=8, width=14)
+    plot_fit(x.fit, x.simul, cls=cls, name1="Fit LC", name2="Simulated") %>% print()
+    plot_fit(x.fit.nolc, x.simul, cls=cls, name1="Fit no LC", name2="Simulated") %>% print()
+    plot_fit(x.fit, x.fit.noadj, cls=cls, name1="Fit LC", name2="Fit LC no EM") %>% print()
     patchwork::wrap_plots(pp$umap,
                           plot_scores(x.fit),
                           plot_gradient_norms(x.fit), ncol=2) %>% print()
@@ -151,45 +144,21 @@ compare_single_fit = function(fitname, fits_path, data_path, fits_pattern,
         as.numeric(),
       "G"=(stringr::str_replace_all(idd, "G", "") %>% strsplit(split="[.]"))[[1]][2] %>%
         as.numeric(),
+      "idd"=idd,
+      "unique_id"=unique_id,
 
       "n_shared"=length(rare_common$shared),
       "n_common"=length(rare_common$private_common),
       "n_rare"=length(rare_common$private_rare),
 
-      "n_shared_found"=n_shared_found,
-      "n_private_found"=n_private_found,
-
-      "assigned_missing"=list(assigned_missing),
-
-      "mse_counts"=mse_counts,
-      "mse_expos"=mse_expos,
-      "mse_expos_rare"=mse_expos_rare,
-
-      "cosine_sigs"=cosine_sigs,
-      "cosine_expos"=cosine_expos,
-      "cosine_expos_rare"=cosine_expos_rare,
-
-      "n_sigs"=true_n_sigs,
-      "n_sigs_found"=inf_n_sigs,
-
-      "n_sigs_similar"=n_sigs_similar,
-      "mean_centr_simil"=mean_centr_simil,
-
-      "n_groups_found"=length(x.fit$groups %>% unique()),
-      "ari"=ari_nmi[[1]],
-      "nmi"=ari_nmi[[2]],
-      "ari_km"=ari_nmi_km[[1]],
-      "nmi_km"=ari_nmi_km[[2]],
-      "ari_km_em"=ari_nmi_km_em[[1]],
-      "nmi_km_em"=ari_nmi_km_em[[2]],
+      "n_sigs"=length(get_signames(x.simul)),
 
       "shared"=list(rare_common$shared),
       "priv_common"=list(rare_common$private_common),
-      "priv_rare"=list(rare_common$private_rare),
-
-      "idd"=idd,
-      "unique_id"=unique_id
-    )
+      "priv_rare"=list(rare_common$private_rare)
+    ) %>%
+      tibble::add_column(stats_fit_quality(x.fit.nolc, x.simul, suffix_name="noLC")) %>%
+      tibble::add_column(stats_fit_quality(x.fit, x.simul, suffix_name="LC"))
   )
 }
 

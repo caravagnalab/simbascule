@@ -11,12 +11,12 @@ fits_path = c(paste0(main_path, "fits_dn.clust.nonparametric.sparsity.noreg.old_
               paste0(main_path, "fits_dn.flat.nonparametric.nonsparsity.noreg.old_hier.0208/"))
 run_id = c("nparam.spars", "nparam.nspars", "flat.spars", "flat.nspars") %>% setNames(fits_path)
 
-cutoff = 0.8; min_expos=0.; df_id = "lc.2408"
+cutoff = 0.8; min_expos=0.; df_id = "2808"
 stats_df = get_stats_df(data_path=data_path, fits_path=fits_path,
                         cutoff=cutoff, fits_pattern=c("fit.", "fit_clust."),
                         run_id=run_id,
                         min_exposure=min_expos,
-                        save_plots=TRUE, check_plots=FALSE) %>%
+                        save_plots=FALSE, check_plots=FALSE) %>%
 
   dplyr::mutate(clust_type=dplyr::case_when(
     grepl(".nonparam", fits_path) ~ "non-parametric",
@@ -24,8 +24,11 @@ stats_df = get_stats_df(data_path=data_path, fits_path=fits_path,
     .default="flat")
   )
 # saveRDS(stats_df, paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
-# fname = paste0(cutoff*100, ".", df_id)
-# report_stats(stats_df=stats_df, fname=fname, save_path=save_path, fill="run_id")
+fname = paste0(cutoff*100, ".", df_id)
+report_stats(stats_df=stats_df, fname=paste(fname,"LC",sep="."),
+             save_path=save_path, fill="run_id", suffix_name="LC")
+report_stats(stats_df=stats_df, fname=paste(fname,"noLC",sep="."),
+             save_path=save_path, fill="run_id", suffix_name="noLC")
 
 stats_df = readRDS(paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
 
