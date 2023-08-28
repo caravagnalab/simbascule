@@ -1,9 +1,9 @@
 devtools::load_all()
 load_deps()
 
-main_path = "~/Dropbox/shared/2022. Basilica/simulations/"
-save_path = paste0(main_path, "stats_dataframes/")
-data_path = paste0(main_path, "synthetic_datasets_3107/")
+main_path = "~/Dropbox/shared/2022. Basilica/simulations/simuls_lc/"
+save_path = paste0(main_path, "../stats_dataframes/")
+data_path = paste0(main_path, "../synthetic_datasets_3107/")
 
 fits_path = c(paste0(main_path, "fits_dn.clust.nonparametric.sparsity.noreg.old_hier.0208/"),
               paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.0208/"),
@@ -11,17 +11,17 @@ fits_path = c(paste0(main_path, "fits_dn.clust.nonparametric.sparsity.noreg.old_
               paste0(main_path, "fits_dn.flat.nonparametric.nonsparsity.noreg.old_hier.0208/"))
 run_id = c("nparam.spars", "nparam.nspars", "flat.spars", "flat.nspars") %>% setNames(fits_path)
 
-cutoff = 0.8; min_expos=0.; df_id = "2408"
-# stats_df = get_stats_df(data_path=data_path, fits_path=fits_path,
-#                         cutoff=cutoff, fits_pattern=c("fit.", "fit_clust."),
-#                         run_id=run_id,
-#                         min_exposure=min_expos, save_plots=FALSE) %>%
-#
-#   dplyr::mutate(clust_type=dplyr::case_when(
-#     grepl(".nonparam", fits_path) ~ "non-parametric",
-#     grepl(".param", fits_path) ~ "parametric",
-#     .default="flat")
-#   )
+cutoff = 0.8; min_expos=0.; df_id = "lc.2408"
+stats_df = get_stats_df(data_path=data_path, fits_path=fits_path,
+                        cutoff=cutoff, fits_pattern=c("fit.", "fit_clust."),
+                        run_id=run_id,
+                        min_exposure=min_expos, save_plots=FALSE) %>%
+
+  dplyr::mutate(clust_type=dplyr::case_when(
+    grepl(".nonparam", fits_path) ~ "non-parametric",
+    grepl(".param", fits_path) ~ "parametric",
+    .default="flat")
+  )
 # saveRDS(stats_df, paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
 # fname = paste0(cutoff*100, ".", df_id)
 # report_stats(stats_df=stats_df, fname=fname, save_path=save_path, fill="run_id")

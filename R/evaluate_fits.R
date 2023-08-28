@@ -41,7 +41,7 @@ compare_single_fit = function(fitname, fits_path, data_path, fits_pattern,
 
   x.simul = readRDS(paste0(data_path, simulname)) %>% create_basilica_obj_simul()
 
-  fit.init = readRDS(paste0(fits_path, fitname))
+  fit.init = readRDS(paste0(fits_path, fitname)) %>% get_adjusted_fit_lc()
   fit.init = fit.init %>% convert_sigs_names(x.simul, cutoff=cutoff)
 
   x.fit = fit.init %>% fix_assignments()

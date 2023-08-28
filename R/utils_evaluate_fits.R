@@ -28,6 +28,9 @@ rename_sigs = function(signatures, old_names) {
 rename_params = function(params_list, new_order_ref, new_order_dn) {
   for (parname in names(params_list)) {
     if (is.null(params_list[[parname]])) next
+    if ((is.data.frame(params_list[[parname]]) ||
+         is.matrix(params_list[[parname]])) &&
+        nrow(params_list[[parname]])==0) next
     if (grepl("alpha", parname))
       params_list[[parname]] = rename_expos(exposures=params_list[[parname]],
                                             old_names=c(new_order_ref, new_order_dn))
@@ -93,7 +96,7 @@ compare_sigs_inf_gt = function(sigs.fit, sigs.simul, cutoff=0.8) {
 
   total_sigs = rbind(sigs.fit[!rownames(sigs.fit) %in% common,],
                      sigs.simul[!rownames(sigs.simul) %in% common,])
-  cosine_matr = lsa::cosine(t(total_sigs))[unique_gt, unique_inf]
+  cosine_matr = as.data.frame(lsa::cosine(t(total_sigs)))[unique_gt, unique_inf]
 
   if (length(unique_inf) == 1 && length(unique_gt) == 1) {
     cosine_matr = as.data.frame(cosine_matr)
