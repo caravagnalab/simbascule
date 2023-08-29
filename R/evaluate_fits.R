@@ -66,8 +66,11 @@ stats_fit_quality = function(x.fit, x.simul, suffix_name="") {
 
   res = tibble::tibble(
     "assigned_missing"=list(assigned_missing),
+
+    "sigs_found"=length(assigned),
     "shared_found"=sum(assigned %in% rare_common$shared),
     "private_found"=sum(assigned %in% c(rare_common$private_rare, rare_common$private_common)),
+    "K_found"=length(get_signames(x.fit)),
 
     "mse_counts"=mse_counts,
     "mse_expos"=mse_expos,
@@ -75,7 +78,6 @@ stats_fit_quality = function(x.fit, x.simul, suffix_name="") {
     "cosine_sigs"=cosine_sigs,
     "cosine_expos"=cosine_expos,
 
-    "sigs_found"=length(get_signames(x.fit)),
 
     "groups_found"=length(x.fit$groups %>% unique()),
     "ari"=ari_nmi[[1]],
@@ -147,11 +149,10 @@ compare_single_fit = function(fitname, fits_path, data_path, fits_pattern,
       "idd"=idd,
       "unique_id"=unique_id,
 
-      "n_shared"=length(rare_common$shared),
-      "n_common"=length(rare_common$private_common),
-      "n_rare"=length(rare_common$private_rare),
-
-      "n_sigs"=length(get_signames(x.simul)),
+      "shared_true"=length(rare_common$shared),
+      "common_true"=length(rare_common$private_common),
+      "rare_true"=length(rare_common$private_rare),
+      "K_true"=length(get_signames(x.simul)),
 
       "shared"=list(rare_common$shared),
       "priv_common"=list(rare_common$private_common),
