@@ -207,3 +207,29 @@ compute_ari_nmi = function(x.simul, x.fit) {
   nmi = aricode::NMI(as.character(groups_fit), as.character(groups_simul))
   return(c(ari, nmi))
 }
+
+
+run_kmeans = function(x.fit) {
+  max_g = length(unique(x.fit$groups))
+  expos = get_exposure(x.fit)
+
+  avg_sil = function(km_res) {
+    ss = cluster::silhouette(km_res$cluster, dist(expos))
+    mean(ss[, 3])
+  }
+
+  scores = lapply(2:max_g, function(k) {
+    km = kmeans(expos, centers=k, nstart=10)
+    avg_sil(km)
+    }) %>% setNames(2:max_g) %>% unlist()
+
+  km = kmeans(expos, centers=as.integer(names(which.max(scores))), nstart=10)
+  x.fit$groups = km$cluster[rownames(x.fit$input$counts)] %>% setNames(NULL)
+
+  return(x.fit)
+}
+
+
+
+
+

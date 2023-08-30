@@ -49,6 +49,11 @@ stats_fit_quality = function(x.fit, x.simul, suffix_name="") {
   mse_counts = compute.mse(m_true=x.simul$input$counts, m_inf=get_data(x.fit, reconstructed=T))
   mse_expos = compute.mse(m_true=expos.simul, m_inf=expos.fit,
                           assigned_missing=assigned_missing)
+  mse_unn_counts = compute.mse(m_true=x.simul$input$counts,
+                               m_inf=get_data(x.fit, reconstructed=T),
+                               norm=FALSE)
+  mse_unn_expos = compute.mse(m_true=expos.simul, m_inf=expos.fit,
+                              assigned_missing=assigned_missing, norm=F)
 
   cosine_sigs = compute.cosine(sigs.fit, sigs.simul,
                                assigned_missing=assigned_missing,
@@ -59,9 +64,12 @@ stats_fit_quality = function(x.fit, x.simul, suffix_name="") {
 
   ari_nmi = ari_nmi_km = ari_nmi_km_em = list(NA, NA)
   if (have_groups(x.fit)) {
+    kmeans1 = get_obj_initial_params(x.fit)
+    kmeans2 = get_obj_initial_params(x.fit) %>% run_kmeans()
+
     ari_nmi = compute_ari_nmi(x.simul=x.simul, x.fit=x.fit)
-    ari_nmi_km = compute_ari_nmi(x.simul=x.simul, x.fit=get_obj_initial_params(x.fit))
-    ari_nmi_km_em = compute_ari_nmi(x.simul=x.simul, x.fit=fix_assignments(get_obj_initial_params(x.fit)))
+    ari_nmi_km1 = compute_ari_nmi(x.simul=x.simul, x.fit=get_obj_initial_params(kmeans1))
+    ari_nmi_km2 = compute_ari_nmi(x.simul=x.simul, x.fit=get_obj_initial_params(kmeans2))
   }
 
   res = tibble::tibble(
@@ -78,14 +86,13 @@ stats_fit_quality = function(x.fit, x.simul, suffix_name="") {
     "cosine_sigs"=cosine_sigs,
     "cosine_expos"=cosine_expos,
 
-
     "groups_found"=length(x.fit$groups %>% unique()),
     "ari"=ari_nmi[[1]],
     "nmi"=ari_nmi[[2]],
-    "ari_km"=ari_nmi_km[[1]],
-    "nmi_km"=ari_nmi_km[[2]],
-    "ari_km_em"=ari_nmi_km_em[[1]],
-    "nmi_km_em"=ari_nmi_km_em[[2]],
+    "ari_km1"=ari_nmi_km1[[1]],
+    "nmi_km1"=ari_nmi_km1[[2]],
+    "ari_km2"=ari_nmi_km2[[1]],
+    "nmi_km2"=ari_nmi_km2[[2]]
   )
 
   colnames(res) = paste(colnames(res), suffix_name, sep="_")
