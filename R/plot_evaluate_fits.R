@@ -1,17 +1,137 @@
+make_figure = function(stats_df, suffix_name="") {
+  n_sigs = plot_sigs_clusters_found(stats_df, what="all", suffix_name=suffix_name,
+                                    ylim=c(0,1)) + theme(legend.position="bottom")
+
+  nmi = stats_df %>%
+    tidyr::pivot_longer(cols=paste(c("nmi","ari"), suffix_name, sep="_"),
+                        names_to="which_fit", values_to="score") %>%
+    dplyr::mutate(which_fit=stringr::str_replace_all(which_fit,suffix_name,""),
+                  which_fit=dplyr::case_when(
+                    which_fit == "nmi_" ~ "NMI",
+                    which_fit == "ari_" ~ "ARI")) %>%
+    plot_mse_cosine(colname="score", ylim=c(0,1), facet="which_fit") +
+    ylab("Score") + labs(title="") + theme(legend.position="none")
+
+  nmi_compare = stats_df %>%
+    tidyr::pivot_longer(cols=paste(c("nmi_km_em","nmi_km","nmi"), suffix_name, sep="_"),
+                        names_to="which_fit", values_to="nmi") %>%
+    dplyr::mutate(which_fit=stringr::str_replace_all(which_fit,"nmi|_",""),
+                  which_fit=stringr::str_replace_all(which_fit,suffix_name,""),
+                  which_fit=dplyr::case_when(
+                    which_fit == "km" ~ "KMeans",
+                    which_fit == "kmem" ~ "KMeans+EM",
+                    which_fit == "" ~ "Basilica fit",
+                  )) %>%
+    dplyr::mutate(which_fit=factor(which_fit, levels=c("Basilica fit","KMeans","KMeans+EM"))) %>%
+    plot_mse_cosine(colname="nmi", fill="which_fit", ylim=c(0,1)) +
+    ylab("NMI") + labs(title="") + theme(legend.position="bottom")
+
+
+  counts_expos = stats_df %>%
+    tidyr::pivot_longer(cols=paste(c("mse_counts","mse_expos"), suffix_name, sep="_"),
+                        names_to="which_stat", values_to="score") %>%
+    dplyr::mutate(which_stat=stringr::str_replace_all(which_stat,"mse|cosine|_",""),
+                  which_stat=stringr::str_replace_all(which_stat,suffix_name,""),
+                  which_stat=stringr::str_replace_all(which_stat,"expos","exposures"),
+                  which_stat=stringr::str_to_sentence(which_stat)) %>%
+    plot_mse_cosine(colname="score", facet="which_stat", ylim=c(0,0.5)) +
+    ylab("MSE") + labs(title="MSE and cosine similarity")
+
+  sigs = stats_df %>%
+    tidyr::pivot_longer(cols=paste("cosine_sigs", suffix_name, sep="_"),
+                        names_to="which_stat", values_to="score") %>%
+    dplyr::mutate(which_stat=stringr::str_replace_all(which_stat,"mse|cosine|_",""),
+                  which_stat=stringr::str_replace_all(which_stat,suffix_name,""),
+                  which_stat=stringr::str_replace_all(which_stat,"sigs","signatures"),
+                  which_stat=stringr::str_to_sentence(which_stat)) %>%
+    plot_mse_cosine(colname="score", facet="which_stat", ylim=c(0,1)) +
+    ylab("Cosine similarity") + labs(title="")
+
+  panel1 = patchwork::wrap_plots(counts_expos, sigs, guides="collect", design="AAAABB") &
+    theme(legend.position="bottom")
+  panel2 = n_sigs + labs(title="Ratio between signatures found and simulated")
+  panel3 = nmi + labs(title="ARI and NMI between true and inferred clusters")
+  panel4 = nmi_compare + labs(title="NMI between true and inferred clusters")
+
+  design = "AAAABBB
+          CCCCDDD"
+
+  return(patchwork::wrap_plots(panel1, panel2, panel3, panel4, design=design))
+}
+
+report_stats = function(stats_df, fname, save_path,
+                        fill="fits_pattern", suffix_name="LC") {
+  pdf(paste0(save_path, "stats_report.sim", fname, ".pdf"), height=6, width=14)
+
+  (plot_sigs_clusters_found(stats_df, what="all", facet=T, ratio=T,
+                            scales="free_y", ylim=c(0,NA), fill=fill,
+                            suffix_name=suffix_name) %>%
+      patchwork::wrap_plots(
+        plot_sigs_clusters_found(stats_df, what="private", facet=T, ratio=T,
+                                 scales="free_y", ylim=c(0,NA), fill=fill, suffix_name=suffix_name),
+        guides="collect") & theme(legend.position="bottom")) %>% print()
+
+  (plot_mse_cosine(stats_df, paste0("mse_counts_", suffix_name), scales="free_y",
+                   ylim=c(0,1), fill=fill) %>%
+      patchwork::wrap_plots(
+        plot_mse_cosine(stats_df, paste0("mse_expos_", suffix_name), scales="free_y",
+                        ylim=c(0,1), fill=fill),
+        guides="collect") & theme(legend.position="bottom")) %>% print()
+
+  (plot_mse_cosine(stats_df, paste0("cosine_sigs_", suffix_name), scales="free_y",
+                   ylim=c(0,1), fill=fill) %>%
+      patchwork::wrap_plots(
+        plot_mse_cosine(stats_df, paste0("cosine_expos_", suffix_name), scales="free_y",
+                        ylim=c(0,1), fill=fill),
+        guides="collect") & theme(legend.position="bottom")) %>% print()
+
+  stats_df_clst = stats_df %>% dplyr::filter(grepl("clust",fits_pattern))
+
+  (plot_sigs_clusters_found(stats_df_clst, what="clusters", facet=T, ratio=T,
+                            scales="free_y", ylim=c(0,NA), fill=fill,
+                            suffix_name=suffix_name) %>%
+      patchwork::wrap_plots(
+        plot_mse_cosine(stats_df_clst, paste0("nmi_", suffix_name),
+                        scales="free_y", ylim=c(0,1), fill=fill),
+        plot_mse_cosine(stats_df_clst, paste0("ari_", suffix_name),
+                        scales="free_y", ylim=c(0,1), fill=fill),
+        guides="collect") & theme(legend.position="bottom")) %>% print()
+
+  (plot_mse_cosine(stats_df_clst, paste0("nmi_", suffix_name),
+                   scales="free_y", ylim=c(0,1), fill=fill) %>%
+      patchwork::wrap_plots(
+        plot_mse_cosine(stats_df_clst, paste0("nmi_km_", suffix_name),
+                        scales="free_y", ylim=c(0,1), fill=fill),
+        plot_mse_cosine(stats_df_clst, paste0("nmi_km_em_", suffix_name),
+                        scales="free_y", ylim=c(0,1), fill=fill),
+        guides="collect", nrow=1) & theme(legend.position="bottom")) %>% print()
+
+  (plot_mse_cosine(stats_df_clst, paste0("ari_", suffix_name),
+                   scales="free_y", ylim=c(0,1), fill=fill) %>%
+      patchwork::wrap_plots(
+        plot_mse_cosine(stats_df_clst, paste0("ari_km_", suffix_name),
+                        scales="free_y", ylim=c(0,1), fill=fill),
+        plot_mse_cosine(stats_df_clst, paste0("ari_km_em_", suffix_name),
+                        scales="free_y", ylim=c(0,1), fill=fill),
+        guides="collect", nrow=1) & theme(legend.position="bottom")) %>% print()
+
+  dev.off()
+}
+
+
 plot_sigs_clusters_found = function(stats_df, what=c("private", "shared", "all", "similar", "clusters"),
-                                    ratio=F, fill="inf_type", facet=FALSE, scales="fixed", ylim=NULL,
+                                    ratio=T, fill="run_id", facet=FALSE, scales="fixed", ylim=NULL,
                                     cols=NULL, suffix_name="") {
   if (suffix_name != "" && !grepl("^_", suffix_name)) suffix_name = paste0("_", suffix_name)
   stats_df = stats_df %>% dplyr::select(-dplyr::contains("plot")) %>%
-    dplyr::mutate(n_private=n_rare+n_common)
+    dplyr::mutate(private_true=rare_true+common_true)
 
   columns = dplyr::case_when(
-    what == "private" ~ c(paste0("private_found", suffix_name), "n_private"),
-    what == "shared" ~ c(paste0("shared_found", suffix_name), "n_shared"),
-    what == "all" ~ c(paste0("sigs_found", suffix_name), "n_sigs"),
+    what == "private" ~ c(paste0("private_found", suffix_name), "private_true"),
+    what == "shared" ~ c(paste0("shared_found", suffix_name), "shared_true"),
+    what == "all" ~ c(paste0("sigs_found", suffix_name), "K_true"),
     what == "clusters" ~ c(paste0("groups_found", suffix_name), "G")
   )
-
 
   if (is.null(cols))
     cols = gen_palette(length(stats_df[[fill]] %>% unique())) %>%
@@ -63,7 +183,7 @@ plot_sigs_clusters_found = function(stats_df, what=c("private", "shared", "all",
 
 
 
-plot_mse_cosine = function(stats_df, colname, facet=T, fill="inf_type",
+plot_mse_cosine = function(stats_df, colname, facet="", fill="run_id",
                            cols=NULL, scales="fixed", ylim=NULL) {
   stats_df = stats_df %>% dplyr::select(-dplyr::contains("plot"))
 
@@ -91,79 +211,21 @@ plot_mse_cosine = function(stats_df, colname, facet=T, fill="inf_type",
 
   p = stats_df %>%
     ggplot() +
-    geom_boxplot(aes_string(x="as.factor(N)", y=colname, color=fill),
+    geom_violin(aes_string(x="as.factor(N)", y=colname, color=fill, fill=fill),
                 fill="white",
                 alpha=0.5, position=position_dodge(width=0.7),
                 outlier.size=0.5, width=0.5) +
 
     scale_color_manual(values=cols, name="") +
+    scale_fill_manual(values=cols, name="") +
     theme_bw() + xlab("# samples") + ylab(metric) +
     labs(title=paste(metric, type, quantity))
 
-  if (facet)
-    p = p + ggh4x::facet_nested(G ~ clust_type, scales=scales)
+  p = p + ggh4x::facet_nested(as.formula(paste0("G ~ ", ifelse(facet!="",facet,"."))), scales=scales)
 
   if (!is.null(ylim)) p = p + ylim(ylim)
 
   return(p)
-}
-
-
-report_stats = function(stats_df, fname, save_path,
-                        fill="fits_pattern", suffix_name="LC") {
-  pdf(paste0(save_path, "stats_report.sim", fname, ".pdf"), height=6, width=14)
-
-  (plot_sigs_clusters_found(stats_df, what="all", facet=T, ratio=T,
-                           scales="free_y", ylim=c(0,NA), fill=fill,
-                           suffix_name=suffix_name) %>%
-    patchwork::wrap_plots(
-      plot_sigs_clusters_found(stats_df, what="private", facet=T, ratio=T,
-                               scales="free_y", ylim=c(0,NA), fill=fill, suffix_name=suffix_name),
-      guides="collect") & theme(legend.position="bottom")) %>% print()
-
-  (plot_mse_cosine(stats_df, paste0("mse_counts_", suffix_name), scales="free_y",
-                   ylim=c(0,1), fill=fill) %>%
-    patchwork::wrap_plots(
-      plot_mse_cosine(stats_df, paste0("mse_expos_", suffix_name), scales="free_y",
-                      ylim=c(0,1), fill=fill),
-      guides="collect") & theme(legend.position="bottom")) %>% print()
-
-  (plot_mse_cosine(stats_df, paste0("cosine_sigs_", suffix_name), scales="free_y",
-                   ylim=c(0,1), fill=fill) %>%
-    patchwork::wrap_plots(
-      plot_mse_cosine(stats_df, paste0("cosine_expos_", suffix_name), scales="free_y",
-                      ylim=c(0,1), fill=fill),
-      guides="collect") & theme(legend.position="bottom")) %>% print()
-
-  (plot_sigs_clusters_found(stats_df %>% dplyr::filter(clust_type!="flat"),
-                           what="clusters", facet=T, ratio=T, scales="free_y",
-                           ylim=c(0,NA), fill=fill, suffix_name=suffix_name) %>%
-    patchwork::wrap_plots(
-      plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), paste0("nmi_", suffix_name),
-                      scales="free_y", ylim=c(0,1), fill=fill),
-      plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), paste0("ari_", suffix_name),
-                      scales="free_y", ylim=c(0,1), fill=fill),
-      guides="collect") & theme(legend.position="bottom")) %>% print()
-
-  (plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), paste0("nmi_", suffix_name),
-                   scales="free_y", ylim=c(0,1), fill=fill) %>%
-      patchwork::wrap_plots(
-        plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), paste0("nmi_km_", suffix_name),
-                        scales="free_y", ylim=c(0,1), fill=fill),
-        plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), paste0("nmi_km_em_", suffix_name),
-                        scales="free_y", ylim=c(0,1), fill=fill),
-        guides="collect", nrow=1) & theme(legend.position="bottom")) %>% print()
-
-  (plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), paste0("ari_", suffix_name),
-                   scales="free_y", ylim=c(0,1), fill=fill) %>%
-      patchwork::wrap_plots(
-        plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), paste0("ari_km_", suffix_name),
-                        scales="free_y", ylim=c(0,1), fill=fill),
-        plot_mse_cosine(stats_df %>% dplyr::filter(clust_type!="flat"), paste0("ari_km_em_", suffix_name),
-                        scales="free_y", ylim=c(0,1), fill=fill),
-        guides="collect", nrow=1) & theme(legend.position="bottom")) %>% print()
-
-  dev.off()
 }
 
 

@@ -7,34 +7,44 @@ data_path = paste0(main_path, "../synthetic_datasets_3107/")
 
 cutoff = 0.8; min_expos=0.; df_id = "2808"
 
-fits_path = c(paste0(main_path, "fits_dn.clust.nonparametric.sparsity.noreg.old_hier.0208/"),
-              paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.0208/"),
-              paste0(main_path, "fits_dn.flat.nonparametric.sparsity.noreg.old_hier.0208/"),
-              paste0(main_path, "fits_dn.flat.nonparametric.nonsparsity.noreg.old_hier.0208/"))
-run_id = c("nparam.spars", "nparam.nspars", "flat.spars", "flat.nspars") %>% setNames(fits_path)
-stats_df = get_stats_df(data_path=data_path, fits_path=fits_path,
-                        cutoff=cutoff, fits_pattern=c("fit.", "fit_clust."),
-                        run_id=run_id,
-                        min_exposure=min_expos,
-                        save_plots=FALSE, check_plots=FALSE) %>%
+# fits_path = c(paste0(main_path, "fits_dn.clust.nonparametric.sparsity.noreg.old_hier.0208/"),
+#               paste0(main_path, "fits_dn.clust.nonparametric.nonsparsity.noreg.old_hier.0208/"),
+#               paste0(main_path, "fits_dn.flat.nonparametric.sparsity.noreg.old_hier.0208/"),
+#               paste0(main_path, "fits_dn.flat.nonparametric.nonsparsity.noreg.old_hier.0208/"))
+# run_id = c("nparam.spars", "nparam.nspars", "flat.spars", "flat.nspars") %>% setNames(fits_path)
+# stats_df = get_stats_df(data_path=data_path, fits_path=fits_path,
+#                         cutoff=cutoff, fits_pattern=c("fit.", "fit_clust."),
+#                         run_id=run_id,
+#                         min_exposure=min_expos,
+#                         save_plots=FALSE, check_plots=FALSE) %>%
+#
+#   dplyr::mutate(clust_type=dplyr::case_when(
+#     grepl(".nonparam", fits_path) ~ "non-parametric",
+#     grepl(".param", fits_path) ~ "parametric",
+#     .default="flat"),
+#     clust_type=ifelse(grepl("clust",fits_pattern), clust_type, "non-clustering")
+#   )
+# saveRDS(stats_df, paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
+# fname = paste0(cutoff*100, ".", df_id)
+# report_stats(stats_df=stats_df, fname=paste(fname,"LC",sep="."),
+#              save_path=save_path, fill="run_id", suffix_name="LC")
+# report_stats(stats_df=stats_df, fname=paste(fname,"noLC",sep="."),
+#              save_path=save_path, fill="run_id", suffix_name="noLC")
 
-  dplyr::mutate(clust_type=dplyr::case_when(
-    grepl(".nonparam", fits_path) ~ "non-parametric",
-    grepl(".param", fits_path) ~ "parametric",
-    .default="flat"),
-    clust_type=ifelse(grepl("clust",fits_pattern), clust_type, "non-clustering")
-  )
-saveRDS(stats_df, paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
-fname = paste0(cutoff*100, ".", df_id)
-report_stats(stats_df=stats_df, fname=paste(fname,"LC",sep="."),
-             save_path=save_path, fill="run_id", suffix_name="LC")
-report_stats(stats_df=stats_df, fname=paste(fname,"noLC",sep="."),
-             save_path=save_path, fill="run_id", suffix_name="noLC")
-
-stats_df = readRDS(paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds")) %>%
-  dplyr::mutate(clust_type=ifelse(grepl("clust",fits_pattern), clust_type, "non-clustering"))
+stats_df = readRDS(paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
 
 
+
+## Plots ####
+stats_df_spars = stats_df %>% dplyr::filter(!grepl("nspars",unique_id)) %>%
+  dplyr::mutate(run_id=ifelse(run_id=="flat.spars", "non-clustering", "clustering"))
+
+suffix_name = "LC"
+figure = make_figure(stats_df_spars, suffix_name=suffix_name)
+
+fig_id = paste(suffix_name,df_id,sep=".")
+ggsave(plot=figure, filename=paste0(save_path,"fig_simulations.",fig_id,".pdf"), height=8, width=12)
+ggsave(plot=figure, filename=paste0(save_path,"fig_simulations.",fig_id,".png"), height=8, width=12)
 
 ## Example ####
 # idd_good = stats_df %>%
