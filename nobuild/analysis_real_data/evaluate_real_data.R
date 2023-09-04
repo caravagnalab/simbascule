@@ -16,24 +16,33 @@ idxs = sample(1:nrow(counts_all), N, replace=F)
 counts_n = counts_all[idxs,] %>% dplyr::select(-organ, -cohort)
 groups_n = groups_all[idxs]
 
+input_data = tibble::tibble("counts"=list(counts_n), "groupid"=list(groups_n))
+
+saveRDS(input_data, "~/Dropbox/shared/2022. Basilica/datasets/input.N500_CRC.Rds")
+
 
 ## Dirichlet
-fit_dn = fit(x=counts_n, k=10:15, clusters=10, nonparametric=TRUE, keep_sigs=c("SBS1","SBS5"),
+fit_dn = fit(x=counts_n, k=15, clusters=7, nonparametric=TRUE, keep_sigs=c("SBS1","SBS5"),
              reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),], reg_weight=0., verbose=T,
-             enforce_sparsity=TRUE)
+             enforce_sparsity=TRUE, py=py) #, hyperparameters=list("alpha_sigma"=0.05))
 
 fit_cat = fit(x=counts_n, k=10:15, clusters=10, nonparametric=TRUE, keep_sigs=c("SBS1","SBS5"),
-              reference_catalogue=COSMIC_filt, reg_weight=0., verbose=T, enforce_sparsity=TRUE)
+              reference_catalogue=COSMIC_filt, reg_weight=0., verbose=T,
+              enforce_sparsity=TRUE, py=py)
 
 
-fit_dn2 %>% filter_exposures(0.05) %>%
+fit_dn %>%
+  # filter_exposures(0.05) %>%
+  # recompute_centroids() %>% merge_clusters() %>%
   plot_exposures() %>%
-  patchwork::wrap_plots(fit_dn2 %>% filter_exposures(0.05) %>%
+  patchwork::wrap_plots(fit_dn %>%
+                          # filter_exposures(0.05) %>%
+                          # recompute_centroids() %>% merge_clusters() %>%
                           plot_exposures(centroids=T),
-                        ncol=2, widths=c(7,1), guides="collect") & theme(legend.position="bottom")
+                        ncol=2, widths=c(9,1), guides="collect") & theme(legend.position="bottom")
 
 # fix_assignments(fit_dn) %>% plot_exposures()
-idd = "spars"
+idd = "norm_spars"
 saveRDS(fit_dn, paste0(save_path, "fit_CRC_dn.", idd, ".Rds"))
 saveRDS(fit_cat, paste0(save_path, "fit_CRC_cat.", idd, ".Rds"))
 
@@ -43,12 +52,12 @@ fit_cat = readRDS(paste0(save_path, "fit_CRC_cat.Rds"))
 
 fit_dn = fit_CRC_dn.dirich_spars
 
-samples = get_group(fit_dn, groupIDs = c("8"), return_idx = T)
-fit_dn %>% convert_sigs_names(reference_cat=COSMIC_filt) %>%
+samples = get_group(fit_dn, groupIDs = c("2","3","5","6"), return_idx = T)
+fit_dn %>% # convert_sigs_names(reference_cat=COSMIC_filt) %>%
   # merge_clusters() %>%
   # filter_exposures() %>%
   plot_exposures(sampleIDs = samples) %>%
-  patchwork::wrap_plots(fit_dn %>% convert_sigs_names(reference_cat=COSMIC_filt) %>%
+  patchwork::wrap_plots(fit_dn %>% # convert_sigs_names(reference_cat=COSMIC_filt) %>%
                           # merge_clusters() %>%
                           plot_exposures(centroids = T))
 fit_dn %>% recompute_centroids() %>% merge_clusters() %>% plot_exposures()

@@ -46,7 +46,22 @@ fig_id = paste(suffix_name,df_id,sep=".")
 ggsave(plot=figure, filename=paste0(save_path,"fig_simulations.",fig_id,".pdf"), height=8, width=12)
 ggsave(plot=figure, filename=paste0(save_path,"fig_simulations.",fig_id,".png"), height=8, width=12)
 
+
 ## Example ####
+x = readRDS("/Users/elenab/Dropbox/shared/2022. Basilica/simulations/simuls_lc/fits_dn.clust.nonparametric.sparsity.noreg.old_hier.0208/fit_clust.N150.G3.s1.1.Rds")
+simul = readRDS("/Users/elenab/Dropbox/shared/2022. Basilica/simulations/synthetic_datasets_3107/simul.N150.G3.s1.1.Rds") %>% create_basilica_obj_simul()
+x %>% fix_assignments() %>% plot_exposures(add_centroid=T)
+x_new = fit(x=get_data(x), k=4, clusters=4, enforce_sparsity=TRUE,
+            reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),], py=py,
+            nonparametric=TRUE, store_parameters=FALSE)
+
+x_new
+
+simul.N500.G3.s13.4 <- readRDS("/Users/elenab/Dropbox/shared/2022. Basilica/simulations/synthetic_datasets_3107/simul.N500.G3.s13.4.Rds")
+
+# saveRDS(simul.N150.G3.s5.1, "~/Dropbox/shared/2022. Basilica/datasets/simul.N150_G3.Rds")
+# saveRDS(simul.N500.G3.s13.4, "~/Dropbox/shared/2022. Basilica/datasets/simul.N500_G3.Rds")
+
 # idd_good = stats_df %>%
 #   dplyr::filter(clust_type=="non-parametric", nmi_rare==max(nmi_rare, na.rm=T)) %>%
 #   dplyr::pull(idd)
