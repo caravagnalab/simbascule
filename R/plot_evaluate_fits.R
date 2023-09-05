@@ -1,5 +1,5 @@
 make_figure = function(stats_df, suffix_name="") {
-  n_sigs = plot_sigs_clusters_found(stats_df, what="all", suffix_name=suffix_name,
+  n_sigs = plot_sigs_clusters_found(stats_df, what="private", suffix_name=suffix_name,
                                     ylim=c(0,1)) + theme(legend.position="bottom")
 
   nmi = stats_df %>%
@@ -211,7 +211,7 @@ plot_mse_cosine = function(stats_df, colname, facet="", fill="run_id",
 
   p = stats_df %>%
     ggplot() +
-    geom_violin(aes_string(x="as.factor(N)", y=colname, color=fill, fill=fill),
+    geom_boxplot(aes_string(x="as.factor(N)", y=colname, color=fill, fill=fill),
                 fill="white",
                 alpha=0.5, position=position_dodge(width=0.7),
                 outlier.size=0.5, width=0.5) +

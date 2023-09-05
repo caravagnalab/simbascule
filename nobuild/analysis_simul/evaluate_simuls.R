@@ -51,9 +51,9 @@ ggsave(plot=figure, filename=paste0(save_path,"fig_simulations.",fig_id,".png"),
 x = readRDS("/Users/elenab/Dropbox/shared/2022. Basilica/simulations/simuls_lc/fits_dn.clust.nonparametric.sparsity.noreg.old_hier.0208/fit_clust.N150.G3.s1.1.Rds")
 simul = readRDS("/Users/elenab/Dropbox/shared/2022. Basilica/simulations/synthetic_datasets_3107/simul.N150.G3.s1.1.Rds") %>% create_basilica_obj_simul()
 x %>% fix_assignments() %>% plot_exposures(add_centroid=T)
-x_new = fit(x=get_data(x), k=4, clusters=4, enforce_sparsity=TRUE,
-            reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),], py=py,
-            nonparametric=TRUE, store_parameters=FALSE)
+x_new = fit(x=get_data(x, reconstructed=F), k=x$k_list, clusters=6, enforce_sparsity=TRUE,
+            reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),], py=py, lr=0.005, n_steps=2000,
+            nonparametric=TRUE, store_parameters=FALSE, dirichlet_prior=FALSE)
 
 x_new
 

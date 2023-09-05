@@ -18,7 +18,7 @@ groups_n = groups_all[idxs]
 
 input_data = tibble::tibble("counts"=list(counts_n), "groupid"=list(groups_n))
 
-saveRDS(input_data, "~/Dropbox/shared/2022. Basilica/datasets/input.N500_CRC.Rds")
+# saveRDS(input_data, "~/Dropbox/shared/2022. Basilica/datasets/input.N500_CRC.Rds")
 
 
 ## Dirichlet
