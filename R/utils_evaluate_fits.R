@@ -13,7 +13,7 @@ get_assigned_missing = function(x.fit, x.simul=NULL, reference_cat=NULL, cutoff=
 
 
 rename_expos = function(exposures, old_names) {
-  exposures = exposures %>% dplyr::select(dplyr::contains(old_names))
+  exposures = exposures %>% as.data.frame() %>% dplyr::select(dplyr::contains(old_names))
   colnames(exposures) = old_names %>% names
   return(exposures)
 }

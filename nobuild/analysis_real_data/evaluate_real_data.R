@@ -5,8 +5,8 @@ main_path = "~/Dropbox/shared/2022. Basilica/real_data/"
 save_path = paste0(main_path, "results/")
 data_path = paste0(main_path, "processed_data/")
 
-tissues = c("Colorectal")
-N = 500
+tissues = c("Lung", "Skin")
+N = 200
 counts_all = readRDS(paste0(data_path, "counts_all.Rds")) %>% dplyr::filter(organ %in% tissues)
 groups_all = counts_all$organ
 
@@ -22,7 +22,7 @@ input_data = tibble::tibble("counts"=list(counts_n), "groupid"=list(groups_n))
 
 
 ## Dirichlet
-fit_dn.dir = fit(x=input.simul$counts[[1]], k=4, clusters=6, nonparametric=TRUE,
+fit_dn.dir = fit(x=input_data$counts[[1]], k=8, clusters=4, nonparametric=TRUE,
                  reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
                  keep_sigs=c("SBS1","SBS5"), enforce_sparsity=TRUE,
                  dirichlet_prior=TRUE, verbose=T, py=py)
@@ -33,6 +33,31 @@ fit_dn.norm = fit(x=input.simul$counts[[1]], k=4, clusters=6, nonparametric=TRUE
                   dirichlet_prior=FALSE, verbose=T, py=py)
 
 
+grps_true = setNames(input_data$groupid[[1]], rownames(input_data$counts[[1]]))
+grps_fit = setNames(fit2$groups, rownames(fit2$input$counts))
+
+aricode::NMI(grps_true, grps_fit[rownames(input_data$counts[[1]])])
+
+fit2 = fit_dn.dir %>% convert_sigs_names(reference_cat = COSMIC_filt) %>%
+  recompute_centroids() %>% merge_clusters()
+
+fit2 %>% plot_mutations()
+ggsave("~/Dropbox/uni/phd/presentation/data_real.pdf", height=4, width=8)
+
+fit2$groups = ifelse(fit2$groups=="0", "Lung", "Skin")
+fit2 %>% filter_exposures(min_expos = 0.03) %>% plot_exposures()
+ggsave("~/Dropbox/uni/phd/presentation/expos_real.pdf", height=3, width=8)
+
+plot_signatures(fit2, signames = c("SBS4","SBS7a","SBS7b"))
+ggsave("~/Dropbox/uni/phd/presentation/sigs_real.pdf", height=5, width=8)
+
+aricode::NMI(fit2$groups, input_data$groupid[[1]])
+
+fit3 = fit2
+fit3$groups = input_data$groupid[[1]]
+fit3 %>% plot_exposures()
+
+convert_sigs_names()
 
 fit_dn.norm %>%
   # filter_exposures(0.05) %>%
