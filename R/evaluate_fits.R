@@ -193,8 +193,8 @@ make_plots_compare = function(fit1, fit2, name1="fit1", name2="fit2",
     patchwork::plot_annotation(title=paste0("Counts", ttitle))
 
   plot_expos = plot_exposures(fit1 %>% filter_exposures(min_expos=min_exposure),
-                              add_centroid=TRUE, cls=cls) %>%
-    patchwork::wrap_plots(plot_exposures(fit2, add_centroid=TRUE, cls=cls),
+                              add_centroid=F, cls=cls) %>%
+    patchwork::wrap_plots(plot_exposures(fit2, add_centroid=F, cls=cls),
                           ncol=1, guides="collect") &
     patchwork::plot_annotation(title=paste0("Exposures", ttitle))
 
@@ -208,7 +208,7 @@ make_plots_compare = function(fit1, fit2, name1="fit1", name2="fit2",
 
   plot_expos_centr = patchwork::wrap_plots(plot_expos + theme(legend.position="none"),
                                            plot_centroids,
-                                           widths=c(3,1), guides="collect") &
+                                           widths=c(9,1), guides="collect") &
     theme(legend.position="bottom") &
     patchwork::plot_annotation(title=paste0("Exposures and centroids", ttitle))
 

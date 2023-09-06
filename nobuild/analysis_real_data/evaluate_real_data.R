@@ -1,4 +1,4 @@
-devtools::load_all()
+devtools::load_all("~/GitHub/simbasilica/")
 load_deps()
 
 main_path = "~/Dropbox/shared/2022. Basilica/real_data/"
@@ -22,53 +22,88 @@ input_data = tibble::tibble("counts"=list(counts_n), "groupid"=list(groups_n))
 
 
 ## Dirichlet
-fit_dn = fit(x=counts_n, k=15, clusters=7, nonparametric=TRUE, keep_sigs=c("SBS1","SBS5"),
-             reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),], reg_weight=0., verbose=T,
-             enforce_sparsity=TRUE, py=py) #, hyperparameters=list("alpha_sigma"=0.05))
+fit_dn.dir = fit(x=input.simul$counts[[1]], k=4, clusters=6, nonparametric=TRUE,
+                 reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
+                 keep_sigs=c("SBS1","SBS5"), enforce_sparsity=TRUE,
+                 dirichlet_prior=TRUE, verbose=T, py=py)
 
-fit_cat = fit(x=counts_n, k=10:15, clusters=10, nonparametric=TRUE, keep_sigs=c("SBS1","SBS5"),
-              reference_catalogue=COSMIC_filt, reg_weight=0., verbose=T,
-              enforce_sparsity=TRUE, py=py)
+fit_dn.norm = fit(x=input.simul$counts[[1]], k=4, clusters=6, nonparametric=TRUE,
+                  reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
+                  keep_sigs=c("SBS1","SBS5"), enforce_sparsity=TRUE,
+                  dirichlet_prior=FALSE, verbose=T, py=py)
 
 
-fit_dn %>%
+
+fit_dn.norm %>%
   # filter_exposures(0.05) %>%
   # recompute_centroids() %>% merge_clusters() %>%
   plot_exposures() %>%
-  patchwork::wrap_plots(fit_dn %>%
+  patchwork::wrap_plots(fit_dn.norm %>%
                           # filter_exposures(0.05) %>%
                           # recompute_centroids() %>% merge_clusters() %>%
                           plot_exposures(centroids=T),
-                        ncol=2, widths=c(9,1), guides="collect") & theme(legend.position="bottom")
+                        ncol=2, widths=c(9,1), guides="collect") &
+  theme(legend.position="bottom", legend.direction="horizontal")
 
 # fix_assignments(fit_dn) %>% plot_exposures()
-idd = "norm_spars"
-saveRDS(fit_dn, paste0(save_path, "fit_CRC_dn.", idd, ".Rds"))
-saveRDS(fit_cat, paste0(save_path, "fit_CRC_cat.", idd, ".Rds"))
+idd = "N500.simul"
+saveRDS(fit_dn.dir, paste0(save_path, "fit_dn.dir.", idd, ".Rds"))
+saveRDS(fit_dn.norm, paste0(save_path, "fit_dn.norm.", idd, ".Rds"))
 
-
-fit_dn = readRDS(paste0(save_path, "fit_CRC_dn.Rds"))
-fit_cat = readRDS(paste0(save_path, "fit_CRC_cat.Rds"))
-
-fit_dn = fit_CRC_dn.dirich_spars
-
-samples = get_group(fit_dn, groupIDs = c("2","3","5","6"), return_idx = T)
-fit_dn %>% # convert_sigs_names(reference_cat=COSMIC_filt) %>%
-  # merge_clusters() %>%
-  # filter_exposures() %>%
-  plot_exposures(sampleIDs = samples) %>%
-  patchwork::wrap_plots(fit_dn %>% # convert_sigs_names(reference_cat=COSMIC_filt) %>%
-                          # merge_clusters() %>%
-                          plot_exposures(centroids = T))
-fit_dn %>% recompute_centroids() %>% merge_clusters() %>% plot_exposures()
-fix_assignments()
+# fit_dn = readRDS(paste0(save_path, "fit_CRC_dn.Rds"))
+# fit_cat = readRDS(paste0(save_path, "fit_CRC_cat.Rds"))
 
 
 
-fit_cat_mod = fit_cat %>% convert_sigs_names(reference_cat = COSMIC_filt_merged) %>%
-  recompute_centroids() %>% merge_clusters()
+## Plots ####
+fit1 = fit_dn.dir %>% convert_sigs_names(reference_cat=COSMIC_filt, cutoff=.6)
+fit2 = fit_dn.norm %>% convert_sigs_names(reference_cat=COSMIC_filt, cutoff=.6)
+ref_cls = COSMIC_color_palette()[c(get_signames(fit1),get_signames(fit2))] %>% purrr::discard(is.na)
+dn_cls = c(get_color_palette(fit1),
+           get_color_palette(fit2))[grep("D",c(get_signames(fit1),
+                                               get_signames(fit2)) %>% unique())]
+cls = c(ref_cls, dn_cls)
+pp = make_plots_compare(fit1=fit1, fit2=fit2,
+                        name1="Dirichlet prior", name2="Normal prior",
+                        min_exposure=.05, cls=cls)
 
-filter_signatures_QP(get_signatures(fit_cat_mod), COSMIC_filt, filt_pi=0.1, return_weights=T)
+centr1 = lapply(unique(fit1$groups), function(gid) {
+  idxs = get_group(fit1, groupIDs=gid, return_idx=TRUE)
+  if (length(idxs) == 0) next
+  plot_exposures(fit1, sampleIDs=idxs, cls=cls) + labs(title="")
+})
+centr1[["centr"]] = plot_exposures(fit1, centroids=T, cls=cls) + labs(title="")
+
+centr2 = lapply(unique(fit2$groups), function(gid) {
+  idxs = get_group(fit2, groupIDs=gid, return_idx=TRUE)
+  if (length(idxs) == 0) next
+  plot_exposures(fit2, sampleIDs=idxs, cls=cls) + labs(title="")
+})
+centr2[["centr"]] = plot_exposures(fit2, centroids=T, cls=cls) + labs(title="")
+
+
+idd = "alpha_logprog.N500_simul"
+pdf(paste0(save_path, "plots.", idd, ".pdf"), height=12, width=16)
+plot_fit(fit1, fit2, cls=cls, name1="Dirichlet prior", name2="Normal prior") %>% print()
+pp$expos_centr %>% print()
+patchwork::wrap_plots(centr1, guides="collect") %>% print()
+patchwork::wrap_plots(centr2, guides="collect") %>% print()
+patchwork::wrap_plots(pp$umap,
+                      plot_gradient_norms(fit1),
+                      plot_gradient_norms(fit2), ncol=2) %>% print()
+plot_posterior_probs(fit1)
+plot_posterior_probs(fit2)
+dev.off()
+
+
+tmp %>% plot_signatures()
+
+tmp = fit_dn.dir.alpha_logprog.N500_CRC %>% recompute_centroids() %>% # %>% merge_clusters() %>%
+  convert_sigs_names(reference_cat = COSMIC_filt, cutoff = .7)
+tmp %>% filter_exposures(min_expos = 0.05) %>% plot_exposures() %>%
+  patchwork::wrap_plots(plot_exposures(tmp %>% filter_exposures(min_expos = 0.05), centroids = T), widths = c(9,1),
+                        guides="collect")
+
 
 
 ## Generate whole count matrix ####
@@ -120,6 +155,8 @@ expos_all = lapply(exposures, function(e_i) {
 }) %>% dplyr::bind_rows() %>% replace(is.na(.), 0)
 
 saveRDS(expos_all, file=paste0(data_path, "expos_all.Rds"))
+
+
 
 
 
