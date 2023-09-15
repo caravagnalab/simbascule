@@ -5,8 +5,8 @@ main_path = "~/Dropbox/shared/2022. Basilica/real_data/"
 save_path = paste0(main_path, "results/")
 data_path = paste0(main_path, "processed_data/")
 
-tissues = c("Colorectal")
-N = 500
+tissues = c("Colorectal", "Lung")
+N = 1500
 counts_all = readRDS(paste0(data_path, "counts_all.Rds")) %>% dplyr::filter(organ %in% tissues)
 groups_all = counts_all$organ
 
@@ -17,7 +17,7 @@ counts_n = counts_all[idxs,] %>% dplyr::select(-organ, -cohort)
 groups_n = groups_all[idxs]
 
 input_data = tibble::tibble("counts"=list(counts_n), "groupid"=list(groups_n))
-# saveRDS(input_data, "~/Dropbox/shared/2022. Basilica/datasets/input.N500_CRC.Rds")
+saveRDS(input_data, "~/Dropbox/shared/2022. Basilica/datasets/input.N1500.CRC_LUNG.Rds")
 
 
 ## Dirichlet

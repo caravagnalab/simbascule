@@ -28,6 +28,8 @@ rename_sigs = function(signatures, old_names) {
 rename_params = function(params_list, new_order_ref, new_order_dn) {
   for (parname in names(params_list)) {
     if (is.null(params_list[[parname]])) next
+    if (is.null(colnames(params_list[[parname]]))) next
+
     if ((is.data.frame(params_list[[parname]]) ||
          is.matrix(params_list[[parname]])) &&
         nrow(params_list[[parname]])==0) next

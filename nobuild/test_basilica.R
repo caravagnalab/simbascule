@@ -1,76 +1,92 @@
 devtools::load_all("~/GitHub/basilica")
 devtools::load_all("~/GitHub/simbasilica/")
-# load_deps(base_path="~/GitHub/")
+load_deps(base_path="~/GitHub/")
 
 ## Simulated ####
 input.simul = readRDS("~/Dropbox/shared/2022. Basilica/datasets/input.N500_G3_simul.Rds")
 input.simul %>% create_basilica_obj_simul()  # creates a basilica obj with simulated data
 obj_simul = input.simul %>% create_basilica_obj_simul()
 
-x.simul = fit(x=input.simul$counts[[1]],
-              k=0:2, # n of denovo signatures
-              clusters=6,  # n of clusters
-              n_steps=3000, lr=0.005,
-              enforce_sparsity=TRUE, # using Beta as prior for alpha centroids
-              dirichlet_prior=TRUE,
-              reference_catalogue=COSMIC_filt[lc,],
-              hyperparameters=list("scale_factor_alpha"=100, "scale_factor_centroid"=1000),  # change default values to hyperparameters
-              nonparametric=TRUE, py=py, store_parameters=TRUE)
-
-x.simul.100 = fit(x=input.simul$counts[[1]],
-              k=2:6, # n of denovo signatures
-              clusters=6,  # n of clusters
-              n_steps=3000, lr=0.005,
+x.simul.cl = fit(x=input.simul$counts[[1]],
+              k=3:5, # n of denovo signatures
+              clusters=4,  # n of clusters
+              n_steps=2000, lr=0.01,
               enforce_sparsity=TRUE, # using Beta as prior for alpha centroids
               dirichlet_prior=TRUE,
               reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
-              hyperparameters=list("scale_factor_alpha"=100, "scale_factor_centroid"=100),  # change default values to hyperparameters
+              hyperparameters=list("alpha_conc"=100, "scale_factor_alpha"=500,
+                                   "scale_factor_centroid"=500),  # change default values to hyperparameters
               nonparametric=TRUE, py=py, store_parameters=TRUE)
 
-saveRDS(list("sf_centr100"=x.simul.100,
-             "sf_centr1000"=x.simul),
-        "~/Dropbox/shared/2022. Basilica/real_data/results/fit.N500_G3_simul.onestep.Rds")
+x.simul.cl2 = fit(x=input.simul$counts[[1]],
+                 k=3:5, # n of denovo signatures
+                 clusters=4,  # n of clusters
+                 n_steps=2000, lr=0.01,
+                 enforce_sparsity=TRUE, # using Beta as prior for alpha centroids
+                 dirichlet_prior=TRUE,
+                 reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
+                 hyperparameters=list("alpha_conc"=1, "scale_factor_alpha"=500,
+                                      "scale_factor_centroid"=500),  # change default values to hyperparameters
+                 nonparametric=TRUE, py=py, store_parameters=TRUE)
 
-saveRDS(x.simul,
-        "~/Dropbox/shared/2022. Basilica/real_data/results/fit.N500_G3_simul.dmm.lc.Rds")
 
-lc = filter_signatures_QP(get_signatures(x.simul), COSMIC_filt) %>% unlist() %>% unique()
+saveRDS(list("alpha_conc100"=x.simul.cl,
+             "alpha_conc1"=x.simul.cl2),
+        "~/Dropbox/shared/2022. Basilica/real_data/results/objects/fit.N500_G3_simul.dmm.alpha_conc.Rds")
 
-x.simul %>% convert_sigs_names(input.simul %>% create_basilica_obj_simul()) %>%
-  get_obj_initial_params() %>% plot_exposures() %>%
-  patchwork::wrap_plots(x.simul %>% convert_sigs_names(input.simul %>% create_basilica_obj_simul()) %>%
-                          plot_exposures(sample_name = T))
+plot_similarity_reference(x.simul.cl, reference = get_signatures(obj_simul))
+plot_similarity_reference(x.simul.cl2, reference = get_signatures(obj_simul))
 
+x.simul.cl %>% convert_sigs_names(obj_simul, cutoff = .7) %>% plot_fit(obj_simul)
+x.simul.cl2 %>% convert_sigs_names(obj_simul, cutoff = .7) %>% plot_fit(obj_simul)
+
+high_d5 = x.simul$fit$exposure[x.simul$fit$exposure[, "D5"] > 0.2, ] %>% rownames()
+x.simul %>% plot_exposures(sampleIDs = high_d5)
+
+
+aricode::NMI(as.vector(x.simul.cl$groups), as.vector(obj_simul$groups))
+aricode::NMI(as.vector((x.simul2$sf_centr1000)$groups), as.vector(obj_simul$groups))
+
+compute.mse(m_inf=get_exposure(x.simul.cl), m_true=get_exposure(obj_simul))
+compute.mse(m_inf=get_exposure(x.simul2$sf_centr1000), m_true=get_exposure(obj_simul))
+
+compute.cosine(m1=get_exposure(x.simul.cl), m2=get_exposure(obj_simul),
+               assigned_missing=get_assigned_missing(x.simul.cl, obj_simul, cutoff=0.7),
+               what="expos")
+
+aricode::NMI(as.vector(x.simul$groups), as.vector(obj_simul$groups))
+compute.mse(m_inf=get_exposure(x.simul), m_true=get_exposure(obj_simul))
 
 
 ## Real data ####
-input.real = readRDS("~/Dropbox/shared/2022. Basilica/datasets/input.N500_CRC.Rds")
+input.real = readRDS("~/Dropbox/shared/2022. Basilica/datasets/input.N1500.CRC_LUNG.Rds")
 
-x.real = fit(x=input.real$counts[[1]],
-             k=8:10, # n of denovo signatures
+x.real2.bis = fit(x=input.real$counts[[1]],
+             k=8, # n of denovo signatures
              clusters=6,  # n of clusters
              n_steps=3000, lr=0.005,
              enforce_sparsity=TRUE, # using Beta as prior for alpha centroids
              dirichlet_prior=TRUE,
              reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
-             hyperparameters=list("scale_factor_alpha"=100, "scale_factor_centroid"=1000),  # change default values to hyperparameters
-             nonparametric=TRUE, py=py, store_parameters=TRUE)
+             hyperparameters=list("alpha_conc"=1000, "scale_factor_alpha"=1000,
+                                  "scale_factor_centroid"=1000, "scale_tau"=1),  # change default values to hyperparameters
+             nonparametric=TRUE, py=py, store_parameters=FALSE)
 
-x.real.100 = fit(x=input.real$counts[[1]],
-             k=8:10, # n of denovo signatures
-             clusters=6,  # n of clusters
-             n_steps=3000, lr=0.005,
-             enforce_sparsity=TRUE, # using Beta as prior for alpha centroids
-             dirichlet_prior=TRUE,
-             reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
-             hyperparameters=list("scale_factor_alpha"=100, "scale_factor_centroid"=100),  # change default values to hyperparameters
-             nonparametric=TRUE, py=py, store_parameters=TRUE)
 
-lc = filter_signatures_QP(get_signatures(x.real), COSMIC_filt, filt_pi=0.2) %>% unlist() %>% unique()
+x.real2.bis %>% convert_sigs_names(reference_cat = COSMIC_filt, cutoff = .7) %>% plot_exposures(add_centroid = T)
 
-saveRDS(list("sf_centr100"=x.real.100,
-             "sf_centr1000"=x.real),
-        "~/Dropbox/shared/2022. Basilica/real_data/results/fit.N500_CRC.onestep.Rds")
+plot_exposures_real(x.real2.bis %>% convert_sigs_names(reference_cat = COSMIC_filt, cutoff = .7) %>%
+                      filter_exposures(min_expos=.05),
+                    groups_true=input.real$groupid[[1]])
+
+plot_centroids(x.real2.bis %>% convert_sigs_names(reference_cat = COSMIC_filt, cutoff = .7) %>%
+                 filter_exposures(min_expos = .05))
+
+plot_posterior_probs(x.real2.bis)
+
+
+
+saveRDS(x.real2.bis, "~/Dropbox/shared/2022. Basilica/real_data/results/objects/fit.N1500.CRC_LUNG.dmm.alpha_conc.Rds")
 
 
 ## plots ####
