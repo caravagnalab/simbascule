@@ -205,7 +205,7 @@ run_model = function(...,
     cli::cli_process_start("Running non-hierarchical fit")
 
     x.fit = run_single_fit(..., pattern="fit.", path=path,
-                           k_list = k_list,
+                           k_list = k_list, cluster_list=NULL,
                            reference_catalogue = reference_catalogue,
                            subset_reference = subset_reference,
                            cohort=cohort, error_file=error_file,
@@ -225,7 +225,8 @@ run_model = function(...,
     cli::cli_process_start("Running clustering fit")
 
     x.fit.clust = run_single_fit(..., pattern="fit_clust.", path=path,
-                                 out_name=out_name, k_list = k_list,
+                                 out_name=out_name, k_list = k_list, 
+				 cluster_list=cluster_list,
                                  reference_catalogue=reference_catalogue,
                                  subset_reference=subset_reference, 
                                  cohort=cohort, groups=NULL, new_hier=new_hier, 
@@ -293,6 +294,7 @@ run_single_fit = function(...,
     k_list = new_min_k:k_list[length(k_list)]
     cat(paste(paste(new_sigs, collapse=","), "\n"))
     cat(paste(paste(k_list, collapse=","), "\n"))
+    cat(paste(paste(cluster_list, collapse=","), "\n"))
     x.fit_new = try_run(error_file,
                     expr =
                       fit(..., k = k_list,
