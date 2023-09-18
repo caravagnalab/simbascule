@@ -1,13 +1,13 @@
 #!/bin/bash
 #SBATCH --time=30:00:00
 #SBATCH --nodes=1
-#SBATCH --array=5-8
+#SBATCH --array=6-8
 #SBATCH --cpus-per-task=1
 #SBATCH --partition=gpuq
 #SBATCH --gres=gpu:1
 #SBATCH --job-name=2.dmm
 #SBATCH --mem=20GB
-#SBATCH --output=/home/elena.buscaroli/GitHub/simbasilica/nobuild/sbatch/sbatch_3107/logs_ht/2.dmm-%A-%a.log
+#SBATCH --output=/home/elena.buscaroli/GitHub/simbasilica/nobuild/sbatch/sbatch_1809/logs_ht/2.dmm-%A-%a.log
 
 echo '----------------------------'
 echo ' JOB ID: '$SLURM_ARRAY_JOB_ID

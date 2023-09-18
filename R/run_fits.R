@@ -133,7 +133,7 @@ generate_and_run = function(comb_matrix,
                   seed_list = seed_list,
 
                   filtered_catalogue = TRUE,
-                  groups = x$groups[[1]] - 1,
+                  # groups = x$groups[[1]] - 1,
                   cluster_list = cluster_list,
 
                   error_file = failed,
@@ -267,7 +267,7 @@ run_single_fit = function(...,
 
   cat("AFTER READING FILE RDS\n")
 
-  if (check_linear_comb) {
+  if (check_linear_comb && !is.null(get_denovo_signatures(x.fit))) {
     lc = filter_signatures_QP(sign1=get_denovo_signatures(x.fit),
                               sign2=reference_catalogue,
                               return_weights=FALSE,
@@ -275,19 +275,23 @@ run_single_fit = function(...,
     new_sigs = unique(c(subset_reference, unlist(lc)))
     new_min_k = max(0, k_list[1] - length(setdiff(unlist(lc), subset_reference)))
     k_list = new_min_k:k_list[length(k_list)]
-    cat(paste(paste(new_sigs, collapse=","), "\n"))
-    cat(paste(paste(k_list, collapse=","), "\n"))
-    cat(paste(paste(cluster_list, collapse=","), "\n"))
-    x.fit_new = try_run(error_file,
-                    expr =
-                      fit(..., k = k_list,
-                          reference_catalogue=reference_catalogue[new_sigs, ],
-                          nonparametric = nonparametric,
-                          clusters = cluster_list,
-                          cohort = cohort,
-                          regul_denovo = regul_denovo),
-                    msg = paste(msg, "checking linear comb"))
-    x.fit$lc_check = x.fit_new
+
+    if (any(!new_sigs %in% subset_reference)) {
+      cat(paste(paste(new_sigs, collapse=","), "\n"))
+      cat(paste(paste(k_list, collapse=","), "\n"))
+      cat(paste(paste(cluster_list, collapse=","), "\n"))
+
+      x.fit_new = try_run(error_file,
+                  expr =
+                    fit(..., k = k_list,
+                        reference_catalogue=reference_catalogue[new_sigs, ],
+                        nonparametric = nonparametric,
+                        clusters = cluster_list,
+                        cohort = cohort,
+                        regul_denovo = regul_denovo),
+                  msg = paste(msg, "checking linear comb"))
+      x.fit$lc_check = x.fit_new
+    }
   }
 
   return(x.fit)
