@@ -2,22 +2,14 @@ args = commandArgs(trailingOnly = TRUE)
 cat(paste("\nArguments:", paste(args, collapse=", "), "\n"))
 
 i = as.integer(args[1])
-nonparametric = args[2] == "nonparametric"
-enforce_sparsity = args[3] == "sparsity"
-inference_type = args[4]
-run_id = args[5]
+inference_type = args[2]
+run_id = args[3]
 
-new_hier = FALSE
-regularizer = "noreg"
-reg_weight = 0.
-
-cat(paste("i =", i, "new_hier =", new_hier, "regularizer =", regularizer, "enforce_sparsity=", enforce_sparsity,
-          "inference_type =", inference_type, "nonparametric =", nonparametric, "\n"))
+cat(paste("i =", i, "inference_type =", inference_type, "\n"))
 
 main_path = "~/GitHub/"
 data_path = "~/signatures/simulations/synthetic_datasets_3107/"
-fits_path = paste0("~/signatures/simulations/", "fits_dn.",
-                   inference_type, ".", args[2], ".", args[3], ".", regularizer, ".old_hier.", run_id, "/")
+fits_path = paste0("~/signatures/simulations/", "fits_dn.", inference_type, ".", run_id, "/")
 
 cat(paste0("\nSaving in directory: ", fits_path, "\n\n"))
 
@@ -58,7 +50,7 @@ generate_and_run(comb_matrix = comb_i,
 
                  fits_path = fits_path,
                  data_path = data_path,
-                 seeds = 1:30,
+                 seeds = 1:10,
 
                  catalogue_sbs = catalogue_sbs,
                  alpha_range = c(.15,0.2),
@@ -72,27 +64,23 @@ generate_and_run(comb_matrix = comb_i,
                  reference_catalogue = COSMIC_filt,
                  subset_reference = c("SBS1", "SBS5"),
                  keep_sigs = c("SBS1", "SBS5"),
-                 hyperparameters = list("alpha_sigma"=0.1),
+                 hyperparameters=list("alpha_conc"=100, "scale_factor_alpha"=500,
+                                      "scale_factor_centroid"=500, "scale_tau"=5),
                  lr = 0.005,
-                 n_steps = 2000,
-                 nonparametric = nonparametric,
-                 enforce_sparsity = enforce_sparsity,
+                 n_steps = 3000,
+                 nonparametric = TRUE,
+                 enforce_sparsity = TRUE,
 
-                 reg_weight = reg_weight,
-                 regularizer = regularizer,
-                 new_hier = new_hier,
-                 regul_denovo = FALSE,
-                 regul_fixed = FALSE,
+                 reg_weight = 0.,
+                 regularizer = "cosine",
+                 regul_denovo = T,
+                 regul_fixed = T,
 
-                 initializ_seed = FALSE,
-                 do_initial_fit = TRUE,
-                 save_runs_seed = TRUE,
                  save_all_fits = TRUE,
                  seed_list = c(4,17,22),
 
                  CUDA = TRUE,
                  do.fits = TRUE,
-                 verbose = FALSE,
                  cohort = i,
 
                  check_present = TRUE,
