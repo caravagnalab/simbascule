@@ -226,7 +226,7 @@ run_model = function(...,
 
     x.fit.clust = run_single_fit(..., pattern="fit_clust.", path=path,
                                  out_name=out_name, k_list = k_list, 
-				 cluster_list=cluster_list,
+                                 cluster_list=cluster_list,
                                  reference_catalogue=reference_catalogue,
                                  subset_reference=subset_reference, 
                                  cohort=cohort, groups=NULL, new_hier=new_hier, 
