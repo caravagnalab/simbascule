@@ -39,7 +39,9 @@ x.fit = fit(x=input.real$counts[[1]],
                                  "scale_factor_centroid"=1000, "scale_tau"=1),  # change default values to hyperparameters
             nonparametric=TRUE, py=py, CUDA=TRUE)
 
-saveRDS(x.fit, paste0(fits_path, "fit.", inference_type, ".", run_id, ".Rds"))
+saveRDS(x.fit, paste0(fits_path, "fit.real_data.N",
+                      nrow(input.real$counts[[1]]),
+                      ".", run_id, ".Rds"))
 
 
 
