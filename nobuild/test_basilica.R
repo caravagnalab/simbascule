@@ -75,8 +75,7 @@ x.real2.bis = fit(x=input.real$counts[[1]],
 
 x.real2.bis %>% convert_sigs_names(reference_cat = COSMIC_filt, cutoff = .7) %>% plot_exposures(add_centroid = T)
 
-plot_exposures_real(x.real2.bis %>% convert_sigs_names(reference_cat = COSMIC_filt, cutoff = .7) %>%
-                      filter_exposures(min_expos=.05),
+plot_exposures_real(x.real2.bis %>% convert_sigs_names(reference_cat = COSMIC_filt, cutoff = .7),
                     groups_true=input.real$groupid[[1]])
 
 plot_centroids(x.real2.bis %>% convert_sigs_names(reference_cat = COSMIC_filt, cutoff = .7) %>%
@@ -84,7 +83,7 @@ plot_centroids(x.real2.bis %>% convert_sigs_names(reference_cat = COSMIC_filt, c
 
 plot_posterior_probs(x.real2.bis)
 
-
+x.real2.bis = readRDS("~/Dropbox/shared/2022. Basilica/real_data/results/objects/fit.N1500.CRC_LUNG.dmm.alpha_conc.Rds")
 
 saveRDS(x.real2.bis, "~/Dropbox/shared/2022. Basilica/real_data/results/objects/fit.N1500.CRC_LUNG.dmm.alpha_conc.Rds")
 

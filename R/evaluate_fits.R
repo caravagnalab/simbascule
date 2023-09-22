@@ -49,11 +49,6 @@ stats_fit_quality = function(x.fit, x.simul, suffix_name="") {
   mse_counts = compute.mse(m_true=x.simul$input$counts, m_inf=get_data(x.fit, reconstructed=T))
   mse_expos = compute.mse(m_true=expos.simul, m_inf=expos.fit,
                           assigned_missing=assigned_missing)
-  mse_unn_counts = compute.mse(m_true=x.simul$input$counts,
-                               m_inf=get_data(x.fit, reconstructed=T),
-                               norm=FALSE)
-  mse_unn_expos = compute.mse(m_true=expos.simul, m_inf=expos.fit,
-                              assigned_missing=assigned_missing, norm=F)
 
   cosine_sigs = compute.cosine(sigs.fit, sigs.simul,
                                assigned_missing=assigned_missing,
@@ -68,8 +63,8 @@ stats_fit_quality = function(x.fit, x.simul, suffix_name="") {
     kmeans2 = get_obj_initial_params(x.fit) %>% run_kmeans()
 
     ari_nmi = compute_ari_nmi(x.simul=x.simul, x.fit=x.fit)
-    ari_nmi_km1 = compute_ari_nmi(x.simul=x.simul, x.fit=get_obj_initial_params(kmeans1))
-    ari_nmi_km2 = compute_ari_nmi(x.simul=x.simul, x.fit=get_obj_initial_params(kmeans2))
+    ari_nmi_km1 = compute_ari_nmi(x.simul=x.simul, x.fit=kmeans1)
+    ari_nmi_km2 = compute_ari_nmi(x.simul=x.simul, x.fit=kmeans2)
   }
 
   res = tibble::tibble(
@@ -112,13 +107,16 @@ compare_single_fit = function(fitname, fits_path, data_path, fits_pattern,
 
   x.fit.nolc = readRDS(paste0(fits_path, fitname)) %>%
     convert_sigs_names(x.simul, cutoff=cutoff) %>%
-    fix_assignments()
+    # fix_assignments()
+    recompute_centroids() %>% merge_clusters()
 
   x.fit.noadj = readRDS(paste0(fits_path, fitname)) %>%
     get_adjusted_fit_lc() %>%
     convert_sigs_names(x.simul, cutoff=cutoff)
 
-  x.fit = x.fit.noadj %>% fix_assignments()
+  x.fit = x.fit.noadj %>%
+    # fix_assignments()
+    recompute_centroids() %>% merge_clusters()
 
   rare_common = rare_common_sigs(x.simul)
 
@@ -192,29 +190,27 @@ make_plots_compare = function(fit1, fit2, name1="fit1", name2="fit2",
     patchwork::wrap_plots(plot_mutations(fit2, reconstructed=F), ncol=1) &
     patchwork::plot_annotation(title=paste0("Counts", ttitle))
 
-  plot_expos = plot_exposures(fit1 %>% filter_exposures(min_expos=min_exposure),
-                              add_centroid=F, cls=cls) %>%
-    patchwork::wrap_plots(plot_exposures(fit2, add_centroid=F, cls=cls),
+  plot_expos_centr = plot_exposures(fit1 %>% filter_exposures(min_expos=min_exposure),
+                              add_centroid=T, cls=cls) %>%
+    patchwork::wrap_plots(plot_exposures(fit2, add_centroid=T, cls=cls),
                           ncol=1, guides="collect") &
-    patchwork::plot_annotation(title=paste0("Exposures", ttitle))
+    patchwork::plot_annotation(title=paste0("Exposures and centroids", ttitle))
 
-  plot_centroids = plot_exposures(fit1 %>% filter_exposures(min_expos=min_exposure),
-                                  centroids=TRUE, cls=cls) %>%
-    patchwork::wrap_plots(plot_exposures(fit2, centroids=T, cls=cls),
-                          ncol=1, guides="collect") &
-    patchwork::plot_annotation(title=paste0("Centroids", ttitle))
+  # plot_centroids = plot_exposures(fit1 %>% filter_exposures(min_expos=min_exposure),
+  #                                 centroids=TRUE, cls=cls) %>%
+  #   patchwork::wrap_plots(plot_exposures(fit2, centroids=T, cls=cls),
+  #                         ncol=1, guides="collect") &
+  #   patchwork::plot_annotation(title=paste0("Centroids", ttitle))
 
   plot_sigs = plot_signatures(fit1, catalogue=get_signatures(fit2), cls=cls)
 
-  plot_expos_centr = patchwork::wrap_plots(plot_expos + theme(legend.position="none"),
-                                           plot_centroids,
-                                           widths=c(9,1), guides="collect") &
-    theme(legend.position="bottom") &
-    patchwork::plot_annotation(title=paste0("Exposures and centroids", ttitle))
+  # plot_expos_centr = patchwork::wrap_plots(plot_expos + theme(legend.position="none"),
+  #                                          plot_centroids,
+  #                                          widths=c(9,1), guides="collect") &
+  #   theme(legend.position="bottom") &
+  #   patchwork::plot_annotation(title=paste0("Exposures and centroids", ttitle))
 
-  return(list("exposures"=plot_expos,
-              "centroids"=plot_centroids,
-              "expos_centr"=plot_expos_centr,
+  return(list("expos_centr"=plot_expos_centr,
               "signatures"=plot_sigs,
               "counts"=plot_counts,
               "umap"=plot_umap))

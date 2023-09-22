@@ -13,16 +13,17 @@ make_figure = function(stats_df, suffix_name="") {
     ylab("Score") + labs(title="") + theme(legend.position="none")
 
   nmi_compare = stats_df %>%
-    tidyr::pivot_longer(cols=paste(c("nmi_km_em","nmi_km","nmi"), suffix_name, sep="_"),
+    tidyr::pivot_longer(cols=paste(c("nmi_km1","nmi_km2","nmi"), suffix_name, sep="_"),
                         names_to="which_fit", values_to="nmi") %>%
     dplyr::mutate(which_fit=stringr::str_replace_all(which_fit,"nmi|_",""),
                   which_fit=stringr::str_replace_all(which_fit,suffix_name,""),
                   which_fit=dplyr::case_when(
-                    which_fit == "km" ~ "KMeans",
-                    which_fit == "kmem" ~ "KMeans+EM",
+                    which_fit == "km1" ~ "Initial KMeans",
+                    which_fit == "km2" ~ "KMeans with K selection",
                     which_fit == "" ~ "Basilica fit",
                   )) %>%
-    dplyr::mutate(which_fit=factor(which_fit, levels=c("Basilica fit","KMeans","KMeans+EM"))) %>%
+    dplyr::mutate(which_fit=factor(which_fit, levels=c("Basilica fit","Initial KMeans",
+                                                       "KMeans with K selection"))) %>%
     plot_mse_cosine(colname="nmi", fill="which_fit", ylim=c(0,1)) +
     ylab("NMI") + labs(title="") + theme(legend.position="bottom")
 
@@ -100,18 +101,18 @@ report_stats = function(stats_df, fname, save_path,
   (plot_mse_cosine(stats_df_clst, paste0("nmi_", suffix_name),
                    scales="free_y", ylim=c(0,1), fill=fill) %>%
       patchwork::wrap_plots(
-        plot_mse_cosine(stats_df_clst, paste0("nmi_km_", suffix_name),
+        plot_mse_cosine(stats_df_clst, paste0("nmi_km1_", suffix_name),
                         scales="free_y", ylim=c(0,1), fill=fill),
-        plot_mse_cosine(stats_df_clst, paste0("nmi_km_em_", suffix_name),
+        plot_mse_cosine(stats_df_clst, paste0("nmi_km2_", suffix_name),
                         scales="free_y", ylim=c(0,1), fill=fill),
         guides="collect", nrow=1) & theme(legend.position="bottom")) %>% print()
 
   (plot_mse_cosine(stats_df_clst, paste0("ari_", suffix_name),
                    scales="free_y", ylim=c(0,1), fill=fill) %>%
       patchwork::wrap_plots(
-        plot_mse_cosine(stats_df_clst, paste0("ari_km_", suffix_name),
+        plot_mse_cosine(stats_df_clst, paste0("ari_km1_", suffix_name),
                         scales="free_y", ylim=c(0,1), fill=fill),
-        plot_mse_cosine(stats_df_clst, paste0("ari_km_em_", suffix_name),
+        plot_mse_cosine(stats_df_clst, paste0("ari_km2_", suffix_name),
                         scales="free_y", ylim=c(0,1), fill=fill),
         guides="collect", nrow=1) & theme(legend.position="bottom")) %>% print()
 
