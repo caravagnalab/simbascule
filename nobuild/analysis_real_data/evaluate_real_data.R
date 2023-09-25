@@ -1,63 +1,12 @@
 devtools::load_all("~/GitHub/simbasilica/")
 load_deps()
 
-
-### whole cohort ####
-x.real = readRDS("~/Dropbox/shared/2022. Basilica/real_data/results/fit.real_data.N18764.tris.dmm.1809.Rds")
-
-x.real$color_palette = COSMIC_color_palette(get_signatures(x.real))
-# x.real$groups = get_obj_initial_params(x.real)$groups
-
-x.real.merged = x.real %>% recompute_centroids() %>% merge_clusters(cutoff = .9)
-
-lapply(x.real.merged$groups %>% unique(), function(gid) {
-  idxs = get_group(x.real.merged, groupIDs=gid, return_idx=TRUE)
-  x.real.merged %>%
-    filter_exposures(0.01) %>%
-    convert_sigs_names(reference_cat = COSMIC_filt) %>%
-    plot_exposures(sampleIDs=idxs)
-}) %>% patchwork::wrap_plots(guides="collect")
-
-all_organs = lapply(x.real.merged$groups_true %>% unique(), function(gid) {
-  idxs1 = which(x.real.merged$groups_true == gid)
-  idxs2 = rownames(get_exposure(x.real.merged))[idxs1]
-  x.real.merged %>%
-    filter_exposures(0.01) %>%
-    convert_sigs_names(reference_cat = COSMIC_filt) %>%
-    plot_exposures_real(sampleIDs=idxs2, groups_true=x.real.merged$groups_true)
-})
-
-all_organs2 = lapply(x.real.merged$groups %>% unique(), function(gid) {
-  # idxs1 = which(x.real$groups_true == gid)
-  # idxs2 = rownames(get_exposure(x.real))[idxs1]
-  idxs = get_group(x.real.merged, groupIDs=gid, return_idx=T)
-  x.real.merged %>%
-    filter_exposures(0.01) %>%
-    convert_sigs_names(reference_cat = COSMIC_filt) %>%
-    plot_exposures_real(sampleIDs=idxs, groups_true=x.real.merged$groups_true)
-})
-
-pdf("~/Dropbox/shared/2022. Basilica/real_data/results/plots.N18764.dmm.1809.pdf", width=16, height=10)
-# all_organs %>% patchwork::wrap_plots(guides="collect") %>% print()
-# all_organs2 %>% patchwork::wrap_plots(guides="collect") %>% print()
-all_organs2 %>% print()
-dev.off()
-
-
-filter_signatures_QP(get_signatures(x.real %>%
-                                      convert_sigs_names(reference_cat=COSMIC_filt)),
-                     COSMIC_filt, return_weights=T)
-
-p = plot_exposures_real(x.real, groups_true = x.real$groups_true)
-
-
 ## Test on subset ####
-
 main_path = "~/Dropbox/shared/2022. Basilica/real_data/"
 save_path = paste0(main_path, "results/")
 data_path = paste0(main_path, "processed_data/")
 
-tissues = c("Colorectal", "Lung")
+tissues = c("Colorectal", "Lung", "Breast")
 N = 1500
 counts_all = readRDS(paste0(data_path, "counts_all.Rds")) %>% dplyr::filter(organ %in% tissues)
 groups_all = counts_all$organ
@@ -74,11 +23,27 @@ input_data = tibble::tibble("counts"=list(counts_n), "groupid"=list(groups_n))
 
 ## Dirichlet
 fit_dn = fit(x=input_data$counts[[1]], k=8, clusters=4, nonparametric=TRUE,
-             reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),],
+             reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),], n_steps=2000,
              keep_sigs=c("SBS1","SBS5"), enforce_sparsity=TRUE,
-             hyperparameters=list("alpha_conc"=1000, "scale_factor_alpha"=10000,
-                                  "scale_factor_centroid"=5000, "scale_tau"=5),
+             hyperparameters=list("alpha_conc"=100, "scale_factor_alpha"=10000,
+                                  "scale_factor_centroid"=10000, "scale_tau"=1),
              dirichlet_prior=TRUE, py=py)
+
+fit_dn.2 = fit(x=input_data$counts[[1]], k=8, clusters=4, nonparametric=TRUE,
+             reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),], n_steps=2000,
+             keep_sigs=c("SBS1","SBS5"), enforce_sparsity=TRUE,
+             hyperparameters=list("alpha_conc"=100, "scale_factor_alpha"=10000,
+                                  "scale_factor_centroid"=10000, "scale_tau"=0),
+             dirichlet_prior=TRUE, py=py)
+
+tmp = fit(x=input_data$counts[[1]], k=8, clusters=4, nonparametric=TRUE,
+               reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),], n_steps=2,
+               keep_sigs=c("SBS1","SBS5"), enforce_sparsity=TRUE, reg_weight = 1., regul_denovo = FALSE,
+               hyperparameters=list("alpha_conc"=100, "scale_factor_alpha"=10000,
+                                    "scale_factor_centroid"=10000, "scale_tau"=0),
+               dirichlet_prior=TRUE, py=py)
+
+saveRDS(list("nolearning"=fit_dn, "learning"=fit_dn.2), "~/Dropbox/shared/2022. Basilica/real_data/results/objects/fit.N1500.CRC_LUNG.sf_test.Rds")
 
 lc_sbs = filter_signatures_QP(get_signatures(fit_dn %>% convert_sigs_names(reference_cat=COSMIC_filt)),
                               COSMIC_filt, filt_pi=0.1, return_weights=F) %>% unlist() %>% unique()
@@ -136,13 +101,17 @@ convert_sigs_names()
 ## Plots ####
 fit1 = fit_dn %>% convert_sigs_names(reference_cat=COSMIC_filt, cutoff=.8)
 fit2 = fit_dn$lc_check %>% convert_sigs_names(reference_cat=COSMIC_filt, cutoff=.8)
+name1 = "fit1"
+name2 = "fit2"
+idd = "N1500.CRC_LUNG.dmm"
+
 ref_cls = COSMIC_color_palette()[unique(c(get_signames(fit1),get_signames(fit2)))] %>% purrr::discard(is.na)
 dn_cls = c(get_color_palette(fit1),
            get_color_palette(fit2))[grep("D",c(get_signames(fit1),
                                                get_signames(fit2)) %>% unique(), value=TRUE)]
 cls = c(ref_cls, dn_cls)
 pp = make_plots_compare(fit1=fit1, fit2=fit2,
-                        name1="Fit", name2="Fit+lcomb",
+                        name1=name1, name2=name2,
                         min_exposure=.0, cls=cls)
 
 centr1 = lapply(unique(fit1$groups), function(gid) {
@@ -159,10 +128,8 @@ centr2 = lapply(unique(fit2$groups), function(gid) {
 })
 centr2[["centr"]] = plot_centroids(fit2, cls=cls) + labs(title="")
 
-
-idd = "N1500.CRC_LUNG.dmm"
 pdf(paste0(save_path, "plots.", idd, ".pdf"), height=12, width=16)
-plot_fit(fit1, fit2, cls=cls, name1="Fit", name2="Fit+lcomb") %>% print()
+plot_fit(fit1, fit2, cls=cls, name1=name1, name2=name2) %>% print()
 plot_exposures_real(fit1, groups_true=input_data$groupid[[1]], cls=cls) %>%
   patchwork::wrap_plots(plot_exposures_real(fit2, groups_true=input_data$groupid[[1]], cls=cls), ncol=1)
 pp$expos_centr %>% print()
@@ -186,7 +153,48 @@ tmp %>% filter_exposures(min_expos = 0.05) %>% plot_exposures() %>%
 
 
 
-## Generate whole count matrix ####
+### whole cohort ####
+x.real = readRDS("~/Dropbox/shared/2022. Basilica/real_data/results/fit.real_data.N18764.tris.dmm.1809.Rds")
+
+x.real$color_palette = COSMIC_color_palette(get_signatures(x.real))
+# x.real$groups = get_obj_initial_params(x.real)$groups
+
+x.real.merged = x.real %>% recompute_centroids() %>% merge_clusters(cutoff = .9)
+
+lapply(x.real.merged$groups %>% unique(), function(gid) {
+  idxs = get_group(x.real.merged, groupIDs=gid, return_idx=TRUE)
+  x.real.merged %>%
+    filter_exposures(0.01) %>%
+    convert_sigs_names(reference_cat = COSMIC_filt) %>%
+    plot_exposures(sampleIDs=idxs)
+}) %>% patchwork::wrap_plots(guides="collect")
+
+all_organs = lapply(x.real.merged$groups_true %>% unique(), function(gid) {
+  idxs1 = which(x.real.merged$groups_true == gid)
+  idxs2 = rownames(get_exposure(x.real.merged))[idxs1]
+  x.real.merged %>%
+    filter_exposures(0.01) %>%
+    convert_sigs_names(reference_cat = COSMIC_filt) %>%
+    plot_exposures_real(sampleIDs=idxs2, groups_true=x.real.merged$groups_true)
+})
+
+all_organs2 = lapply(x.real.merged$groups %>% unique(), function(gid) {
+  # idxs1 = which(x.real$groups_true == gid)
+  # idxs2 = rownames(get_exposure(x.real))[idxs1]
+  idxs = get_group(x.real.merged, groupIDs=gid, return_idx=T)
+  x.real.merged %>%
+    filter_exposures(0.01) %>%
+    convert_sigs_names(reference_cat = COSMIC_filt) %>%
+    plot_exposures_real(sampleIDs=idxs, groups_true=x.real.merged$groups_true)
+})
+
+pdf("~/Dropbox/shared/2022. Basilica/real_data/results/plots.N18764.dmm.1809.pdf", width=16, height=10)
+# all_organs %>% patchwork::wrap_plots(guides="collect") %>% print()
+# all_organs2 %>% patchwork::wrap_plots(guides="collect") %>% print()
+all_organs2 %>% print()
+dev.off()
+
+## Whole count matrix ####
 catalogues = list.files(path=paste0(data_path, "SBS_v2.03/catalogues/"), recursive=TRUE, full.names=TRUE)
 counts_all = lapply(catalogues, function(c_i) {
   splitted = strsplit(c_i, "/")[[1]]
@@ -205,7 +213,7 @@ signatures = read.csv(paste0(data_path, "SBS_v2.03/RefSig_SBS_v2.03.tsv"), sep="
 saveRDS(signatures, file=paste0(data_path, "signatures_all.Rds"))
 
 
-## Generate whole exposures matrix ####
+## Whole exposures matrix ####
 exposures = list.files(path=paste0(data_path, "SBS_v2.03/organSpecificExposures/"),
                        recursive=TRUE, full.names=TRUE, pattern=".tsv$")
 conversion_table = read.csv(paste0(data_path, "SBS_v2.03/RefSig_SBS_conversionMatrix_v2.03.tsv"), sep="\t") %>%
