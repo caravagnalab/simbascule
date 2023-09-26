@@ -25,6 +25,6 @@ conda activate basilica-env
 
 Rscript /home/elena.buscaroli/GitHub/simbasilica/nobuild/run_scripts/run_simuls.R \
   $SLURM_ARRAY_TASK_ID \
-  flat_clust \
-  dmm.1809
+  clust \
+  sf_learning.dmm.1809
 

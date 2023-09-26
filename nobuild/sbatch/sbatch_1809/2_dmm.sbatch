@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --time=30:00:00
 #SBATCH --nodes=1
-#SBATCH --array=6-8
+#SBATCH --array=5-8
 #SBATCH --cpus-per-task=1
 #SBATCH --partition=gpuq
 #SBATCH --gres=gpu:1
@@ -27,6 +27,6 @@ conda activate basilica-env
 
 Rscript /home/elena.buscaroli/GitHub/simbasilica/nobuild/run_scripts/run_simuls.R \
   $SLURM_ARRAY_TASK_ID \
-  flat_clust \
-  dmm.1809
+  clust \
+  sf_learning.dmm.1809
 
