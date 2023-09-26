@@ -7,7 +7,7 @@ save_path = paste0(main_path, "results/")
 data_path = paste0(main_path, "processed_data/")
 
 tissues = c("Colorectal", "Lung", "Breast")
-N = 1500
+N = 2000
 counts_all = readRDS(paste0(data_path, "counts_all.Rds")) %>% dplyr::filter(organ %in% tissues)
 groups_all = counts_all$organ
 
@@ -22,28 +22,27 @@ input_data = tibble::tibble("counts"=list(counts_n), "groupid"=list(groups_n))
 
 
 ## Dirichlet
-fit_dn = fit(x=input_data$counts[[1]], k=8, clusters=4, nonparametric=TRUE,
-             reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),], n_steps=2000,
-             keep_sigs=c("SBS1","SBS5"), enforce_sparsity=TRUE,
-             hyperparameters=list("alpha_conc"=100, "scale_factor_alpha"=10000,
-                                  "scale_factor_centroid"=10000, "scale_tau"=1),
-             dirichlet_prior=TRUE, py=py)
+# fit_dn = fit(x=input_data$counts[[1]], k=8, clusters=4, nonparametric=TRUE,
+#              reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),], n_steps=2000,
+#              keep_sigs=c("SBS1","SBS5"), enforce_sparsity=TRUE,
+#              hyperparameters=list("alpha_conc"=100, "scale_factor_alpha"=10000,
+#                                   "scale_factor_centroid"=10000, "scale_tau"=1),
+#              dirichlet_prior=TRUE, py=py)
 
-fit_dn.2 = fit(x=input_data$counts[[1]], k=8, clusters=4, nonparametric=TRUE,
+fit_dn = fit(x=input_data$counts[[1]], k=6:8, clusters=10, nonparametric=TRUE,
              reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),], n_steps=2000,
              keep_sigs=c("SBS1","SBS5"), enforce_sparsity=TRUE,
              hyperparameters=list("alpha_conc"=100, "scale_factor_alpha"=10000,
                                   "scale_factor_centroid"=10000, "scale_tau"=0),
              dirichlet_prior=TRUE, py=py)
 
-tmp = fit(x=input_data$counts[[1]], k=8, clusters=4, nonparametric=TRUE,
-               reference_catalogue=COSMIC_filt[c("SBS1","SBS5"),], n_steps=2,
-               keep_sigs=c("SBS1","SBS5"), enforce_sparsity=TRUE, reg_weight = 1., regul_denovo = FALSE,
-               hyperparameters=list("alpha_conc"=100, "scale_factor_alpha"=10000,
-                                    "scale_factor_centroid"=10000, "scale_tau"=0),
-               dirichlet_prior=TRUE, py=py)
+saveRDS(fit_dn, "~/Dropbox/shared/2022. Basilica/real_data/results/objects/fit.N2000.BR_CRC_LUNG.sf_test.Rds")
 
-saveRDS(list("nolearning"=fit_dn, "learning"=fit_dn.2), "~/Dropbox/shared/2022. Basilica/real_data/results/objects/fit.N1500.CRC_LUNG.sf_test.Rds")
+fit_dn %>% convert_sigs_names(reference_cat = COSMIC_filt, cutoff = .7) %>%
+  plot_exposures_real(groups_true = input_data$groupid[[1]]) %>%
+  patchwork::wrap_plots(fit_dn %>% convert_sigs_names(reference_cat = COSMIC_filt, cutoff = .7) %>%
+                          plot_centroids(), widths = c(9,1), guides="collect")
+ggsave("~/Dropbox/shared/2022. Basilica/real_data/results/objects/expos.BR_CRC_LUNG.sf_test.png")
 
 lc_sbs = filter_signatures_QP(get_signatures(fit_dn %>% convert_sigs_names(reference_cat=COSMIC_filt)),
                               COSMIC_filt, filt_pi=0.1, return_weights=F) %>% unlist() %>% unique()

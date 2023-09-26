@@ -164,7 +164,8 @@ compare_single_fit = function(fitname, fits_path, data_path, fits_pattern,
       "priv_rare"=list(rare_common$private_rare)
     ) %>%
       tibble::add_column(stats_fit_quality(x.fit.nolc, x.simul, suffix_name="noLC")) %>%
-      tibble::add_column(stats_fit_quality(x.fit, x.simul, suffix_name="LC"))
+      tibble::add_column(stats_fit_quality(x.fit, x.simul, suffix_name="LC")) %>%
+      tibble::add_column(stats_fit_quality(x.fit.noadj, x.simul, suffix_name="LCnomerge"))
   )
 }
 
