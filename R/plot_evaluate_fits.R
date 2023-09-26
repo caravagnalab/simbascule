@@ -1,6 +1,7 @@
 make_figure = function(stats_df, suffix_name="") {
   n_sigs = plot_sigs_clusters_found(stats_df, what="private", suffix_name=suffix_name,
-                                    ylim=c(0,1)) + theme(legend.position="bottom")
+                                    ylim=c(0,1), facet=TRUE) +
+    theme(legend.position="bottom")
 
   nmi = stats_df %>%
     tidyr::pivot_longer(cols=paste(c("nmi","ari"), suffix_name, sep="_"),
@@ -13,19 +14,19 @@ make_figure = function(stats_df, suffix_name="") {
     ylab("Score") + labs(title="") + theme(legend.position="none")
 
   nmi_compare = stats_df %>%
-    tidyr::pivot_longer(cols=paste(c("nmi_km1","nmi_km2","nmi"), suffix_name, sep="_"),
+    tidyr::pivot_longer(cols=paste(c("nmi_km2","nmi"), suffix_name, sep="_"),
                         names_to="which_fit", values_to="nmi") %>%
     dplyr::mutate(which_fit=stringr::str_replace_all(which_fit,"nmi|_",""),
                   which_fit=stringr::str_replace_all(which_fit,suffix_name,""),
                   which_fit=dplyr::case_when(
-                    which_fit == "km1" ~ "Initial KMeans",
                     which_fit == "km2" ~ "KMeans with K selection",
                     which_fit == "" ~ "Basilica fit",
                   )) %>%
     dplyr::mutate(which_fit=factor(which_fit, levels=c("Basilica fit","Initial KMeans",
                                                        "KMeans with K selection"))) %>%
-    plot_mse_cosine(colname="nmi", fill="which_fit", ylim=c(0,1)) +
-    ylab("NMI") + labs(title="") + theme(legend.position="bottom")
+    plot_mse_cosine(colname="nmi", fill="which_fit", ylim=c(0,1), facet="run_id") +
+    ylab("NMI") + labs(title="") + theme(legend.position="bottom") +
+    scale_color_manual(values=c("tan3","dodgerblue3"))
 
 
   counts_expos = stats_df %>%
