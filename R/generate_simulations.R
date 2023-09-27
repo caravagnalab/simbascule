@@ -53,7 +53,7 @@ generate_simulation_dataset = function(G, N,
   n_rare = min(ceiling(frac_rare * N), N)
   min_n = min(min_samples, n_rare)
   repeat {
-    pi = rdirichlet(1, alpha=rep(pi_conc, G))
+    pi = gtools::rdirichlet(1, alpha=rep(pi_conc, G))
     n_gs = sapply(1:G, function(i) round(N * pi[i]))
     if (all(n_gs >= min_n) && any(n_gs <= n_rare)) break
   }
@@ -85,6 +85,8 @@ generate_simulation_dataset = function(G, N,
       alpha_prior_g = sample(1:100, size=nrow(beta_g)) %>% setNames(rownames(beta_g))
       alpha_prior_g = alpha_prior_g / sum(alpha_prior_g)
       w_min = min(alpha_prior_g)
+
+      if (length(alpha_prior_g)==1) break
 
       if (w_min >= alpha_range[1] && w_min <= alpha_range[2]) break
     }

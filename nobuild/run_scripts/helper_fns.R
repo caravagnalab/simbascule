@@ -197,19 +197,19 @@
 ## Function to select "n_fixed" signatures from a reference catalogue (i.e. COSMIC)
 ## with a cosine similarity lower than "cosine_limit"
 ## It returns the subset reference
-select_fixed_sbs = function(referece_cat, n_fixed=4, cosine_limit=.5) {
-  ref_cosine.all = lsa::cosine(reference_cat %>% t())
-
-  while (TRUE) {
-    idxs = sample(1:nrow(ref_cosine.all), n_fixed)
-    sbss = rownames(ref_cosine.all)[idxs]
-    sbs_cosine = ref_cosine.all[sbss, sbss]
-    if (any(sbs_cosine != 1. & sbs_cosine > cosine_limit)) next
-
-    sbs_fixed = sbss
-    sbs_ref = reference_cat[sbs_fixed,]
-    break
-  }
-  return(sbs_ref)
-}
-
+# select_fixed_sbs = function(referece_cat, n_fixed=4, cosine_limit=.5) {
+#   ref_cosine.all = lsa::cosine(reference_cat %>% t())
+#
+#   while (TRUE) {
+#     idxs = sample(1:nrow(ref_cosine.all), n_fixed)
+#     sbss = rownames(ref_cosine.all)[idxs]
+#     sbs_cosine = ref_cosine.all[sbss, sbss]
+#     if (any(sbs_cosine != 1. & sbs_cosine > cosine_limit)) next
+#
+#     sbs_fixed = sbss
+#     sbs_ref = reference_cat[sbs_fixed,]
+#     break
+#   }
+#   return(sbs_ref)
+# }
+#
