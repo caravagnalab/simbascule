@@ -9,6 +9,7 @@ cat(paste("i =", i, "inference_type =", inference_type, "\n"))
 
 main_path = "~/GitHub/"
 data_path = "~/signatures/simulations/synthetic_datasets_indels_2609/"
+data_path = "~/Dropbox/shared/2022. Basilica/simulations/synthetic_datasets_indels_2609/"
 fits_path = paste0("~/signatures/simulations/", "fits_dn.", inference_type, ".", run_id, "/")
 
 cat(paste0("\nSaving in directory: ", fits_path, "\n\n"))
@@ -31,11 +32,14 @@ N = c(150, 500, 1000)
 G = c(1, 3, 6)
 fracs_rare = 1.
 
-shared_sbs = c()
+shared_sbs = c("ID8")
 private_sbs = c("ID1",  # correlated with MSI
                 "ID2",  # correlated with MSI
                 "ID3",  # tobacco smoking
-                "ID8",  # seems to accumulate also in normal cells (prob clock-like)
+                "ID5",  # no mut process
+                "ID6",  # HR deficiency
+                "ID7",  # defective DNA mismatch repair
+                # "ID8",  # seems to accumulate also in normal cells (prob clock-like)
                 "ID13",  # UV light exposure
                 "ID17",  # mutations in TOP2A
                 "ID18"  # e.coli with pks pathogenicity island
@@ -56,7 +60,7 @@ generate_and_run(comb_matrix = comb_i,
 
                  fits_path = fits_path,
                  data_path = data_path,
-                 seeds = 11:30,
+                 seeds = 1:30,
 
                  catalogue_sbs = catalogue_sbs,
                  alpha_range = c(.15,0.2),
@@ -67,6 +71,7 @@ generate_and_run(comb_matrix = comb_i,
                  shared_sbs = shared_sbs,
 
                  ## inference
+                 do.fits = FALSE,
                  reference_catalogue = COSMIC_filt,
                  subset_reference = c("SBS1", "SBS5"),
                  keep_sigs = c("SBS1", "SBS5"),
@@ -86,7 +91,6 @@ generate_and_run(comb_matrix = comb_i,
                  seed_list = c(4,17,22),
 
                  CUDA = TRUE,
-                 do.fits = TRUE,
                  cohort = i,
 
                  check_present = TRUE,

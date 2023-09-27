@@ -1,11 +1,10 @@
 generate_data_aux = function(N, G, catalogue_sbs,
                              alpha_range, alpha_sigma, seed,
-                             n_muts_range = 500:5000,
+                             k_min_priv=NULL, n_muts_range = 500:5000,
                              pi_conc=1., frac_rare=1.,
                              shared_sbs=c("SBS1","SBS5"),
                              cohort="", out_path=NULL,
                              idd=NULL) {
-
   if (!is.null(idd))
     out_name = paste0("simul.", idd, ".", cohort, ".Rds") %>% stringr::str_replace_all("\\.\\.", ".")
 
@@ -13,7 +12,11 @@ generate_data_aux = function(N, G, catalogue_sbs,
     return(readRDS(paste0(out_path, out_name)))
 
   set.seed(seed)
-  sbs = sample(setdiff(rownames(catalogue_sbs), shared_sbs), G + floor(G/2), replace=F)
+  if ((G + floor(G/2)) > length(setdiff(rownames(catalogue_sbs), shared_sbs)))
+    cli::cli_alert_warning("Not enough signatures in the catalogue.
+    Using {.val {length(setdiff(rownames(catalogue_sbs), shared_sbs))}} instead of {.val {G + floor(G/2)}} signatures.")
+  sbs = sample(setdiff(rownames(catalogue_sbs), shared_sbs),
+               min(G + floor(G/2), length(setdiff(rownames(catalogue_sbs), shared_sbs))), replace=F)
 
   set.seed(seed)
   private_shared_sbs = sample(sbs, floor(G/2))
@@ -58,6 +61,7 @@ generate_simulation_dataset = function(G, N,
     if (all(n_gs >= min_n) && any(n_gs <= n_rare)) break
   }
 
+  ## shared among two groups
   private_shared = data.frame()
   if (length(private_shared_sbs) > 0) {
     private_shared = lapply(1:floor(G/2), function(i)
@@ -66,7 +70,8 @@ generate_simulation_dataset = function(G, N,
   }
 
   shared = expand.grid(group=1:G, idd=shared_sbs)
-  private = data.frame(group=1:G, idd=sample(private_sbs, G, replace=F))
+  private = data.frame(group=sample(1:G, min(length(private_sbs),G), replace=F),
+                       idd=sample(private_sbs, min(length(private_sbs),G), replace=F))
   sbs_groups = rbind(private_shared, shared, private) %>%
     dplyr::mutate(idd=as.character(idd))
 
