@@ -123,18 +123,18 @@ generate_simulation_dataset = function(G, N,
     ggplot() + geom_bar(aes(x=sample, y=value, fill=variable), stat="identity") +
     facet_grid(~groupid, scales="free_x", space="free_x")
 
-  return(tibble("counts"=list(counts %>%
-                                dplyr::select(-groupid) %>%
-                                tibble::column_to_rownames(var="sample")),
-                "alpha"=list(alpha %>%
-                               dplyr::select(-groupid) %>%
-                               tibble::column_to_rownames(var="sample")),
-                "groups"=list(counts$groupid),
-                "alpha_prior"=list(alpha_prior), "beta"=list(beta),
-                "sbs_groups"=list(tidyr::nest(sbs_groups, data=idd)),
-                "shared"=list(shared_sbs),
-                "private"=list(private_sbs),
-                "private_shared"=list(private_shared_sbs),
-                "alpha_plot"=list(pl_alpha))
+  return(tibble::tibble("counts"=list(counts %>%
+                                        dplyr::select(-groupid) %>%
+                                        tibble::column_to_rownames(var="sample")),
+                        "alpha"=list(alpha %>%
+                                        dplyr::select(-groupid) %>%
+                                        tibble::column_to_rownames(var="sample")),
+                        "groups"=list(counts$groupid),
+                        "alpha_prior"=list(alpha_prior), "beta"=list(beta),
+                        "sbs_groups"=list(tidyr::nest(sbs_groups, data=idd)),
+                        "shared"=list(shared_sbs),
+                        "private"=list(private_sbs),
+                        "private_shared"=list(private_shared_sbs),
+                        "alpha_plot"=list(pl_alpha))
          )
 }
