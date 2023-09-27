@@ -55,7 +55,7 @@ generate_and_run = function(comb_matrix,
                             seed_list = c(4,17,22),
 
                             CUDA = TRUE,
-                            do.fits = TRUE,
+                            do.fits = FALSE,
                             cohort = "",
 
                             check_present = TRUE,
@@ -212,7 +212,7 @@ run_model = function(...,
     cli::cli_process_start("Running clustering fit")
 
     x.fit.clust = run_single_fit(..., pattern="fit_clust.", path=path,
-                                 out_name=out_name, k_list = k_list, 
+                                 out_name=out_name, k_list = k_list,
                                  cluster_list=cluster_list,
                                  reference_catalogue=reference_catalogue,
                                  subset_reference=subset_reference,
