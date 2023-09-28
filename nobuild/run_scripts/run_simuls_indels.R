@@ -9,8 +9,7 @@ cat(paste("i =", i, "inference_type =", inference_type, "\n"))
 
 main_path = "~/GitHub/"
 data_path = "~/signatures/simulations/synthetic_datasets_indels_2609/"
-data_path = "~/Dropbox/shared/2022. Basilica/simulations/synthetic_datasets_indels_2609/"
-fits_path = paste0("~/signatures/simulations/", "fits_dn.", inference_type, ".", run_id, "/")
+fits_path = paste0("~/signatures/simulations/", "fits_dn.indels.", inference_type, ".", run_id, "/")
 
 cat(paste0("\nSaving in directory: ", fits_path, "\n\n"))
 
@@ -71,10 +70,10 @@ generate_and_run(comb_matrix = comb_i,
                  shared_sbs = shared_sbs,
 
                  ## inference
-                 do.fits = FALSE,
-                 reference_catalogue = COSMIC_filt,
-                 subset_reference = c("SBS1", "SBS5"),
-                 keep_sigs = c("SBS1", "SBS5"),
+                 do.fits = TRUE,
+                 reference_catalogue = COSMIC_indels,
+                 subset_reference = c("ID8"),
+                 keep_sigs = c("ID8"),
                  hyperparameters=list("alpha_conc"=100, "scale_factor_alpha"=5000,
                                       "scale_factor_centroid"=5000, "scale_tau"=0),
                  lr = 0.005,
