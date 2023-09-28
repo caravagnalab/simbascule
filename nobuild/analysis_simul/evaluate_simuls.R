@@ -32,20 +32,18 @@ report_stats(stats_df=stats_df, fname=paste(fname,"noLC",sep="."),
              save_path=save_path, fill="run_id", suffix_name="noLC")
 report_stats(stats_df=stats_df, fname=paste(fname,"LCnomerge",sep="."),
              save_path=save_path, fill="run_id", suffix_name="LCnomerge")
-
 # stats_df = readRDS(paste0(save_path, "stats_df.sim", cutoff*100, ".", df_id, ".Rds"))
 
 
 
 ## Plots ####
 stats_df_spars = stats_df %>%
-  dplyr::filter(run_id == "sf5000.DMM") %>% dplyr::mutate(run_id="DMM")
+  dplyr::filter(run_id == "sfLearning.DMM") %>% dplyr::mutate(run_id="DMM")
 
-stats_df_spars = stats_df
-
-suffix_name = "LCnomerge"
+suffix_name = "LC"
 figure = make_figure(stats_df_spars, suffix_name=suffix_name)
 
 fig_id = paste(suffix_name,df_id,sep=".")
 ggsave(plot=figure, filename=paste0(save_path,"fig_simulations.",fig_id,".pdf"), height=8, width=12)
+
 

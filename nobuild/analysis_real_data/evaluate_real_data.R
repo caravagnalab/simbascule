@@ -193,8 +193,10 @@ pdf("~/Dropbox/shared/2022. Basilica/real_data/results/plots.N18764.dmm.1809.pdf
 all_organs2 %>% print()
 dev.off()
 
+
+
 ## Whole count matrix ####
-catalogues = list.files(path=paste0(data_path, "SBS_v2.03/catalogues/"), recursive=TRUE, full.names=TRUE)
+catalogues = list.files(path=paste0(data_path, "DBS_v1.01/catalogues/"), recursive=TRUE, full.names=TRUE)
 counts_all = lapply(catalogues, function(c_i) {
   splitted = strsplit(c_i, "/")[[1]]
   cohort = splitted[length(splitted)-1]
@@ -203,28 +205,29 @@ counts_all = lapply(catalogues, function(c_i) {
   return(read.csv(c_i, sep="\t", check.names=FALSE) %>% t() %>% as.data.frame() %>%
            dplyr::mutate(organ=organ, cohort=cohort))
   }) %>% do.call(rbind, .)
-saveRDS(counts_all, file=paste0(data_path, "counts_all.Rds"))
+saveRDS(counts_all, file=paste0(data_path, "counts_dbs.Rds"))
 
 
 ## Read reference signatures ####
-signatures = read.csv(paste0(data_path, "SBS_v2.03/RefSig_SBS_v2.03.tsv"), sep="\t") %>%
+signatures = read.csv(paste0(data_path, "DBS_v1.01/RefSig_DBS_v1.01.tsv"), sep="\t") %>%
   t() %>% as.data.frame()
-saveRDS(signatures, file=paste0(data_path, "signatures_all.Rds"))
+saveRDS(signatures, file=paste0(data_path, "signatures_dbs.Rds"))
 
 
 ## Whole exposures matrix ####
-exposures = list.files(path=paste0(data_path, "SBS_v2.03/organSpecificExposures/"),
+exposures = list.files(path=paste0(data_path, "DBS_v1.01/organSpecificExposures/"),
                        recursive=TRUE, full.names=TRUE, pattern=".tsv$")
-conversion_table = read.csv(paste0(data_path, "SBS_v2.03/RefSig_SBS_conversionMatrix_v2.03.tsv"), sep="\t") %>%
+conversion_table = read.csv(paste0(data_path, "DBS_v1.01/RefSig_DBS_conversionMatrix_v1.01.tsv"), sep="\t") %>%
   apply(1, function(sbs) names(sbs)[sbs>0])
-referece_expos = readxl::read_xlsx(paste0(data_path, "science.abl9283_tables_s1_to_s33.v2/SupplementaryTables.xlsx"), sheet="Table S23")
+referece_expos = readxl::read_xlsx(paste0(data_path, "science.abl9283_tables_s1_to_s33.v2/SupplementaryTables.xlsx"),
+                                   sheet="Table S24")
 
 expos_all = lapply(exposures, function(e_i) {
   cat(paste0(e_i, "\n"))
   splitted = strsplit(e_i, "/")[[1]]
   cohortname = splitted[length(splitted)-1]
   organname = strsplit(splitted[length(splitted)], "-")[[1]][2] %>%
-    stringr::str_replace_all("_SBS_exposures_finalT.tsv","")
+    stringr::str_replace_all("_DBS_exposures_finalT.tsv","")
 
   expos_file = read.csv(e_i, sep="\t", check.names=F) %>%
     tibble::rownames_to_column(var="sample")
@@ -241,7 +244,7 @@ expos_all = lapply(exposures, function(e_i) {
   return(conv_expos)
 }) %>% dplyr::bind_rows() %>% replace(is.na(.), 0)
 
-saveRDS(expos_all, file=paste0(data_path, "expos_all.Rds"))
+saveRDS(expos_all, file=paste0(data_path, "expos_dbs.Rds"))
 
 
 
