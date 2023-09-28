@@ -8,9 +8,9 @@ run_id = args[3]
 cat(paste("i =", i, "inference_type =", inference_type, "\n"))
 
 main_path = "~/GitHub/"
-data_path = "~/signatures/simulations/synthetic_datasets_dbs_2609/"
-data_path = "~/Dropbox/shared/2022. Basilica/simulations/synthetic_datasets_dbs_2609/"
-fits_path = paste0("~/signatures/simulations/", "fits_dn.", inference_type, ".", run_id, "/")
+data_path = "~/signatures/simulations/datasets/synthetic_datasets_dbs_2609/"
+# data_path = "~/Dropbox/shared/2022. Basilica/simulations/synthetic_datasets_dbs_2609/"
+fits_path = paste0("~/signatures/simulations/fits/", "fits_dn.dbs.", inference_type, ".", run_id, "/")
 
 cat(paste0("\nSaving in directory: ", fits_path, "\n\n"))
 
@@ -53,21 +53,6 @@ comb_i = comb[i+1,]
 inference_type = c(strsplit(inference_type, "_")[[1]])
 
 
-generate_and_run(comb_matrix = comb,
-                 py = py,
-
-                 data_path = data_path,
-                 seeds = 1:30,
-
-                 catalogue_sbs = catalogue_sbs,
-                 alpha_range = c(.15,0.2),
-                 alpha_sigma = 0.1,
-                 pi_conc = 1.,
-                 frac_rare = comb_i$fracs_rare,
-                 n_muts_range = 100:5000,
-                 shared_sbs = shared_sbs)
-
-
 # Run model #####
 generate_and_run(comb_matrix = comb_i,
                  py = py,
@@ -86,9 +71,9 @@ generate_and_run(comb_matrix = comb_i,
 
                  ## inference
                  do.fits = FALSE,
-                 reference_catalogue = COSMIC_filt,
-                 subset_reference = c("SBS1", "SBS5"),
-                 keep_sigs = c("SBS1", "SBS5"),
+                 reference_catalogue = COSMIC_dbs,
+                 subset_reference = c("DBS4"),
+                 keep_sigs = c("DBS4"),
                  hyperparameters=list("alpha_conc"=100, "scale_factor_alpha"=5000,
                                       "scale_factor_centroid"=5000, "scale_tau"=0),
                  lr = 0.005,
