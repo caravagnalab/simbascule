@@ -1,6 +1,0 @@
-sbatch sbatch_0208/nonparam_sparsity_0208.sbatch
-sbatch sbatch_0208/nonparam_nonsparsity_0208.sbatch
-
-sbatch sbatch_0208/nonparam_sparsity_gpu_0208.sbatch
-sbatch sbatch_0208/nonparam_nonsparsity_gpu_0208.sbatch
-

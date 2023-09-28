@@ -1,10 +1,11 @@
 args = commandArgs(trailingOnly = TRUE)
 cat(paste("\nArguments:", paste(args, collapse=", "), "\n"))
 
-inference_type = args[1]
-run_id = args[2]
+i = as.integer(args[1])
+inference_type = args[2]
+run_id = args[3]
 
-cat(paste("inference_type =", inference_type, "\n"))
+cat(paste("i =", i, "inference_type =", inference_type, "\n"))
 
 main_path = "~/GitHub/"
 data_path = "~/signatures/real_data/"
@@ -24,23 +25,33 @@ devtools::load_all(paste0(main_path, "simbasilica"))
 
 counts_all = readRDS(paste0(data_path, "counts_all.Rds"))
 groups_all = counts_all$organ
-# input_data = tibble::tibble("counts"=list(counts_all), "groupid"=list(groups_all))
 
-k_list = 15:20
+organ_i = unique(groups_all)[i+1]
+
+k_list = 8:12
+g = 10
 subset_reference = c("SBS1","SBS5")
 
-x.fit = readRDS("/home/elena.buscaroli/signatures/real_data/fit.real_data.N18764.tris.dmm.1809.Rds")
+set.seed(10)
+seed_list = sample(1:100, 10, replace=FALSE)
 
-# x.fit = fit(x=counts_all %>% dplyr::select(-organ, -cohort),
-#             k=k_list, # n of denovo signatures
-#             clusters=35,  # n of clusters
-#             n_steps=3000, lr=0.005,
-#             enforce_sparsity=TRUE,
-#             dirichlet_prior=TRUE,
-#             reference_catalogue=COSMIC_filt[subset_reference,],
-#             hyperparameters=list("alpha_conc"=100, "scale_factor_alpha"=10000,
-#                                  "scale_factor_centroid"=5000, "scale_tau"=5),  # change default values to hyperparameters
-#             nonparametric=TRUE, py=py, CUDA=TRUE)
+counts_i = counts_all %>%
+  dplyr::filter(organ==organ_i) %>%
+  dplyr::select(-organ, -cohort)
+
+x.fit = fit(x=counts_i,
+            k=k_list, # n of denovo signatures
+            clusters=g,  # n of clusters
+            n_steps=3000, lr=0.005,
+            enforce_sparsity=TRUE,
+            dirichlet_prior=TRUE,
+            reference_catalogue=COSMIC_filt[subset_reference,],
+            hyperparameters=list("alpha_conc"=100, "scale_factor_alpha"=10000,
+                                 "scale_factor_centroid"=10000, "scale_tau"=0),  # change default values to hyperparameters
+            nonparametric=TRUE,
+            py=py,
+            CUDA=TRUE,
+            seed_list=seed_list)
 
 lc = filter_signatures_QP(sign1=get_signatures(x.fit),
                           sign2=COSMIC_filt,
@@ -49,24 +60,26 @@ lc = filter_signatures_QP(sign1=get_signatures(x.fit),
 new_sigs = unique(c(subset_reference, unlist(lc)))
 new_min_k = max(0, k_list[1] - length(setdiff(unlist(lc), subset_reference)))
 k_list = new_min_k:k_list[length(k_list)]
+
 print(new_sigs)
 print(k_list)
-x.fit_new = fit(x=counts_all %>% dplyr::select(-organ, -cohort),
-            k=k_list, # n of denovo signatures
-            clusters=35,  # n of clusters
-            n_steps=3000, lr=0.005,
-            enforce_sparsity=TRUE,
-            dirichlet_prior=TRUE,
-            reference_catalogue=COSMIC_filt[new_sigs,],
-            hyperparameters=list("alpha_conc"=100, "scale_factor_alpha"=10000,
-                                 "scale_factor_centroid"=10000, "scale_tau"=0),  # change default values to hyperparameters
-            nonparametric=TRUE, py=py, CUDA=TRUE)
+
+x.fit_new = fit(x=counts_i,
+                k=k_list, # n of denovo signatures
+                clusters=g,  # n of clusters
+                n_steps=3000, lr=0.005,
+                enforce_sparsity=TRUE,
+                dirichlet_prior=TRUE,
+                reference_catalogue=COSMIC_filt[new_sigs,],
+                hyperparameters=list("alpha_conc"=100, "scale_factor_alpha"=10000,
+                                     "scale_factor_centroid"=10000, "scale_tau"=0),  # change default values to hyperparameters
+                nonparametric=TRUE, py=py, CUDA=TRUE, seed_list=seed_list)
 
 x.fit$lc_check = x.fit_new
 
-x.fit$groups_true = groups_all
+x.fit$groups_true = organ_i
 
-saveRDS(x.fit, paste0(data_path, "fit.real_data.N",
+saveRDS(x.fit, paste0(data_path, "fit.real_data.", organ_i, ".N",
                       nrow(counts_all),
                       ".", run_id, ".Rds"))
 

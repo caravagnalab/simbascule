@@ -1,6 +1,0 @@
-sbatch sbatch_0208/flat_sparsity_0208.sbatch
-sbatch sbatch_0208/flat_nonsparsity_0208.sbatch
-
-sbatch sbatch_0208/flat_sparsity_gpu_0208.sbatch
-sbatch sbatch_0208/flat_nonsparsity_gpu_0208.sbatch
-
