@@ -174,8 +174,7 @@ compare_single_fit = function(fitname, fits_path, data_path, fits_pattern,
 make_plots_compare = function(fit1, fit2, name1="fit1", name2="fit2",
                               min_exposure=0., cls=NULL) {
   if (is.null(cls)) {
-    all_sigs = unique(c(get_signames(fit1), get_signames(fit2)))
-    cls = gen_palette(n=length(all_sigs)) %>% setNames(all_sigs)
+    cls = merge_colors_palette(fit1, fit2)
   }
 
   ttitle = paste0(" ", name1, " (top) and ", name2, " (bottom)")
@@ -197,19 +196,13 @@ make_plots_compare = function(fit1, fit2, name1="fit1", name2="fit2",
                           ncol=1, guides="collect") &
     patchwork::plot_annotation(title=paste0("Exposures and centroids", ttitle))
 
-  # plot_centroids = plot_exposures(fit1 %>% filter_exposures(min_expos=min_exposure),
-  #                                 centroids=TRUE, cls=cls) %>%
-  #   patchwork::wrap_plots(plot_exposures(fit2, centroids=T, cls=cls),
-  #                         ncol=1, guides="collect") &
-  #   patchwork::plot_annotation(title=paste0("Centroids", ttitle))
+  plot_exposures_real(fit1, groups_true=fit2$groups,
+                      titlee=paste0(name1, " exposures")) %>%
+    patchwork::wrap_plots(plot_exposures_real(fit2, groups_true=fit1$groups,
+                                              titlee=paste0(name2, " exposures")),
+                          guides="collect", ncol=1)
 
   plot_sigs = plot_signatures(fit1, catalogue=get_signatures(fit2), cls=cls)
-
-  # plot_expos_centr = patchwork::wrap_plots(plot_expos + theme(legend.position="none"),
-  #                                          plot_centroids,
-  #                                          widths=c(9,1), guides="collect") &
-  #   theme(legend.position="bottom") &
-  #   patchwork::plot_annotation(title=paste0("Exposures and centroids", ttitle))
 
   return(list("expos_centr"=plot_expos_centr,
               "signatures"=plot_sigs,
