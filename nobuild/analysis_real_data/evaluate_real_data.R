@@ -2,7 +2,6 @@ devtools::load_all("~/GitHub/simbasilica/")
 load_deps()
 main_path = "~/Dropbox/shared/2022. Basilica/real_data/"
 
-
 ## Make plots ####
 fits_path = paste0(main_path, "results/all_organs/")
 fits_names = list.files(fits_path)
@@ -10,10 +9,13 @@ fits_names = list.files(fits_path)
 fitname_i = fits_names[1]
 organ_i = strsplit(fitname_i, "[.]")[[1]][3]
 fit_i = readRDS(paste0(fits_path, fitname_i))
-fit_i %>% convert_sigs_names(reference_cat = COSMIC_filt)
+fit_i %>% convert_sigs_names(reference_cat = COSMIC_filt) %>% plot_exposures()
 
+filter_signatures_QP(get_signatures(fit_i), COSMIC_filt, return_weights = T)
 
-fit_i
+fig = make_plots_compare(fit1=fit_i, fit2=fit_i$lc_check,
+                         name1=paste0(organ_i, " Denovo fit"),
+                         name2=paste0(organ_i, " Ref fit"))
 
 
 ## Test on subset ####
