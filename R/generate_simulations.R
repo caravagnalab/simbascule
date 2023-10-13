@@ -64,8 +64,8 @@ generate_simulation_dataset = function(G, N,
   ## shared among two groups
   private_shared = data.frame()
   if (length(private_shared_sbs) > 0) {
-    private_shared = lapply(1:floor(G/2), function(i)
-      data.frame(group=sample(G, 2), idd=private_shared_sbs[i])
+    private_shared = lapply(1:max(floor(G/2),1), function(i)
+      data.frame(group=sample(G, min(G,2)), idd=private_shared_sbs[i])
     ) %>% do.call(rbind, .)
   }
 
@@ -78,7 +78,7 @@ generate_simulation_dataset = function(G, N,
   counts = alpha = alpha_prior = tibble::tibble()
   beta = data.frame()
   for (gid in 1:G) {
-    n_g = n_gs[gid]
+    if (gid==G) n_g = N - nrow(counts) else n_g = n_gs[gid]
     set.seed(seed)
     n_muts_g = reticulate::r_to_py(sample(n_muts_range, size=n_g))
 
@@ -123,13 +123,15 @@ generate_simulation_dataset = function(G, N,
     ggplot() + geom_bar(aes(x=sample, y=value, fill=variable), stat="identity") +
     facet_grid(~groupid, scales="free_x", space="free_x")
 
+  groupss = counts$groupid
+
   return(tibble::tibble("counts"=list(counts %>%
                                         dplyr::select(-groupid) %>%
                                         tibble::column_to_rownames(var="sample")),
                         "alpha"=list(alpha %>%
                                         dplyr::select(-groupid) %>%
                                         tibble::column_to_rownames(var="sample")),
-                        "groups"=list(counts$groupid),
+                        "groups"=list(groupss),
                         "alpha_prior"=list(alpha_prior), "beta"=list(beta),
                         "sbs_groups"=list(tidyr::nest(sbs_groups, data=idd)),
                         "shared"=list(shared_sbs),
