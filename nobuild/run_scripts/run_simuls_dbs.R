@@ -86,7 +86,7 @@ generate_and_run(comb_matrix = comb_i,
                  regul_denovo = T,
                  regul_fixed = T,
 
-                 save_all_fits = TRUE,
+                 store_fits = TRUE,
                  seed_list = c(4,17,22),
 
                  CUDA = TRUE,

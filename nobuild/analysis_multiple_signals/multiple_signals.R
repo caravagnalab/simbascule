@@ -77,7 +77,9 @@ test = fit(counts=counts, k_list=4, cluster=6, n_steps=3,
            keep_sigs=c("SBS1","SBS5","DBS4"),
            hyperparameters=list("scale_factor_centroid"=5000,
                                 "scale_factor_alpha"=5000, "tau"=0),
-           seed_list=c(10,33,4), filter_dn=TRUE, save_all_fits=TRUE)
+           seed_list=c(10,33,4), filter_dn=TRUE, store_fits=TRUE)
+
+get_alternative_run(x, params=list("seed"=10))
 
 
 x = readRDS("~/GitHub/simbasilica/nobuild/analysis_multiple_signals/ex.Rds")
@@ -87,7 +89,7 @@ x = readRDS("~/GitHub/simbasilica/nobuild/analysis_multiple_signals/ex.Rds")
 #         keep_sigs=c("SBS1","SBS5","DBS4"),
 #         hyperparameters=list("scale_factor_centroid"=5000,
 #                              "scale_factor_alpha"=5000, "tau"=0),
-#         seed_list=c(10,33,4), filter_dn=TRUE, save_all_fits=TRUE)
+#         seed_list=c(10,33,4), filter_dn=TRUE, store_fits=TRUE)
 # saveRDS(x, "~/GitHub/simbasilica/nobuild/analysis_multiple_signals/ex.Rds")
 
 
