@@ -10,26 +10,38 @@ G = 2; N = 150
 types = c("SBS","DBS")
 
 
+private = list("SBS"=c("SBS17b"),
+               "DBS"=c("DBS7"))
+private_shared = list("SBS"=c("SBS4"),
+                      "DBS"=c("DBS11","DBS5"))
+shared = list("SBS"=c("SBS1","SBS5"),
+              "DBS"=c("DBS3"))
 
 
+simul_obj = generate_simulation_dataset_matched(N=150, G=2, private=private,
+                                             private_shared=private_shared,
+                                             shared=shared,
+                                             py=py) %>%
+  create_basilica_obj_simul()
+
+counts = get_input(simul_obj, matrix=TRUE)
 
 
-
-x = readRDS("~/GitHub/simbasilica/nobuild/analysis_multiple_signals/ex.Rds")
-
-plot_signatures(x)
+# x = readRDS("~/GitHub/simbasilica/nobuild/analysis_multiple_signals/ex.Rds")
+# plot_signatures(x)
 
 # cos_mat = lsa::cosine(t(rbind(get_denovo_signatures(x, types="SBS",
 #                                                     matrix=TRUE)[["SBS"]],
 #                               betas[["SBS"]])))[rownames(betas[["SBS"]]),
 #                                                 get_denovo_signames(x, types="SBS")[["SBS"]]]
 
-x = fit(counts=counts, k_list=1:4, cluster=6, n_steps=3000,
+x = fit(counts=counts, k_list=1:4, cluster=3, n_steps=3000,
         reference_cat=list("SBS"=COSMIC_filt[c("SBS1","SBS5"),], "DBS"=COSMIC_dbs["DBS7",]),
         keep_sigs=c("SBS1","SBS5","DBS7"),
         hyperparameters=list("scale_factor_centroid"=5000,
                              "scale_factor_alpha"=5000, "tau"=0),
         seed_list=c(10,33,4), filter_dn=TRUE, store_fits=TRUE)
+
 saveRDS(x, "~/GitHub/simbasilica/nobuild/analysis_multiple_signals/ex.Gamma.Rds")
 
 

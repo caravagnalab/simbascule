@@ -27,14 +27,13 @@ generate_simulation_dataset_matched = function(N, G, private, private_shared, py
                                             catalogue_sbs=reference[[tid]],
                                             seed=seed[[tid]], py=py)
       used_sigs <<- c(used_sigs, obj_tid$beta[[1]] %>% rownames())
+      return(obj_tid)
     }) %>% setNames(types)
-
-    return(tibble::tibble("SBS"=list(sbs), "DBS"=list(dbs)))
   })
 
   counts = lapply(types, function(tid) {
     lapply(1:G, function(gid) {
-      counts_g = counts_groups[[gid]][[tid]][[1]]$counts[[1]]
+      counts_g = counts_groups[[gid]][[tid]]$counts[[1]]
       rownames(counts_g) = stringr::str_replace_all(rownames(counts_g), "G1", paste0("G",gid))
       return(counts_g)
     }) %>% do.call(rbind, .)
@@ -43,15 +42,14 @@ generate_simulation_dataset_matched = function(N, G, private, private_shared, py
 
   betas = lapply(types, function(tid) {
     lapply(1:G, function(gid) {
-      betas_g = counts_groups[[gid]][[tid]][[1]]$beta[[1]] %>% tibble::rownames_to_column("signame")
-      return(betas_g)
+      betas_g = counts_groups[[gid]][[tid]]$beta[[1]] %>% tibble::rownames_to_column("signame")
     }) %>% do.call(rbind, .) %>% unique() %>% tibble::column_to_rownames(var="signame")
   }) %>% setNames(types)
 
 
   exposures = lapply(types, function(tid) {
     lapply(1:G, function(gid) {
-      alphas_g = counts_groups[[gid]][[tid]][[1]]$alpha[[1]]
+      alphas_g = counts_groups[[gid]][[tid]]$alpha[[1]]
       rownames(alphas_g) = stringr::str_replace_all(rownames(alphas_g), "G1", paste0("G",gid))
       return(alphas_g)
     }) %>% dplyr::bind_rows() %>% dplyr::mutate(dplyr::across(dplyr::everything(),
@@ -61,7 +59,7 @@ generate_simulation_dataset_matched = function(N, G, private, private_shared, py
 
   centroids = lapply(types, function(tid) {
     lapply(1:G, function(gid) {
-      centroids_g = counts_groups[[gid]][[tid]][[1]]$alpha_prior[[1]] %>% data.frame()
+      centroids_g = counts_groups[[gid]][[tid]]$alpha_prior[[1]] %>% data.frame()
       rownames(centroids_g) = paste0("G",gid)
       return(centroids_g)
     }) %>% dplyr::bind_rows() %>% dplyr::mutate(dplyr::across(dplyr::everything(),
@@ -78,7 +76,7 @@ generate_simulation_dataset_matched = function(N, G, private, private_shared, py
 
 
 create_basilica_obj_simul = function(simul_df) {
-  types = simul_df$types[[1]]
+  types = simul_df$types
   obj_simul = list()
 
   obj_simul$input = lapply(types, function(tid) {
@@ -87,18 +85,23 @@ create_basilica_obj_simul = function(simul_df) {
 
   obj_simul$nmf = lapply(types, function(tid) {
     list("exposure"=simul_df$exposures[[tid]] %>% wide_to_long(what="exposures"),
-         # "beta_fixed"=NULL,
          "beta_denovo"=simul_df$betas[[tid]] %>% wide_to_long(what="beta"))
   }) %>% setNames(types)
 
+  groups = rownames(simul_df$counts[[1]]) %>% strsplit("_") %>%
+    sapply(function(i) return(i[[1]][1]))
+
   obj_simul$clustering = list(
-    "clusters"=tibble::tibble(samples=simul_df$counts[[1]][[1]]$samples,
-                              clusters=paste0("G",init_params$init_clusters)),
-    "centroids"
+    "clusters"=tibble::tibble("samples"=obj_simul$input[[1]]$counts %>%
+                                dplyr::select(samples) %>% unique() %>%
+                                dplyr::pull(samples),
+                              "clusters"=groups)
   )
 
-  lapply(types, function(tid) {
-    centr = centroids[[tid]] %>% tibble::rownames_to_column(var="clusters") %>%
-      reshape2::melt(variable.name="sigs")
-  })
+  # lapply(types, function(tid) {
+  #   centr = centroids[[tid]] %>% tibble::rownames_to_column(var="clusters") %>%
+  #     reshape2::melt(variable.name="sigs")
+  # })
+
+  return(obj_simul)
 }
