@@ -13,9 +13,9 @@ types = c("SBS","DBS")
 private = list("SBS"=c("SBS17b"),
                "DBS"=c("DBS7"))
 private_shared = list("SBS"=c("SBS4"),
-                      "DBS"=c("DBS11","DBS5"))
+                      "DBS"=c("DBS11"))
 shared = list("SBS"=c("SBS1","SBS5"),
-              "DBS"=c("DBS3"))
+              "DBS"=c("DBS3","DBS5"))
 
 
 simul_obj = generate_simulation_dataset_matched(N=150, G=2, private=private,
@@ -35,14 +35,43 @@ counts = get_input(simul_obj, matrix=TRUE)
 #                               betas[["SBS"]])))[rownames(betas[["SBS"]]),
 #                                                 get_denovo_signames(x, types="SBS")[["SBS"]]]
 
-x = fit(counts=counts, k_list=1:4, cluster=3, n_steps=3000,
-        reference_cat=list("SBS"=COSMIC_filt[c("SBS1","SBS5"),], "DBS"=COSMIC_dbs["DBS7",]),
-        keep_sigs=c("SBS1","SBS5","DBS7"),
+x = fit(counts=counts, k_list=1, cluster=NULL, n_steps=1000,
+        reference_cat=list("SBS"=COSMIC_filt[c("SBS1","SBS5"),],
+                           "DBS"=COSMIC_dbs[c("DBS3","DBS5"),]),
+        keep_sigs=c("SBS1","SBS5","DBS3","DBS5"),
         hyperparameters=list("scale_factor_centroid"=5000,
                              "scale_factor_alpha"=5000, "tau"=0),
         seed_list=c(10,33,4), filter_dn=TRUE, store_fits=TRUE)
 
-saveRDS(x, "~/GitHub/simbasilica/nobuild/analysis_multiple_signals/ex.Gamma.Rds")
+plot_scores(x)
+plot_signatures(x)
+alt_sols = get_alternatives(x, what="nmf", types="SBS")
+get_params(x, what="nmf", type="SBS")[[1]]$beta_w
+
+beta_star = get_params(x, what="nmf", type="SBS")[[1]]$beta_star$numpy() %>%
+  as.data.frame()
+colnames(beta_star) = colnames(COSMIC_filt)
+p_beta_star = beta_star %>% wide_to_long(what="beta") %>%
+  reformat_contexts(what="SBS") %>%
+  dplyr::mutate(type="SBS") %>%
+  plot_signatures_aux()
+
+alpha_star = get_params(x, what="nmf", type="SBS")[[1]]$alpha_star %>%
+  as.data.frame()
+p_alpha_star = alpha_star %>% wide_to_long(what="exposures") %>%
+  dplyr::mutate(type="SBS") %>%
+  plot_exposures_aux()
+
+beta_weights = get_params(x, what="nmf", type="SBS")[[1]]$beta_w
+colnames(beta_weights) = c(get_fixed_signames(x, types="SBS")$SBS, "DN")
+rownames(beta_weights) = get_denovo_signames(x, types="SBS")$SBS
+
+patchwork::wrap_plots(plot_signatures(simul_obj, types="SBS"), p_beta_star, ncol=1)
+patchwork::wrap_plots(plot_exposures(simul_obj, types="SBS"), p_alpha_star, ncol=1)
+patchwork::wrap_plots(plot_exposures(simul_obj, types="SBS"), plot_exposures(x, types="SBS"), ncol=1)
+pheatmap::pheatmap(beta_weights, cluster_rows=F, cluster_cols=F)
+plot_signatures(x)
+# saveRDS(x, "~/GitHub/simbasilica/nobuild/analysis_multiple_signals/ex.Gamma.Rds")
 
 
 # test = fit(counts=counts, k_list=4, cluster=NULL, n_steps=3000,
