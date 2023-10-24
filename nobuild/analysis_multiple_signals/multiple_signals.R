@@ -6,21 +6,25 @@ private = list("SBS"=c("SBS17b", "SBS4", "SBS7c", "SBS13"),
 shared = list("SBS"=c("SBS1","SBS5"),
               "DBS"=c("DBS3","DBS5"))
 
-N_list = c(150,300,1000,5000)
+N_list = c(150,300,1000)
 G_list = c(2,4,6)
 n_gs = expand.grid(N_list, G_list)
 
 easypar_pars = lapply(1:nrow(n_gs), function(i) {
-  list(N=n_gs[i,"N"], G=n_gs[i,"G"],
+  list(N=n_gs[i,"Var1"], G=n_gs[i,"Var2"],
        private=private,
-       shared=shared, py=py)
+       shared=shared)
 })
 
-easypar_fn = function(N, G, private, shared, py) {
+easypar_fn = function(N, G, private, shared) {
   devtools::load_all("~/GitHub/basilica/")
   devtools::load_all("~/GitHub/simbasilica/")
+  reticulate::use_condaenv("basilica-env")
+  library(ggplot2)
+  py = reticulate::import_from_path("pybasilica", "~/GitHub/pybasilica/")
   seed_list = list("SBS"=N+G,
                    "DBS"=N+G*2)
+
   simul_ng = generate_simulation_dataset_matched(N=N, G=G,
                                                  private=private,
                                                  shared=shared,
@@ -32,7 +36,7 @@ easypar_fn = function(N, G, private, shared, py) {
 
   counts_ng = get_input(simul_ng, matrix=TRUE)
   max_K = sapply(get_signames(simul_ng), length) %>% max
-  x_ng = fit(counts=counts_ng, k_list=0:max_K, cluster=NULL, n_steps=10,
+  x_ng = fit(counts=counts_ng, k_list=0:max_K, cluster=NULL, n_steps=3000,
              reference_cat=list("SBS"=COSMIC_filt[shared$SBS,],
                                 "DBS"=COSMIC_dbs[shared$DBS,]),
              keep_sigs=unlist(shared),
@@ -46,17 +50,18 @@ easypar_fn = function(N, G, private, shared, py) {
   return(list("dataset"=simul_ng, "fit"=x_ng))
 }
 
-easypar_fn(150, 3, private, shared, py)
-# simul_objects = lapply(G_list, function(gid) {
-#   lapply(N_list, function(nid) {
-#     print(paste0("N=", nid, " G=", gid))
-#     easypar_fn(N=nid, G=gid, private=private, shared=shared, py=py)
-#   }) %>% setNames(N_list)
-# }) %>% setNames(G_list)
+# lapply(easypar_pars, function(i) {
+#   print(i)
+#   easypar_fn(N=i$N, G=i$G, private=i$private,
+#              shared=i$shared, py=i$py)
+# })
+
 
 easypar_output = easypar::run(FUN=easypar_fn,
                               PARAMS=easypar_pars,
-                              parallel=TRUE, silent=FALSE,
+                              parallel=TRUE,
+                              silent=FALSE,
+                              filter_errors=FALSE,
                               outfile="~/Dropbox/shared/2022. Basilica/simulations/matched_signals/easypar.log")
 
 
