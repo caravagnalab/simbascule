@@ -6,33 +6,58 @@ private = list("SBS"=c("SBS17b", "SBS4", "SBS7c", "SBS13"),
 shared = list("SBS"=c("SBS1","SBS5"),
               "DBS"=c("DBS3","DBS5"))
 
-N_list = c(150, 300, 1000)
-G_list = c(2,4)
-simul_objects = lapply(G_list, function(gid) {
-  lapply(N_list, function(nid) {
-    seed_list = list("SBS"=sample(1:100, size=1),
-                     "DBS"=sample(1:100, size=1))
-    simul_ng = generate_simulation_dataset_matched(N=nid, G=gid,
-                                                    private=private,
-                                                    shared=shared,
-                                                    py=py,
-                                                    seed=seed_list) %>%
-      create_basilica_obj_simul()
+N_list = c(150,300,1000,5000)
+G_list = c(2,4,6)
+n_gs = expand.grid(N_list, G_list)
 
-    counts_ng = get_input(simul_obj, matrix=TRUE)
-    max_K = sapply(get_signames(simul_obj), length) %>% max
-    x_ng = fit(counts=counts, k_list=0:max_K, cluster=NULL, n_steps=3000,
-               reference_cat=list("SBS"=COSMIC_filt[shared$SBS,],
-                                  "DBS"=COSMIC_dbs[shared$DBS,]),
-               keep_sigs=unlist(shared),
-               hyperparameters=list("scale_factor_centroid"=5000,
-                                    "scale_factor_alpha"=5000, "tau"=0),
-               seed_list=c(10,33,4), filter_dn=TRUE, store_fits=TRUE)
-    return(list("dataset"=simul_ng, "fit"=x_ng))
-  }) %>% setNames(N_list)
-}) %>% setNames(G_list)
+easypar_pars = lapply(1:nrow(n_gs), function(i) {
+  list(N=n_gs[i,"N"], G=n_gs[i,"G"],
+       private=private,
+       shared=shared, py=py)
+})
 
+easypar_fn = function(N, G, private, shared, py) {
+  devtools::load_all("~/GitHub/basilica/")
+  devtools::load_all("~/GitHub/simbasilica/")
+  seed_list = list("SBS"=N+G,
+                   "DBS"=N+G*2)
+  simul_ng = generate_simulation_dataset_matched(N=N, G=G,
+                                                 private=private,
+                                                 shared=shared,
+                                                 py=py,
+                                                 seed=seed_list) %>%
+    create_basilica_obj_simul()
 
+  cat("Simulated dataset generated!")
+
+  counts_ng = get_input(simul_ng, matrix=TRUE)
+  max_K = sapply(get_signames(simul_ng), length) %>% max
+  x_ng = fit(counts=counts_ng, k_list=0:max_K, cluster=NULL, n_steps=10,
+             reference_cat=list("SBS"=COSMIC_filt[shared$SBS,],
+                                "DBS"=COSMIC_dbs[shared$DBS,]),
+             keep_sigs=unlist(shared),
+             hyperparameters=list("scale_factor_centroid"=5000,
+                                  "scale_factor_alpha"=5000, "tau"=0),
+             seed_list=c(10,33,4), filter_dn=TRUE, store_fits=TRUE)
+
+  fname = paste0("simul_fit_", N, G, ".Rds")
+  saveRDS(list("dataset"=simul_ng, "fit"=x_ng),
+          paste0("~/Dropbox/shared/2022. Basilica/simulations/matched_signals/", fname))
+  return(list("dataset"=simul_ng, "fit"=x_ng))
+}
+
+easypar_fn(150, 3, private, shared, py)
+# simul_objects = lapply(G_list, function(gid) {
+#   lapply(N_list, function(nid) {
+#     print(paste0("N=", nid, " G=", gid))
+#     easypar_fn(N=nid, G=gid, private=private, shared=shared, py=py)
+#   }) %>% setNames(N_list)
+# }) %>% setNames(G_list)
+
+easypar_output = easypar::run(FUN=easypar_fn,
+                              PARAMS=easypar_pars,
+                              parallel=TRUE, silent=FALSE,
+                              outfile="~/Dropbox/shared/2022. Basilica/simulations/matched_signals/easypar.log")
 
 
 simul_obj = generate_simulation_dataset_matched(N=150, G=2, private=private,
