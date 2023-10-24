@@ -12,15 +12,28 @@ simul_objects = lapply(G_list, function(gid) {
   lapply(N_list, function(nid) {
     seed_list = list("SBS"=sample(1:100, size=1),
                      "DBS"=sample(1:100, size=1))
-    generate_simulation_dataset_matched(N=nid, G=gid,
-                                        private=private,
-                                        shared=shared,
-                                        py=py,
-                                        seed=seed_list) %>%
+    simul_ng = generate_simulation_dataset_matched(N=nid, G=gid,
+                                                    private=private,
+                                                    shared=shared,
+                                                    py=py,
+                                                    seed=seed_list) %>%
       create_basilica_obj_simul()
+
+    counts_ng = get_input(simul_obj, matrix=TRUE)
+    max_K = sapply(get_signames(simul_obj), length) %>% max
+    x_ng = fit(counts=counts, k_list=0:max_K, cluster=NULL, n_steps=3000,
+               reference_cat=list("SBS"=COSMIC_filt[shared$SBS,],
+                                  "DBS"=COSMIC_dbs[shared$DBS,]),
+               keep_sigs=unlist(shared),
+               hyperparameters=list("scale_factor_centroid"=5000,
+                                    "scale_factor_alpha"=5000, "tau"=0),
+               seed_list=c(10,33,4), filter_dn=TRUE, store_fits=TRUE)
+    return(list("dataset"=simul_ng, "fit"=x_ng))
   }) %>% setNames(N_list)
 }) %>% setNames(G_list)
-saveRDS(simul_objects, "~/GitHub/simbasilica/nobuild/analysis_multiple_signals/simulated_data_list.Rds")
+
+
+
 
 simul_obj = generate_simulation_dataset_matched(N=150, G=2, private=private,
                                                 shared=shared,
