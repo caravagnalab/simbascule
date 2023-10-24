@@ -1,4 +1,4 @@
-generate_simulation_dataset_matched = function(N, G, private, private_shared, py,
+generate_simulation_dataset_matched = function(N, G, private, py,
                                                shared=list("SBS"=c("SBS1","SBS5"),
                                                            "DBS"=c("DBS2","DBS4")),
                                                reference=list("SBS"=COSMIC_filt,
@@ -17,12 +17,13 @@ generate_simulation_dataset_matched = function(N, G, private, private_shared, py
   counts_groups = lapply(1:G, function(gid) {
     lapply(types, function(tid) {
       keep_sigs = setdiff(rownames(reference[[tid]]), used_sigs)
-      private_t = private[[tid]][private[[tid]] %in% keep_sigs]
-      private_shared_t = private_shared[[tid]][private_shared[[tid]] %in% keep_sigs]
+      set.seed(seed[[tid]])
+      private_t = private[[tid]][private[[tid]] %in% keep_sigs] %>%
+        sample(size=1, replace=F)
 
       obj_tid = generate_simulation_dataset(N=n_g[gid], G=1,
                                             private_sbs=private_t,
-                                            private_shared_sbs=private_shared_t,
+                                            private_shared_sbs=c(),
                                             shared_sbs=shared[[tid]],
                                             catalogue_sbs=reference[[tid]],
                                             seed=seed[[tid]], py=py)
@@ -42,8 +43,8 @@ generate_simulation_dataset_matched = function(N, G, private, private_shared, py
 
   betas = lapply(types, function(tid) {
     lapply(1:G, function(gid) {
-      betas_g = counts_groups[[gid]][[tid]]$beta[[1]] %>% tibble::rownames_to_column("signame")
-    }) %>% do.call(rbind, .) %>% unique() %>% tibble::column_to_rownames(var="signame")
+      betas_g = counts_groups[[gid]][[tid]]$beta[[1]] # %>% tibble::rownames_to_column("signame")
+    }) %>% do.call(rbind, .) %>% unique()
   }) %>% setNames(types)
 
 
