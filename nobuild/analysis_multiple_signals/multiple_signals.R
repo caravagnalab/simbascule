@@ -1,8 +1,8 @@
 devtools::load_all("~/GitHub/simbasilica/")
 load_deps()
 
-private = list("SBS"=c("SBS17b", "SBS4", "SBS7c", "SBS13"),
-               "DBS"=c("DBS1", "DBS2", "DBS7", "DBS11"))
+private = list("SBS"=c("SBS17b", "SBS4", "SBS7c", "SBS13", "SBS20", "SBS22"),
+               "DBS"=c("DBS1", "DBS2", "DBS7", "DBS11", "DBS4", "DBS10"))
 shared = list("SBS"=c("SBS1","SBS5"),
               "DBS"=c("DBS3","DBS5"))
 
@@ -16,12 +16,20 @@ easypar_pars = lapply(1:nrow(n_gs), function(i) {
        shared=shared)
 })
 
+
 easypar_fn = function(N, G, private, shared) {
+  fname = paste0("simul_fit_", N, ".", G, "_macpro.Rds")
+  fname_fpath = paste0("~/Dropbox/shared/2022. Basilica/simulations/matched_signals/",
+                       fname)
+  if (file.exists(fname_fpath))
+    return(NULL)
+
   devtools::load_all("~/GitHub/basilica/")
   devtools::load_all("~/GitHub/simbasilica/")
   reticulate::use_condaenv("basilica-env")
   library(ggplot2)
   py = reticulate::import_from_path("pybasilica", "~/GitHub/pybasilica/")
+
   seed_list = list("SBS"=N+G,
                    "DBS"=N+G*2)
 
@@ -44,25 +52,33 @@ easypar_fn = function(N, G, private, shared) {
                                   "scale_factor_alpha"=5000, "tau"=0),
              seed_list=c(10,33,4), filter_dn=TRUE, store_fits=TRUE)
 
-  fname = paste0("simul_fit_", N, G, ".Rds")
   saveRDS(list("dataset"=simul_ng, "fit"=x_ng),
           paste0("~/Dropbox/shared/2022. Basilica/simulations/matched_signals/", fname))
   return(list("dataset"=simul_ng, "fit"=x_ng))
 }
 
+
 # lapply(easypar_pars, function(i) {
 #   print(i)
-#   easypar_fn(N=i$N, G=i$G, private=i$private,
-#              shared=i$shared, py=i$py)
+#   easypar_fn(N=i$N, G=i$G, private=i$private, shared=i$shared)
 # })
 
 
-easypar_output = easypar::run(FUN=easypar_fn,
-                              PARAMS=easypar_pars,
-                              parallel=TRUE,
-                              silent=FALSE,
-                              filter_errors=FALSE,
-                              outfile="~/Dropbox/shared/2022. Basilica/simulations/matched_signals/easypar.log")
+# easypar_output = easypar::run(FUN=easypar_fn,
+#                               PARAMS=easypar_pars,
+#                               parallel=TRUE,
+#                               silent=FALSE,
+#                               filter_errors=FALSE,
+#                               outfile="~/Dropbox/shared/2022. Basilica/simulations/matched_signals/easypar.log")
+
+
+
+## Data analysis #####
+
+simul_fit_i = readRDS("~/Dropbox/shared/2022. Basilica/simulations/matched_signals/simul_fit_150.2_macpro.Rds")
+
+simul_i = simul_fit_i$dataset
+fit_i = simul_fit_i$fit
 
 
 simul_obj = generate_simulation_dataset_matched(N=150, G=2, private=private,
@@ -87,6 +103,14 @@ plot_scores(x)
 plot_signatures(x)
 # alt_sols = get_alternatives(x, what="nmf", types="SBS")
 get_params(x, what="nmf", type="SBS")[[1]]$beta_w
+
+
+plot_beta_star = function(x, what, type=get_types(x)) {
+  lapply(types, function(tid) {
+    beta_star = get_params(x, what=what, type=tid)[[1]]$beta_star %>%
+      as.data.frame()
+  }) %>% setNames(types)
+}
 
 beta_star = get_params(x, what="nmf", type="SBS")[[1]]$beta_star$numpy() %>%
   as.data.frame()
@@ -128,14 +152,6 @@ patchwork::wrap_plots(plot_signatures(simul_obj, types="DBS"),
 
 
 
-# test = fit(counts=counts, k_list=4, cluster=NULL, n_steps=3000,
-#            reference_cat=list("SBS"=COSMIC_filt[c("SBS1","SBS5"),], "DBS"=COSMIC_dbs["DBS4",]),
-#            keep_sigs=c("SBS1","SBS5","DBS4"),
-#            hyperparameters=list("scale_factor_centroid"=5000,
-#                                 "scale_factor_alpha"=5000, "tau"=0),
-#            seed_list=c(10,33,4), filter_dn=TRUE, store_fits=TRUE)
-
-# get_alternative_run(x, params=list("seed"=10))
 
 
 

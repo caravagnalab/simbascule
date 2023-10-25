@@ -78,7 +78,7 @@ generate_simulation_dataset_matched = function(N, G, private, py,
 
 create_basilica_obj_simul = function(simul_df) {
   types = simul_df$types
-  obj_simul = list()
+  obj_simul = list(); class(obj_simul) = "basilica_obj"
 
   obj_simul$input = lapply(types, function(tid) {
     list("counts"=simul_df$counts[[tid]] %>% wide_to_long(what="counts"))
