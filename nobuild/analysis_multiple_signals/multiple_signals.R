@@ -17,12 +17,12 @@ easypar_pars = lapply(1:nrow(n_gs), function(i) {
 })
 
 
-easypar_fn = function(N, G, private, shared) {
+easypar_fn = function(N, G, private, shared, run_fits=FALSE) {
   fname = paste0("simul_fit_", N, ".", G, "_macpro.Rds")
   fname_fpath = paste0("~/Dropbox/shared/2022. Basilica/simulations/matched_signals/",
                        fname)
-  if (file.exists(fname_fpath))
-    return(NULL)
+  # if (file.exists(fname_fpath))
+  #   return(NULL)
 
   devtools::load_all("~/GitHub/basilica/")
   devtools::load_all("~/GitHub/simbasilica/")
@@ -36,27 +36,39 @@ easypar_fn = function(N, G, private, shared) {
   simul_ng = generate_simulation_dataset_matched(N=N, G=G,
                                                  private=private,
                                                  shared=shared,
+                                                 alpha_range=c(0.25,0.3),
+                                                 alpha_sigma=0.2,
                                                  py=py,
                                                  seed=seed_list) %>%
     create_basilica_obj_simul()
 
   cat("Simulated dataset generated!")
 
-  counts_ng = get_input(simul_ng, matrix=TRUE)
-  max_K = sapply(get_signames(simul_ng), length) %>% max
-  x_ng = fit(counts=counts_ng, k_list=0:max_K, cluster=NULL, n_steps=3000,
-             reference_cat=list("SBS"=COSMIC_filt[shared$SBS,],
-                                "DBS"=COSMIC_dbs[shared$DBS,]),
-             keep_sigs=unlist(shared),
-             hyperparameters=list("scale_factor_centroid"=5000,
-                                  "scale_factor_alpha"=5000, "tau"=0),
-             seed_list=c(10,33,4), filter_dn=TRUE, store_fits=TRUE)
+  x_ng = NULL
+
+  if (run_fits) {
+    counts_ng = get_input(simul_ng, matrix=TRUE)
+    max_K = sapply(get_signames(simul_ng), length) %>% max
+    x_ng = fit(counts=counts_ng, k_list=0:max_K, cluster=NULL, n_steps=3000,
+               reference_cat=list("SBS"=COSMIC_filt[shared$SBS,],
+                                  "DBS"=COSMIC_dbs[shared$DBS,]),
+               keep_sigs=unlist(shared),
+               hyperparameters=list("scale_factor_centroid"=5000,
+                                    "scale_factor_alpha"=5000, "tau"=0),
+               seed_list=c(10,33,4), filter_dn=TRUE, store_fits=TRUE)
+  }
 
   saveRDS(list("dataset"=simul_ng, "fit"=x_ng),
           paste0("~/Dropbox/shared/2022. Basilica/simulations/matched_signals/", fname))
   return(list("dataset"=simul_ng, "fit"=x_ng))
 }
 
+easypar_output = easypar::run(FUN=easypar_fn,
+                              PARAMS=easypar_pars,
+                              parallel=TRUE,
+                              silent=FALSE,
+                              filter_errors=FALSE,
+                              outfile="~/Dropbox/shared/2022. Basilica/simulations/matched_signals/easypar.log")
 
 # lapply(easypar_pars, function(i) {
 #   print(i)
@@ -64,21 +76,30 @@ easypar_fn = function(N, G, private, shared) {
 # })
 
 
-# easypar_output = easypar::run(FUN=easypar_fn,
-#                               PARAMS=easypar_pars,
-#                               parallel=TRUE,
-#                               silent=FALSE,
-#                               filter_errors=FALSE,
-#                               outfile="~/Dropbox/shared/2022. Basilica/simulations/matched_signals/easypar.log")
-
-
 
 ## Data analysis #####
+path = "~/Dropbox/shared/2022. Basilica/simulations/matched_signals/"
+# simul_fit_i = readRDS(paste0(path, "simul_fit_150.2_macpro.Rds"))
+# simul_i = simul_fit_i$dataset
+# fit_i = simul_fit_i$fit
 
-simul_fit_i = readRDS("~/Dropbox/shared/2022. Basilica/simulations/matched_signals/simul_fit_150.2_macpro.Rds")
+plots = lapply(list.files(path, pattern="^simul_fit", full.names=T), function(fname) {
+  simul_i = readRDS(fname)$dataset
+  colpalette = gen_palette(simul_i)
+  return(
+    patchwork::wrap_plots(plot_exposures(simul_i, cls=colpalette) +
+                            theme(legend.position="bottom"),
+                          plot_signatures(simul_i, cls=colpalette),
+                          nrow=2, design="AAA
+                                          BBB
+                                          BBB")
+  )
+}) %>% setNames(list.files(path, pattern="^simul_fit", full.names=F))
 
-simul_i = simul_fit_i$dataset
-fit_i = simul_fit_i$fit
+pdf(paste0(path, "datasets.pdf"), height=10, width=12)
+lapply(names(plots), function(i)
+  plots[[i]] + labs(title=stringr::str_replace_all(i, pattern="_macpro.Rds", "")))
+dev.off()
 
 
 simul_obj = generate_simulation_dataset_matched(N=150, G=2, private=private,

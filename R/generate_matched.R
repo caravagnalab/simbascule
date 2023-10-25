@@ -3,6 +3,12 @@ generate_simulation_dataset_matched = function(N, G, private, py,
                                                            "DBS"=c("DBS2","DBS4")),
                                                reference=list("SBS"=COSMIC_filt,
                                                               "DBS"=COSMIC_dbs),
+                                               min_samples=2,
+                                               n_muts_range=500:5000,
+                                               frac_rare=1.,
+                                               alpha_range=c(.15,.2),
+                                               alpha_sigma=0.1,
+                                               pi_conc=1,
                                                seed=list("SBS"=56,"DBS"=67)) {
 
   types = names(shared)
@@ -26,7 +32,13 @@ generate_simulation_dataset_matched = function(N, G, private, py,
                                             private_shared_sbs=c(),
                                             shared_sbs=shared[[tid]],
                                             catalogue_sbs=reference[[tid]],
-                                            seed=seed[[tid]], py=py)
+                                            min_samples=min_samples,
+                                            n_muts_range=n_muts_range,
+                                            frac_rare=frac_rare,
+                                            alpha_range=alpha_range,
+                                            alpha_sigma=alpha_sigma,
+                                            pi_conc=pi_conc,
+                                            seed=seed[[tid]]*gid, py=py)
       used_sigs <<- c(used_sigs, obj_tid$beta[[1]] %>% rownames())
       return(obj_tid)
     }) %>% setNames(types)
