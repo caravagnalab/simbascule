@@ -21,8 +21,10 @@ easypar_fn = function(N, G, private, shared, run_fits=FALSE) {
   fname = paste0("simul_fit_", N, ".", G, "_macpro.Rds")
   fname_fpath = paste0("~/Dropbox/shared/2022. Basilica/simulations/matched_signals/",
                        fname)
-  # if (file.exists(fname_fpath))
-  #   return(NULL)
+
+  simul_ng = NULL
+  if (file.exists(fname_fpath))
+    simul_ng = readRDS(fname_fpath)$dataset
 
   devtools::load_all("~/GitHub/basilica/")
   devtools::load_all("~/GitHub/simbasilica/")
@@ -30,17 +32,19 @@ easypar_fn = function(N, G, private, shared, run_fits=FALSE) {
   library(ggplot2)
   py = reticulate::import_from_path("pybasilica", "~/GitHub/pybasilica/")
 
-  seed_list = list("SBS"=N+G,
-                   "DBS"=N+G*2)
+  if (is.null(simul_ng)) {
+    seed_list = list("SBS"=N+G,
+                     "DBS"=N+G*2)
 
-  simul_ng = generate_simulation_dataset_matched(N=N, G=G,
-                                                 private=private,
-                                                 shared=shared,
-                                                 alpha_range=c(0.25,0.3),
-                                                 alpha_sigma=0.2,
-                                                 py=py,
-                                                 seed=seed_list) %>%
-    create_basilica_obj_simul()
+    simul_ng = generate_simulation_dataset_matched(N=N, G=G,
+                                                   private=private,
+                                                   shared=shared,
+                                                   alpha_range=c(0.25,0.3),
+                                                   alpha_sigma=0.2,
+                                                   py=py,
+                                                   seed=seed_list) %>%
+      create_basilica_obj_simul()
+  }
 
   cat("Simulated dataset generated!")
 
@@ -63,17 +67,17 @@ easypar_fn = function(N, G, private, shared, run_fits=FALSE) {
   return(list("dataset"=simul_ng, "fit"=x_ng))
 }
 
-easypar_output = easypar::run(FUN=easypar_fn,
-                              PARAMS=easypar_pars,
-                              parallel=TRUE,
-                              silent=FALSE,
-                              filter_errors=FALSE,
-                              outfile="~/Dropbox/shared/2022. Basilica/simulations/matched_signals/easypar.log")
+# easypar_output = easypar::run(FUN=easypar_fn,
+#                               PARAMS=easypar_pars,
+#                               parallel=FALSE,
+#                               silent=FALSE,
+#                               filter_errors=FALSE,
+#                               outfile="~/Dropbox/shared/2022. Basilica/simulations/matched_signals/easypar.log")
 
-# lapply(easypar_pars, function(i) {
-#   print(i)
-#   easypar_fn(N=i$N, G=i$G, private=i$private, shared=i$shared)
-# })
+lapply(easypar_pars, function(i) {
+  print(i)
+  easypar_fn(N=i$N, G=i$G, private=i$private, shared=i$shared, run_fits=TRUE)
+})
 
 
 
