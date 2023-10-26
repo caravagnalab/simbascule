@@ -56,7 +56,8 @@ easypar_fn = function(N, G, private, shared, run_fits=FALSE) {
   if (run_fits) {
     counts_ng = get_input(simul_ng, matrix=TRUE)
     max_K = max(sapply(get_signames(simul_ng), length)) + 1
-    x_ng = fit(counts=counts_ng, k_list=0:max_K, cluster=NULL, n_steps=3000,
+    min_K = max(0, max_K - 3)
+    x_ng = fit(counts=counts_ng, k_list=min_K:max_K, cluster=NULL, n_steps=3000,
                reference_cat=list("SBS"=COSMIC_filt[shared$SBS,],
                                   "DBS"=COSMIC_dbs[shared$DBS,]),
                keep_sigs=unlist(shared),
@@ -78,7 +79,7 @@ easypar_fn = function(N, G, private, shared, run_fits=FALSE) {
 #                               filter_errors=FALSE,
 #                               outfile="~/Dropbox/shared/2022. Basilica/simulations/matched_signals/easypar.log")
 
-lapply(easypar_pars[2:length(easypar_pars)], function(i) {
+lapply(easypar_pars, function(i) {
   print(i)
   easypar_fn(N=i$N, G=i$G, private=i$private, shared=i$shared, run_fits=TRUE)
 })
