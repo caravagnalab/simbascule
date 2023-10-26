@@ -78,7 +78,7 @@ easypar_fn = function(N, G, private, shared, run_fits=FALSE) {
 #                               filter_errors=FALSE,
 #                               outfile="~/Dropbox/shared/2022. Basilica/simulations/matched_signals/easypar.log")
 
-lapply(easypar_pars[1], function(i) {
+lapply(easypar_pars[2:length(easypar_pars)], function(i) {
   print(i)
   easypar_fn(N=i$N, G=i$G, private=i$private, shared=i$shared, run_fits=TRUE)
 })
@@ -156,15 +156,31 @@ get_params(fit_i, what="nmf", type="SBS")[[1]]$beta_w
 
 
 plots = lapply(list.files(path, pattern="^simul_fit", full.names=T), function(fname) {
-  simul_i = readRDS(fname)$dataset
+  simul_fit_i = readRDS(fname)
+  simul_i = simul_fit_i$dataset
+  fit_i = simul_fit_i$fit
   colpalette = gen_palette(simul_i)
+  colpalette_fit = gen_palette(fit_i)
+  design = "AACC
+            BBCC
+            BBCC"
+  design2 = "AACC
+             BBCC
+             BBCC"
+  simul_plots = patchwork::wrap_plots(plot_data(simul_i, reconstructed=F),
+                                      plot_exposures(simul_i, cls=colpalette) +
+                                        theme(legend.position="bottom"),
+                                      plot_signatures(simul_i, cls=colpalette),
+                                      design=design)
+  fit_plots = patchwork::wrap_plots(plot_data(fit_i, reconstructed=F),
+                                    plot_exposures(fit_i, cls=colpalette_fit) +
+                                      theme(legend.position="bottom"),
+                                    plot_signatures(fit_i, cls=colpalette_fit),
+                                    plot_beta_weights(fit_i),
+                                    design=design2)
   return(
-    patchwork::wrap_plots(plot_exposures(simul_i, cls=colpalette) +
-                            theme(legend.position="bottom"),
-                          plot_signatures(simul_i, cls=colpalette),
-                          nrow=2, design="AAA
-                                          BBB
-                                          BBB")
+    list("simul"=simul_plots,
+         "fit"=fit_plots)
   )
 }) %>% setNames(list.files(path, pattern="^simul_fit", full.names=F))
 
