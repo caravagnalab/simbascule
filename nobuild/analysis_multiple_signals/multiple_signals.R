@@ -84,6 +84,14 @@ lapply(easypar_pars[1], function(i) {
 })
 
 
+
+## Example ####
+
+path = "~/Dropbox/shared/2022. Basilica/simulations/matched_signals/"
+simul_fit_i = readRDS(paste0(path, "simul_fit_150.2_macpro.Rds"))
+simul_i = simul_fit_i$dataset
+fit_i = simul_fit_i$fit
+
 counts_ng = list("SBS"=get_input(fit_i)$SBS %>% long_to_wide(what="counts"))
 x_ng = fit(counts=counts_ng, k_list=0:3, cluster=NULL, n_steps=3000,
            reference_cat=list("SBS"=COSMIC_filt[shared$SBS,]),
@@ -91,16 +99,29 @@ x_ng = fit(counts=counts_ng, k_list=0:3, cluster=NULL, n_steps=3000,
            hyperparameters=list("scale_factor_centroid"=5000,
                                 "scale_factor_alpha"=5000,
                                 "tau"=0, "pi_conc0"=1e-3),
-           seed_list=c(10), filter_dn=TRUE, store_fits=TRUE, store_parameters=FALSE)
+           seed_list=c(10), filter_dn=FALSE, store_fits=TRUE, store_parameters=FALSE)
 
-x_ng2 = fit(counts=counts_ng, k_list=3, cluster=NULL, n_steps=500,
+x_ng2 = fit(counts=counts_ng, k_list=0:3, cluster=NULL, n_steps=100,
            reference_cat=list("SBS"=COSMIC_filt[shared$SBS,]),
            keep_sigs=unlist(shared),
            hyperparameters=list("scale_factor_centroid"=5000,
                                 "scale_factor_alpha"=5000,
                                 "tau"=0, "pi_conc0"=0.6),
-           seed_list=c(10), filter_dn=TRUE, store_fits=TRUE, store_parameters=TRUE)
+           seed_list=c(10), filter_dn=FALSE, store_fits=TRUE, store_parameters=TRUE)
 
+# muts = plot_data(x_ng, types = "SBS", reconstructed=T)
+muts_true = plot_data(x_ng, types = "SBS", reconstructed=F)
+sigs = plot_signatures(x_ng)
+weights = plot_beta_weights(x_ng)
+beta_star = plot_beta_star(x_ng)
+alpha_star = plot_alpha_star(x_ng)
+patchwork::wrap_plots(sigs, muts_true, design="AABB
+                                               CCBB")
+
+patchwork::wrap_plots(alpha_star, beta_star, weights, design="AABB
+                                                              CCBB")
+plot_exposures(x_ng)
+plot_gradient_norms(x_ng)
 
 x_ng3 = fit(counts=counts_ng, k_list=3, cluster=NULL, n_steps=10,
             reference_cat=list("SBS"=COSMIC_filt[shared$SBS,]),
@@ -177,12 +198,7 @@ plot_signatures(x)
 get_params(x, what="nmf", type="SBS")[[1]]$beta_w
 
 
-plot_beta_star = function(x, what, type=get_types(x)) {
-  lapply(types, function(tid) {
-    beta_star = get_params(x, what=what, type=tid)[[1]]$beta_star %>%
-      as.data.frame()
-  }) %>% setNames(types)
-}
+
 
 beta_star = get_params(x, what="nmf", type="SBS")[[1]]$beta_star$numpy() %>%
   as.data.frame()
@@ -278,7 +294,7 @@ saveRDS(x_crc_Gamma, "~/GitHub/simbasilica/nobuild/analysis_multiple_signals/crc
 plot_beta_weights = function(x) {
   params = get_QC(x, what="nmf", types="SBS")[["SBS"]]$train_params
   tmp = params %>% dplyr::filter(paramname=="beta_w") %>% dplyr::select(-paramname) %>%
-    dplyr::mutate(iteration=iteration) %>% dplyr::filter(iteration %in% c(10, 100, 300, 500))
+    dplyr::mutate(iteration=iteration) # %>% dplyr::filter(iteration %in% c(10, 100, 300, 500))
   tmp %>% ggplot(aes(x=iteration, y=rowname, colour=columnname, size=value)) +
     geom_point(position=position_dodge(width=0.5))
 }
