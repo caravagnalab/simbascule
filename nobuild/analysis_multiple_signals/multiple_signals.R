@@ -2,7 +2,7 @@ devtools::load_all("~/GitHub/simbasilica/")
 load_deps()
 
 
-## Generayte and run ####
+## Generate and run ####
 
 private = list("SBS"=c("SBS17b", "SBS4", "SBS7c", "SBS13", "SBS20", "SBS22"),
                "DBS"=c("DBS1", "DBS2", "DBS7", "DBS11", "DBS4", "DBS10"))
@@ -20,8 +20,8 @@ easypar_pars = lapply(1:nrow(n_gs), function(i) {
 })
 
 
-easypar_fn = function(N, G, private, shared, run_fits=FALSE) {
-  fname = paste0("simul_fit_", N, ".", G, "_macpro.Rds")
+easypar_fn = function(N, G, private, shared, run_fits=FALSE, run_name="") {
+  fname = paste0("simul_fit_", N, ".", G, "_macpro", run_name, ".Rds")
   fname_fpath = paste0("~/Dropbox/shared/2022. Basilica/simulations/matched_signals/",
                        fname)
 
@@ -56,7 +56,7 @@ easypar_fn = function(N, G, private, shared, run_fits=FALSE) {
   if (run_fits) {
     counts_ng = get_input(simul_ng, matrix=TRUE)
     max_K = max(sapply(get_signames(simul_ng), length)) + 1
-    min_K = max(0, max_K - 3)
+    min_K = max(0, max_K - 2 - 3)
     x_ng = fit(counts=counts_ng, k_list=min_K:max_K, cluster=NULL, n_steps=3000,
                reference_cat=list("SBS"=COSMIC_filt[shared$SBS,],
                                   "DBS"=COSMIC_dbs[shared$DBS,]),
@@ -64,7 +64,8 @@ easypar_fn = function(N, G, private, shared, run_fits=FALSE) {
                hyperparameters=list("scale_factor_centroid"=5000,
                                     "scale_factor_alpha"=5000,
                                     "tau"=0),
-               seed_list=c(10,33,4), filter_dn=TRUE, store_fits=TRUE)
+               seed_list=c(10,33,4), filter_dn=TRUE, store_fits=TRUE,
+               py=py)
   }
 
   saveRDS(list("dataset"=simul_ng, "fit"=x_ng),
@@ -81,7 +82,8 @@ easypar_fn = function(N, G, private, shared, run_fits=FALSE) {
 
 lapply(easypar_pars, function(i) {
   print(i)
-  easypar_fn(N=i$N, G=i$G, private=i$private, shared=i$shared, run_fits=TRUE)
+  easypar_fn(N=i$N, G=i$G, private=i$private, shared=i$shared,
+             run_fits=TRUE, run_name="_new_penalty")
 })
 
 
@@ -93,14 +95,20 @@ simul_fit_i = readRDS(paste0(path, "simul_fit_150.2_macpro.Rds"))
 simul_i = simul_fit_i$dataset
 fit_i = simul_fit_i$fit
 
+fit_i %>% plot_signatures()
+
 counts_ng = list("SBS"=get_input(fit_i)$SBS %>% long_to_wide(what="counts"))
-x_ng = fit(counts=counts_ng, k_list=0:3, cluster=NULL, n_steps=3000,
+x_ng = fit(counts=counts_ng, k_list=2:5, cluster=NULL, n_steps=3000,
            reference_cat=list("SBS"=COSMIC_filt[shared$SBS,]),
            keep_sigs=unlist(shared),
            hyperparameters=list("scale_factor_centroid"=5000,
                                 "scale_factor_alpha"=5000,
                                 "tau"=0, "pi_conc0"=1e-3),
-           seed_list=c(10), filter_dn=FALSE, store_fits=TRUE, store_parameters=FALSE)
+           seed_list=c(10), filter_dn=FALSE, store_fits=TRUE,
+           store_parameters=FALSE, py=py)
+
+x_ng %>% plot_scores()
+x_ng %>% plot_signatures()
 
 x_ng2 = fit(counts=counts_ng, k_list=0:3, cluster=NULL, n_steps=100,
            reference_cat=list("SBS"=COSMIC_filt[shared$SBS,]),
@@ -160,6 +168,7 @@ plots = lapply(list.files(path, pattern="^simul_fit", full.names=T), function(fn
   simul_fit_i = readRDS(fname)
   simul_i = simul_fit_i$dataset
   fit_i = simul_fit_i$fit
+  tid = "SBS"
   colpalette = gen_palette(simul_i)
   colpalette_fit = gen_palette(fit_i)
   design = "AACC
@@ -167,28 +176,100 @@ plots = lapply(list.files(path, pattern="^simul_fit", full.names=T), function(fn
             BBCC"
   design2 = "AACC
              BBCC
-             BBCC"
-  simul_plots = patchwork::wrap_plots(plot_data(simul_i, reconstructed=F),
-                                      plot_exposures(simul_i, cls=colpalette) +
-                                        theme(legend.position="bottom"),
-                                      plot_signatures(simul_i, cls=colpalette),
-                                      design=design)
-  fit_plots = patchwork::wrap_plots(plot_data(fit_i, reconstructed=F),
-                                    plot_exposures(fit_i, cls=colpalette_fit) +
-                                      theme(legend.position="bottom"),
-                                    plot_signatures(fit_i, cls=colpalette_fit),
-                                    plot_beta_weights(fit_i),
-                                    design=design2)
+             DDCC"
+  simul_plots = patchwork::wrap_plots(plot_data(simul_i, reconstructed=F, types=tid),
+                                      plot_exposures(simul_i, cls=colpalette, types=tid),
+                                      plot_signatures(simul_i, cls=colpalette, types=tid),
+                                      design=design) +
+    patchwork::plot_annotation(title=fname)
+  fit_plots = patchwork::wrap_plots(plot_data(fit_i, reconstructed=T, types=tid),
+                                    plot_exposures(fit_i, cls=colpalette_fit, types=tid),
+                                    plot_signatures(fit_i, cls=colpalette_fit, types=tid),
+                                    plot_beta_weights(fit_i, types=tid),
+                                    design=design2) +
+    patchwork::plot_annotation(title=fname)
   return(
     list("simul"=simul_plots,
          "fit"=fit_plots)
   )
 }) %>% setNames(list.files(path, pattern="^simul_fit", full.names=F))
 
-pdf(paste0(path, "datasets.pdf"), height=10, width=12)
-lapply(names(plots), function(i)
-  plots[[i]] + labs(title=stringr::str_replace_all(i, pattern="_macpro.Rds", "")))
+
+plots_sigs_muts = lapply(list.files(path, pattern="^simul_fit", full.names=T), function(fname) {
+  simul_fit_i = readRDS(fname)
+  simul_i = simul_fit_i$dataset
+  fit_i = simul_fit_i$fit
+  tid = "SBS"
+  colpalette = gen_palette(simul_i)
+  colpalette_fit = gen_palette(fit_i)
+  design = "AAFFCCCDDD
+            BBGGCCCDDD
+            EE##CCCDDD"
+  fit_plots = patchwork::wrap_plots(plot_data(simul_i, reconstructed=F, types=tid),
+                                    plot_data(fit_i, reconstructed=T, types=tid) +
+                                      labs(title="Reconstructed"),
+                                    plot_signatures(fit_i, cls=colpalette_fit, types=tid),
+                                    plot_signatures(simul_i, cls=colpalette, types=tid),
+                                    plot_exposures(fit_i, cls=colpalette_fit, types=tid) +
+                                      theme(legend.position="bottom"),
+                                    plot_beta_weights(fit_i, types=tid) +
+                                      theme(legend.position="bottom"),
+                                    plot_scores(fit_i, types=tid) +
+                                      theme(legend.position="bottom"),
+                                    design=design) +
+    patchwork::plot_annotation(title=paste0(fname, " best K"))
+
+  best_seed = get_scores(fit_i) %>%
+    dplyr::filter(value==get_K(simul_i)$SBS-2, parname=="K", score_id=="bic") %>%
+    dplyr::slice(which.min(score)) %>% dplyr::pull(seed)
+  fit_i2 = get_alternative_run(fit_i, K=get_K(simul_i)$SBS-2, seed=best_seed)
+  fit_plots2 = patchwork::wrap_plots(plot_data(simul_i, reconstructed=F, types=tid),
+                                    plot_data(fit_i2, reconstructed=T, types=tid) +
+                                      labs(title="Reconstructed"),
+                                    plot_signatures(fit_i2, cls=colpalette_fit, types=tid),
+                                    plot_signatures(simul_i, cls=colpalette, types=tid),
+                                    plot_exposures(fit_i2, cls=colpalette_fit, types=tid) +
+                                      theme(legend.position="bottom"),
+                                    plot_beta_weights(fit_i2, types=tid) +
+                                      theme(legend.position="bottom"),
+                                    plot_scores(fit_i, types=tid) +
+                                      theme(legend.position="bottom"),
+                                    design=design) +
+    patchwork::plot_annotation(title=paste0(fname, " GT K"))
+
+  return(
+    list("best_fit"=fit_plots,
+         "right_K"=fit_plots2)
+  )
+}) %>% setNames(list.files(path, pattern="^simul_fit", full.names=F))
+
+
+plots_sigs_muts$simul_fit_300.4_macpro.Rds
+fit = readRDS(paste0(path, "simul_fit_300.4_macpro.Rds"))
+fit$fit %>% plot_scores()
+sigs2 = get_alternative_run(fit$fit, K=5, seed=4) %>% plot_signatures(types="SBS")
+sigs_true = plot_signatures(fit$dataset, types="SBS")
+patchwork::wrap_plots(sigs2, sigs_true)
+
+pdf(paste0(path, "datasets.pdf"), height=10, width=14)
+lapply(names(plots), function(i) {
+  print(plots[[i]]$simul)
+  print(plots[[i]]$fit)
+  return()
+  })
 dev.off()
+
+
+pdf(paste0(path, "datasets_sigs.pdf"), height=8, width=15)
+lapply(names(plots_sigs_muts), function(i) {
+  print(plots_sigs_muts[[i]]$best_fit)
+  print(plots_sigs_muts[[i]]$right_K)
+  return()
+})
+dev.off()
+
+saveRDS(plots_sigs_muts, paste0(path, "datasets_sigs.Rds"))
+saveRDS(plots, paste0(path, "datasets.Rds"))
 
 
 simul_obj = generate_simulation_dataset_matched(N=150, G=2, private=private,
@@ -308,13 +389,13 @@ saveRDS(x_crc_Gamma, "~/GitHub/simbasilica/nobuild/analysis_multiple_signals/crc
 
 ## Plotting functions ####
 
-plot_beta_weights = function(x) {
-  params = get_QC(x, what="nmf", types="SBS")[["SBS"]]$train_params
-  tmp = params %>% dplyr::filter(paramname=="beta_w") %>% dplyr::select(-paramname) %>%
-    dplyr::mutate(iteration=iteration) # %>% dplyr::filter(iteration %in% c(10, 100, 300, 500))
-  tmp %>% ggplot(aes(x=iteration, y=rowname, colour=columnname, size=value)) +
-    geom_point(position=position_dodge(width=0.5))
-}
+# plot_beta_weights = function(x) {
+#   params = get_QC(x, what="nmf", types="SBS")[["SBS"]]$train_params
+#   tmp = params %>% dplyr::filter(paramname=="beta_w") %>% dplyr::select(-paramname) %>%
+#     dplyr::mutate(iteration=iteration) # %>% dplyr::filter(iteration %in% c(10, 100, 300, 500))
+#   tmp %>% ggplot(aes(x=iteration, y=rowname, colour=columnname, size=value)) +
+#     geom_point(position=position_dodge(width=0.5))
+# }
 
 
 
