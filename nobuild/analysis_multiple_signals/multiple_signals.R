@@ -109,6 +109,7 @@ x_ng = fit(counts=counts_ng, k_list=2:5, cluster=NULL, n_steps=3000,
 
 x_ng %>% plot_scores()
 x_ng %>% plot_signatures()
+x_ng %>% plot_beta_weights()
 
 x_ng2 = fit(counts=counts_ng, k_list=0:3, cluster=NULL, n_steps=100,
            reference_cat=list("SBS"=COSMIC_filt[shared$SBS,]),
@@ -157,14 +158,14 @@ patchwork::wrap_plots(p1, p2, p3, guides="collect")
 
 ## Data analysis #####
 path = "~/Dropbox/shared/2022. Basilica/simulations/matched_signals/"
-simul_fit_i = readRDS(paste0(path, "simul_fit_150.2_macpro.Rds"))
-simul_i = simul_fit_i$dataset
-fit_i = simul_fit_i$fit
+# simul_fit_i = readRDS(paste0(path, "simul_fit_150.2_macpro.Rds"))
+# simul_i = simul_fit_i$dataset
+# fit_i = simul_fit_i$fit
+# get_params(fit_i, what="nmf", type="SBS")[[1]]$beta_w
 
-get_params(fit_i, what="nmf", type="SBS")[[1]]$beta_w
+pattern = "new_penalty.Rds$"
 
-
-plots = lapply(list.files(path, pattern="^simul_fit", full.names=T), function(fname) {
+plots = lapply(list.files(path, pattern=pattern, full.names=T), function(fname) {
   simul_fit_i = readRDS(fname)
   simul_i = simul_fit_i$dataset
   fit_i = simul_fit_i$fit
@@ -192,10 +193,10 @@ plots = lapply(list.files(path, pattern="^simul_fit", full.names=T), function(fn
     list("simul"=simul_plots,
          "fit"=fit_plots)
   )
-}) %>% setNames(list.files(path, pattern="^simul_fit", full.names=F))
+}) %>% setNames(list.files(path, pattern=pattern, full.names=F))
 
 
-plots_sigs_muts = lapply(list.files(path, pattern="^simul_fit", full.names=T), function(fname) {
+plots_sigs_muts = lapply(list.files(path, pattern=pattern, full.names=T), function(fname) {
   simul_fit_i = readRDS(fname)
   simul_i = simul_fit_i$dataset
   fit_i = simul_fit_i$fit
@@ -241,17 +242,17 @@ plots_sigs_muts = lapply(list.files(path, pattern="^simul_fit", full.names=T), f
     list("best_fit"=fit_plots,
          "right_K"=fit_plots2)
   )
-}) %>% setNames(list.files(path, pattern="^simul_fit", full.names=F))
+}) %>% setNames(list.files(path, pattern=pattern, full.names=F))
 
 
-plots_sigs_muts$simul_fit_300.4_macpro.Rds
-fit = readRDS(paste0(path, "simul_fit_300.4_macpro.Rds"))
-fit$fit %>% plot_scores()
-sigs2 = get_alternative_run(fit$fit, K=5, seed=4) %>% plot_signatures(types="SBS")
-sigs_true = plot_signatures(fit$dataset, types="SBS")
-patchwork::wrap_plots(sigs2, sigs_true)
+# plots_sigs_muts$simul_fit_300.4_macpro.Rds
+# fit = readRDS(paste0(path, "simul_fit_300.4_macpro.Rds"))
+# fit$fit %>% plot_scores()
+# sigs2 = get_alternative_run(fit$fit, K=5, seed=4) %>% plot_signatures(types="SBS")
+# sigs_true = plot_signatures(fit$dataset, types="SBS")
+# patchwork::wrap_plots(sigs2, sigs_true)
 
-pdf(paste0(path, "datasets.pdf"), height=10, width=14)
+pdf(paste0(path, "datasets_", pattern, ".pdf"), height=10, width=14)
 lapply(names(plots), function(i) {
   print(plots[[i]]$simul)
   print(plots[[i]]$fit)
@@ -260,7 +261,7 @@ lapply(names(plots), function(i) {
 dev.off()
 
 
-pdf(paste0(path, "datasets_sigs.pdf"), height=8, width=15)
+pdf(paste0(path, "datasets_sigs_", pattern, ".pdf"), height=8, width=15)
 lapply(names(plots_sigs_muts), function(i) {
   print(plots_sigs_muts[[i]]$best_fit)
   print(plots_sigs_muts[[i]]$right_K)
@@ -268,8 +269,8 @@ lapply(names(plots_sigs_muts), function(i) {
 })
 dev.off()
 
-saveRDS(plots_sigs_muts, paste0(path, "datasets_sigs.Rds"))
-saveRDS(plots, paste0(path, "datasets.Rds"))
+saveRDS(plots_sigs_muts, paste0(path, "datasets_sigs_", pattern, ".pdf"))
+saveRDS(plots,paste0(path, "datasets_", pattern, ".pdf"))
 
 
 simul_obj = generate_simulation_dataset_matched(N=150, G=2, private=private,
