@@ -1,115 +1,47 @@
 devtools::load_all("~/GitHub/simbasilica/")
 load_deps()
 
-
-## Generate and run ####
-
 private = list("SBS"=c("SBS17b", "SBS4", "SBS7c", "SBS13", "SBS20", "SBS22"),
                "DBS"=c("DBS1", "DBS2", "DBS7", "DBS11", "DBS4", "DBS10"))
 shared = list("SBS"=c("SBS1","SBS5"),
               "DBS"=c("DBS3","DBS5"))
 
-N_list = c(150,300,1000)
-G_list = c(2,4,6)
-n_gs = expand.grid(N_list, G_list)
-
-easypar_pars = lapply(1:nrow(n_gs), function(i) {
-  list(N=n_gs[i,"Var1"], G=n_gs[i,"Var2"],
-       private=private,
-       shared=shared)
-})
-
-
-easypar_fn = function(N, G, private, shared, run_fits=FALSE, run_name="") {
-  fname = paste0("simul_fit_", N, ".", G, "_macpro", run_name, ".Rds")
-  fname_fpath = paste0("~/Dropbox/shared/2022. Basilica/simulations/matched_signals/",
-                       fname)
-
-  simul_ng = NULL
-  if (file.exists(fname_fpath))
-    simul_ng = readRDS(fname_fpath)$dataset
-
-  devtools::load_all("~/GitHub/basilica/")
-  devtools::load_all("~/GitHub/simbasilica/")
-  reticulate::use_condaenv("basilica-env")
-  library(ggplot2)
-  py = reticulate::import_from_path("pybasilica", "~/GitHub/pybasilica/")
-
-  if (is.null(simul_ng)) {
-    seed_list = list("SBS"=N+G,
-                     "DBS"=N+G*2)
-
-    simul_ng = generate_simulation_dataset_matched(N=N, G=G,
-                                                   private=private,
-                                                   shared=shared,
-                                                   alpha_range=c(0.25,0.3),
-                                                   alpha_sigma=0.2,
-                                                   py=py,
-                                                   seed=seed_list) %>%
-      create_basilica_obj_simul()
-  }
-
-  cat("Simulated dataset generated!")
-
-  x_ng = NULL
-
-  if (run_fits) {
-    counts_ng = get_input(simul_ng, matrix=TRUE)
-    max_K = max(sapply(get_signames(simul_ng), length)) + 1
-    min_K = max(0, max_K - 2 - 3)
-    x_ng = fit(counts=counts_ng, k_list=min_K:max_K, cluster=NULL, n_steps=3000,
-               reference_cat=list("SBS"=COSMIC_filt[shared$SBS,],
-                                  "DBS"=COSMIC_dbs[shared$DBS,]),
-               keep_sigs=unlist(shared),
-               hyperparameters=list("scale_factor_centroid"=5000,
-                                    "scale_factor_alpha"=5000,
-                                    "tau"=0),
-               seed_list=c(10,33,4), filter_dn=TRUE, store_fits=TRUE,
-               py=py)
-  }
-
-  saveRDS(list("dataset"=simul_ng, "fit"=x_ng),
-          paste0("~/Dropbox/shared/2022. Basilica/simulations/matched_signals/", fname))
-  return(list("dataset"=simul_ng, "fit"=x_ng))
-}
-
-# easypar_output = easypar::run(FUN=easypar_fn,
-#                               PARAMS=easypar_pars,
-#                               parallel=FALSE,
-#                               silent=FALSE,
-#                               filter_errors=FALSE,
-#                               outfile="~/Dropbox/shared/2022. Basilica/simulations/matched_signals/easypar.log")
-
-lapply(easypar_pars, function(i) {
-  print(i)
-  easypar_fn(N=i$N, G=i$G, private=i$private, shared=i$shared,
-             run_fits=TRUE, run_name="_new_penalty")
-})
-
-
 
 ## Example ####
 
 path = "~/Dropbox/shared/2022. Basilica/simulations/matched_signals/"
-simul_fit_i = readRDS(paste0(path, "simul_fit_150.2_macpro.Rds"))
+simul_fit_i = readRDS(paste0(path, "fits/simul_fit_300.2.600.penalty_scale.Rds"))
 simul_i = simul_fit_i$dataset
 fit_i = simul_fit_i$fit
 
 fit_i %>% plot_signatures()
+simul_i %>% plot_signatures()
 
 counts_ng = list("SBS"=get_input(fit_i)$SBS %>% long_to_wide(what="counts"))
-x_ng = fit(counts=counts_ng, k_list=2:5, cluster=NULL, n_steps=3000,
+x_ng = fit(counts=counts_ng, k_list=1:3, cluster=NULL, n_steps=2000,
            reference_cat=list("SBS"=COSMIC_filt[shared$SBS,]),
            keep_sigs=unlist(shared),
-           hyperparameters=list("scale_factor_centroid"=5000,
-                                "scale_factor_alpha"=5000,
-                                "tau"=0, "pi_conc0"=1e-3),
+           hyperparameters=NULL,
            seed_list=c(10), filter_dn=FALSE, store_fits=TRUE,
            store_parameters=FALSE, py=py)
 
-x_ng %>% plot_scores()
+x_ng %>% plot_QC()
 x_ng %>% plot_signatures()
 x_ng %>% plot_beta_weights()
+x_ng %>% plot_exposures() %>% patchwork::wrap_plots(plot_exposures(simul_i))
+
+
+
+
+# cum = colSums(COSMIC_filt[shared$SBS,])
+# mmax = max(cum)
+# set.seed(278)
+vals = gtools::rdirichlet(1, (mmax - cum)**3 *100)[1,]; names(vals) = names(cum)
+vals = (mmax - cum)**3
+vals = gtools::rdirichlet(1, c(100,100,1,1))**0.1
+data.frame(value=vals, sigs="A", type="SBS") %>%
+  tibble::rownames_to_column(var="features") %>% reformat_contexts(what="SBS") %>%
+  plot_signatures_aux()
 
 x_ng2 = fit(counts=counts_ng, k_list=0:3, cluster=NULL, n_steps=100,
            reference_cat=list("SBS"=COSMIC_filt[shared$SBS,]),
