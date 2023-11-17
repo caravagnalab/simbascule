@@ -17,7 +17,7 @@ cat(paste0("\nSaving in directory: ", fits_path, "\n\n"))
 
 cli::cli_process_start("Loading packages")
 
-source()
+source("~/GitHub/simbasilica/nobuild/run_scripts/fn_run.R")
 reticulate::use_condaenv("basilica-env")
 py = reticulate::import_from_path(module = "pybasilica", path = paste0(main_path,"pybasilica/"))
 
