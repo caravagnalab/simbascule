@@ -18,19 +18,21 @@ fit_i %>% plot_signatures()
 simul_i %>% plot_signatures()
 
 counts_ng = list("SBS"=get_input(fit_i)$SBS %>% long_to_wide(what="counts"))
-x_ng = fit(counts=counts_ng, k_list=1:3, cluster=NULL, n_steps=2000,
+x_ng = fit(counts=counts_ng, k_list=1:3, cluster=NULL, n_steps=3000,
            reference_cat=list("SBS"=COSMIC_filt[shared$SBS,]),
            keep_sigs=unlist(shared),
-           hyperparameters=NULL,
+           hyperparameters=list("penalty_scale"=150),
            seed_list=c(10), filter_dn=FALSE, store_fits=TRUE,
            store_parameters=FALSE, py=py)
 
 x_ng %>% plot_QC()
-x_ng %>% plot_signatures()
-x_ng %>% plot_beta_weights()
-x_ng %>% plot_exposures() %>% patchwork::wrap_plots(plot_exposures(simul_i))
+plot_fit(x_ng) %>% patchwork::wrap_plots(plot_fit(simul_i), ncol=1) &
+  patchwork::plot_annotation(title="Fit (top) vs Simulated (bottom)")
+# x_ng %>% plot_signatures()
+# x_ng %>% plot_beta_weights()
+# x_ng %>% plot_exposures() %>% patchwork::wrap_plots(plot_exposures(simul_i))
 
-
+plot_similarity_reference(x_ng, reference=COSMIC_filt[c("SBS13","SBS7c"),])
 
 
 # cum = colSums(COSMIC_filt[shared$SBS,])
