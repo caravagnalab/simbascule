@@ -8,12 +8,12 @@ run_name = "no_omega.last_penalty"
 
 ## Generate and run ####
 private = list(
-  "SBS"=c("SBS17b", "SBS4", "SBS7c", "SBS13", "SBS20", "SBS22")
-  # "DBS"=c("DBS1", "DBS2", "DBS7", "DBS11", "DBS4", "DBS10")
+  "SBS"=c("SBS17b", "SBS4", "SBS7c", "SBS13", "SBS20", "SBS22"),
+  "DBS"=c("DBS1", "DBS2", "DBS7", "DBS11", "DBS4", "DBS10")
                )
 shared = list(
-  "SBS"=c("SBS1","SBS5")
-  # "DBS"=c("DBS3","DBS5")
+  "SBS"=c("SBS1","SBS5"),
+  "DBS"=c("DBS3","DBS5")
   )
 
 N_list = c(150, 300)
@@ -30,14 +30,16 @@ easypar_pars = lapply(1:nrow(n_gs), function(i) {
 })
 
 
-easypar_fn = function(N, G, penalty_scale, private, shared, path,
+easypar_fn = function(N, G, penalty_scale, private, shared, path=NULL,
                       run_fits=FALSE, run_name="") {
   fname = paste0("simul_fit_", N, ".", G, ".", penalty_scale, ".", run_name, ".Rds")
   fname_fpath = paste0(path, fname)
 
   simul_ng = x_ng = NULL
-  if (file.exists(fname_fpath)) simul_ng = readRDS(fname_fpath)$dataset
-  if (file.exists(fname_fpath) && !run_fits) x_ng = readRDS(fname_fpath)$fit
+  if (!is.null(path)) {
+    if (file.exists(fname_fpath)) simul_ng = readRDS(fname_fpath)$dataset
+    if (file.exists(fname_fpath) && !run_fits) x_ng = readRDS(fname_fpath)$fit
+  }
 
   devtools::load_all("~/GitHub/basilica/")
   devtools::load_all("~/GitHub/simbasilica/")
@@ -76,7 +78,7 @@ easypar_fn = function(N, G, penalty_scale, private, shared, path,
     cli::cli_process_done()
   }
 
-  saveRDS(list("dataset"=simul_ng, "fit"=x_ng), paste0(path, fname))
+  if (!is.null(path)) saveRDS(list("dataset"=simul_ng, "fit"=x_ng), paste0(path, fname))
   return(list("dataset"=simul_ng, "fit"=x_ng))
 }
 

@@ -7,12 +7,6 @@ gen_run_aux = function(N, G, seed, private, shared, path,
   if (file.exists(fname_fpath)) simul_ng = readRDS(fname_fpath)$dataset
   if (file.exists(fname_fpath) && !run_fits) x_ng = readRDS(fname_fpath)$fit
 
-  devtools::load_all("~/GitHub/basilica/")
-  devtools::load_all("~/GitHub/simbasilica/")
-  reticulate::use_condaenv("basilica-env")
-  library(ggplot2)
-  py = reticulate::import_from_path("pybasilica", "~/GitHub/pybasilica/")
-
   if (is.null(simul_ng)) {
     seed_list = list("SBS"=seed,
                      "DBS"=seed*2)

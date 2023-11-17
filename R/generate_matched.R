@@ -19,13 +19,14 @@ generate_simulation_dataset_matched = function(N, G, private, py,
     if (all(n_g > 5)) break
   }
 
+  private_df = select_private_signatures(G=G, types=types, private=private)
+
   used_sigs = c()
   counts_groups = lapply(1:G, function(gid) {
     lapply(types, function(tid) {
       keep_sigs = setdiff(rownames(reference[[tid]]), used_sigs)
-      set.seed(seed[[tid]])
-      private_t = private[[tid]][private[[tid]] %in% keep_sigs] %>%
-        sample(size=1, replace=F)
+      private_t = private_df %>% dplyr::filter(group==gid, type==tid) %>%
+        dplyr::pull(idd)
 
       obj_tid = generate_simulation_dataset(N=n_g[gid], G=1,
                                             private_sbs=private_t,
@@ -83,14 +84,37 @@ generate_simulation_dataset_matched = function(N, G, private, py,
                         "betas"=betas,
                         "exposures"=exposures,
                         "centroids"=centroids,
+                        "private_sigs"=private_df,
                         "types"=types))
 }
 
+
+select_private_signatures = function(G, types, private) {
+  n_privates = max(floor(G/2),1)
+  # private_df = lapply(types, function(tid) {
+  #   private_tid = private[[tid]]
+  #   if (length(private_tid) == 0) return(data.frame())
+  #   repeat {
+  #     df = lapply(1:n_privates, function(i)
+  #       # data.frame(group=sample(x=1:G, size=min(G,1)),
+  #       #            idd=private_tid[i],
+  #       #            type=tid)
+  #     ) %>% do.call(rbind, .)
+  #     unique_sets = df %>% dplyr::group_by(group, type) %>%
+  #       dplyr::reframe(sigs_list=paste(sort(idd), collapse=","))
+  #     if (length(unique(unique_sets$sigs_list)) == nrow(unique_sets)) return(df)
+  #   }
+  # }) %>% do.call(rbind, .)
+
+  return(private_df)
+}
 
 
 create_basilica_obj_simul = function(simul_df) {
   types = simul_df$types
   obj_simul = list(); class(obj_simul) = "basilica_obj"
+
+  obj_simul$prv_sigs = simul_df$private_sigs
 
   obj_simul$input = lapply(types, function(tid) {
     list("counts"=simul_df$counts[[tid]] %>% wide_to_long(what="counts"))

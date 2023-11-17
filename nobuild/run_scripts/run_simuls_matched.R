@@ -2,14 +2,12 @@ args = commandArgs(trailingOnly = TRUE)
 cat(paste("\nArguments:", paste(args, collapse=", "), "\n"))
 
 i = as.integer(args[1])
-inference_type = args[2]
-run_id = args[3]
+run_id = args[2]
 
-cat(paste("i =", i, "inference_type =", inference_type, "\n"))
+cat(paste("i =", i, "\n"))
 
 main_path = "~/GitHub/"
-data_path = "~/signatures/simulations/synthetic_datasets_3107/"
-fits_path = paste0("~/signatures/simulations/", "fits_dn.", inference_type, ".", run_id, "/")
+fits_path = paste0("~/signatures/simulations/", "fits_dn.", run_id, "/")
 
 cat(paste0("\nSaving in directory: ", fits_path, "\n\n"))
 
@@ -30,7 +28,7 @@ cli::cli_process_done()
 
 N = c(150, 500, 1000)
 G = c(1, 3, 6)
-fracs_rare = 1.
+seed_list = 1:30
 
 shared_sbs = c("SBS1","SBS5")
 private_sbs = c("SBS4","SBS13","SBS10b","SBS7c","SBS7d",
@@ -38,11 +36,19 @@ private_sbs = c("SBS4","SBS13","SBS10b","SBS7c","SBS7d",
 catalogue_sbs = COSMIC_filt[c(shared_sbs, private_sbs),]
 
 set.seed(1234)
-comb = expand.grid(N_vals=N, n_groups_vals=G, fracs_rare=fracs_rare) %>%
+comb = expand.grid(N_vals=N, G_vals=G) %>%
   dplyr::arrange(N_vals)
 
 comb_i = comb[i+1,]
-inference_type = c(strsplit(inference_type, "_")[[1]])
-
 
 # Run model #####
+lapply(seed_list, function(s) {
+  gen_run_aux(N=comb_i[1,"N_vals"],
+              G=comb_i[1,"G_vals"],
+              seed=s,
+              private=private,
+              shared=shared,
+              path=fits_path)
+})
+
+
