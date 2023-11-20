@@ -14,6 +14,7 @@ module load R/4.2.3
 export PATH=~/miniconda3/bin:$PATH
 conda activate basilica-env
 
-Rscript /home/elena.buscaroli/GitHub/simbasilica/nobuild/run_scripts/run_real_data.R \
+Rscript /home/elena.buscaroli/GitHub/simbasilica/nobuild/run_scripts/run_real_data.dbs.R \
+  -1 \
   clust \
-  tris.dmm.1809
+  dmm.2809

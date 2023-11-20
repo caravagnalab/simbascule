@@ -23,7 +23,7 @@ module load R/4.2.3
 export PATH=~/miniconda3/bin:$PATH
 conda activate basilica-env
 
-Rscript /home/elena.buscaroli/GitHub/simbasilica/nobuild/run_scripts/run_simuls_indels.R \
+Rscript /home/elena.buscaroli/GitHub/simbasilica/nobuild/run_scripts/run_simuls_cn.R \
   $SLURM_ARRAY_TASK_ID \
   clust \
   sf_learning.dmm.2609

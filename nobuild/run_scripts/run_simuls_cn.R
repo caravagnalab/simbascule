@@ -9,8 +9,8 @@ cat(paste("i =", i, "inference_type =", inference_type, "\n"))
 
 main_path = "~/GitHub/"
 data_path = "~/signatures/simulations/datasets/synthetic_datasets_cn_2609/"
-data_path = "~/Dropbox/shared/2022. Basilica/simulations/datasets/synthetic_datasets_cn_2609/"
-fits_path = paste0("~/signatures/simulations/fits/", "fits_cn.dbs.", inference_type, ".", run_id, "/")
+# data_path = "~/Dropbox/shared/2022. Basilica/simulations/datasets/synthetic_datasets_cn_2609/"
+fits_path = paste0("~/signatures/simulations/fits/", "fits_dn.cn.", inference_type, ".", run_id, "/")
 
 cat(paste0("\nSaving in directory: ", fits_path, "\n\n"))
 

@@ -70,7 +70,7 @@ generate_and_run(comb_matrix = comb_i,
                  shared_sbs = shared_sbs,
 
                  ## inference
-                 do.fits = FALSE,
+                 do.fits = TRUE,
                  reference_catalogue = COSMIC_dbs,
                  subset_reference = c("DBS4"),
                  keep_sigs = c("DBS4"),

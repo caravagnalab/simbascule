@@ -1,13 +1,13 @@
 #!/bin/bash
 #SBATCH --time=30:00:00
 #SBATCH --nodes=1
-#SBATCH --array=5-8
+#SBATCH --array=0-22
 #SBATCH --cpus-per-task=1
 #SBATCH --partition=gpuq
 #SBATCH --gres=gpu:1
-#SBATCH --job-name=2.dmm
+#SBATCH --job-name=real_dmm
 #SBATCH --mem=20GB
-#SBATCH --output=/home/elena.buscaroli/GitHub/simbasilica/nobuild/sbatch/sbatch_1809/logs_ht/2.dmm-%A-%a.log
+#SBATCH --output=/home/elena.buscaroli/GitHub/simbasilica/nobuild/sbatch/logs_ht/real_dmm-%A-%a.log
 
 echo '----------------------------'
 echo ' JOB ID: '$SLURM_ARRAY_JOB_ID
@@ -25,8 +25,8 @@ module load R/4.2.3
 export PATH=~/miniconda3/bin:$PATH
 conda activate basilica-env
 
-Rscript /home/elena.buscaroli/GitHub/simbasilica/nobuild/run_scripts/run_simuls_cn.R \
+Rscript /home/elena.buscaroli/GitHub/simbasilica/nobuild/run_scripts/run_real_data.sbs.R \
   $SLURM_ARRAY_TASK_ID \
   clust \
-  sf_learning.dmm.2609
+  dmm.2809
 

@@ -9,9 +9,6 @@ cat(paste("i =", i, "inference_type =", inference_type, "\n"))
 
 main_path = "~/GitHub/"
 data_path = "~/signatures/real_data/"
-fits_path = paste0("~/signatures/real_data/", "fits_dn.", inference_type, ".", run_id, "/")
-
-cat(paste0("\nSaving in directory: ", fits_path, "\n\n"))
 
 # Load packages #####
 
@@ -23,10 +20,11 @@ py = reticulate::import_from_path(module = "pybasilica", path = paste0(main_path
 devtools::load_all(paste0(main_path, "basilica"))
 devtools::load_all(paste0(main_path, "simbasilica"))
 
-counts_all = readRDS(paste0(data_path, "counts_all.Rds"))
+counts_all = readRDS(paste0(data_path, "counts_sbs.Rds"))
 groups_all = counts_all$organ
 
 organ_i = unique(groups_all)[i+1]
+groups_i = organ_i
 
 k_list = 8:12
 g = 10
@@ -38,6 +36,13 @@ seed_list = sample(1:100, 10, replace=FALSE)
 counts_i = counts_all %>%
   dplyr::filter(organ==organ_i) %>%
   dplyr::select(-organ, -cohort)
+
+if (i == -1) {
+  counts_i = counts_all %>%
+    dplyr::select(-organ, -cohort)
+  groups_i = groups_all
+  organs_i = "whole_cohort"
+}
 
 x.fit = fit(x=counts_i,
             k=k_list, # n of denovo signatures
@@ -77,10 +82,10 @@ x.fit_new = fit(x=counts_i,
 
 x.fit$lc_check = x.fit_new
 
-x.fit$groups_true = organ_i
+x.fit$groups_true = groups_i
 
-saveRDS(x.fit, paste0(data_path, "fit.real_data.", organ_i, ".N",
-                      nrow(counts_all),
+saveRDS(x.fit, paste0(data_path, "fit.real_data.sbs.", organ_i, ".N",
+                      nrow(counts_i),
                       ".", run_id, ".Rds"))
 
 
