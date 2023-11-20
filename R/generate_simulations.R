@@ -42,9 +42,9 @@ generate_data_aux = function(N, G, catalogue_sbs,
 
 generate_simulation_dataset = function(G, N,
                                        catalogue_sbs, private_sbs,
-                                       private_shared_sbs, py,
+                                       py, private_shared_sbs=c(),
                                        shared_sbs=c("SBS1","SBS5"),
-                                       min_samples=2,
+                                       min_samples=2, use_all_sigs=FALSE,
                                        n_muts_range=500:5000, frac_rare=1.,
                                        alpha_range=c(.15,.2), alpha_sigma=0.1,
                                        pi_conc=1, seed=1234, cohort="") {
@@ -56,7 +56,7 @@ generate_simulation_dataset = function(G, N,
   n_rare = min(ceiling(frac_rare * N), N)
   min_n = min(min_samples, n_rare)
   repeat {
-    pi = gtools::rdirichlet(1, alpha=rep(pi_conc, G))
+    pi = gtools::rdirichlet(1, alpha=rep(pi_conc, G)) %>% as.numeric()
     n_gs = sapply(1:G, function(i) round(N * pi[i]))
     if (all(n_gs >= min_n) && any(n_gs <= n_rare)) break
   }
@@ -69,9 +69,11 @@ generate_simulation_dataset = function(G, N,
     ) %>% do.call(rbind, .)
   }
 
+  if (use_all_sigs && G==1) {n_prvs = length(private_sbs)} else {n_prvs = min(length(private_sbs),G)}
+
   shared = expand.grid(group=1:G, idd=shared_sbs)
-  private = data.frame(group=sample(1:G, min(length(private_sbs),G), replace=F),
-                       idd=sample(private_sbs, min(length(private_sbs),G), replace=F))
+  private = data.frame(group=sample(1:G, n_prvs, replace=T),
+                       idd=sample(private_sbs, n_prvs, replace=F))
   sbs_groups = rbind(private_shared, shared, private) %>%
     dplyr::mutate(idd=as.character(idd))
 
@@ -87,12 +89,12 @@ generate_simulation_dataset = function(G, N,
                              dplyr::pull(idd), ]
 
     repeat {
+      # alpha_prior_g = gtools::rdirichlet(n=1, alpha=rep(1,nrow(beta_g)))
       alpha_prior_g = sample(1:100, size=nrow(beta_g)) %>% setNames(rownames(beta_g))
       alpha_prior_g = alpha_prior_g / sum(alpha_prior_g)
       w_min = min(alpha_prior_g)
 
       if (length(alpha_prior_g)==1) break
-
       if (w_min >= alpha_range[1] && w_min <= alpha_range[2]) break
     }
 

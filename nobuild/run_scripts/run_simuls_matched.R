@@ -30,10 +30,12 @@ N = c(150, 500, 1000)
 G = c(1, 3, 6)
 seed_list = 1:30
 
-shared_sbs = c("SBS1","SBS5")
-private_sbs = c("SBS4","SBS13","SBS10b","SBS7c","SBS7d",
-                "SBS11","SBS90","SBS31","SBS10a","SBS22")
-catalogue_sbs = COSMIC_filt[c(shared_sbs, private_sbs),]
+shared = list("SBS"=c("SBS1","SBS5"),
+              "DBS"=c("DBS3","DBS5"))
+private = list("SBS"=paste("SBS", c(2,4,6,"7a","7c","10a",13,"17b",18,20,22,31,35,36), sep=""),
+               "DBS"=setdiff(rownames(COSMIC_dbs), shared$DBS))
+catalogue_sbs = list("SBS"=COSMIC_filt[c(shared[["SBS"]], private[["SBS"]]),],
+                     "DBS"=COSMIC_dbs[c(shared[["DBS"]], private[["DBS"]]),])
 
 set.seed(1234)
 comb = expand.grid(N_vals=N, G_vals=G) %>%

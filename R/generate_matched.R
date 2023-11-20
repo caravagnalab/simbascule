@@ -32,6 +32,7 @@ generate_simulation_dataset_matched = function(N, G, private, py,
                                             private_sbs=private_t,
                                             private_shared_sbs=c(),
                                             shared_sbs=shared[[tid]],
+                                            use_all_sigs=TRUE,
                                             catalogue_sbs=reference[[tid]],
                                             min_samples=min_samples,
                                             n_muts_range=n_muts_range,
@@ -70,7 +71,6 @@ generate_simulation_dataset_matched = function(N, G, private, py,
                                                               function(i) replace(i, is.na(i), 0)))
   }) %>% setNames(types)
 
-
   centroids = lapply(types, function(tid) {
     lapply(1:G, function(gid) {
       centroids_g = counts_groups[[gid]][[tid]]$alpha_prior[[1]] %>% data.frame()
@@ -84,29 +84,57 @@ generate_simulation_dataset_matched = function(N, G, private, py,
                         "betas"=betas,
                         "exposures"=exposures,
                         "centroids"=centroids,
-                        "private_sigs"=private_df,
+                        "private_sigs"=list(private_df),
                         "types"=types))
 }
 
 
 select_private_signatures = function(G, types, private) {
-  n_privates = max(floor(G/2),1)
-  # private_df = lapply(types, function(tid) {
-  #   private_tid = private[[tid]]
-  #   if (length(private_tid) == 0) return(data.frame())
-  #   repeat {
-  #     df = lapply(1:n_privates, function(i)
-  #       # data.frame(group=sample(x=1:G, size=min(G,1)),
-  #       #            idd=private_tid[i],
-  #       #            type=tid)
-  #     ) %>% do.call(rbind, .)
-  #     unique_sets = df %>% dplyr::group_by(group, type) %>%
-  #       dplyr::reframe(sigs_list=paste(sort(idd), collapse=","))
-  #     if (length(unique(unique_sets$sigs_list)) == nrow(unique_sets)) return(df)
-  #   }
-  # }) %>% do.call(rbind, .)
+  n_privates = lapply(types, function(tid) {
+    n_private_tid = max(floor(G/2),1)
+    repeat{
+      if (length(private[[tid]]) >= n_private_tid*G) break
+      n_private_tid = n_private_tid - 1
+    }
+    return(max(n_private_tid, 1))
+  }) %>% setNames(types)
+
+  n_grps_with_private = lapply(types, function(tid) {
+    if (n_privates[[tid]] == 1) return(min(G, length(private[[tid]])))
+    return(G)
+  }) %>% setNames(types)
+
+  private_df = lapply(types, function(tid) {
+    private_tid = private[[tid]]
+    if (length(private_tid) == 0) return(data.frame())
+    grps = sample(1:G, size=n_grps_with_private[[tid]])
+    repeat {
+      private_tid_df = lapply(grps, function(gid)
+        data.frame(group=gid,
+                   idd=sample(x=private_tid, size=n_privates[[tid]], replace=F),
+                   type=tid)
+      ) %>% do.call(rbind, .)
+      if (check_private_overlaps(private_tid_df, n_privates=n_privates[[tid]], type=tid)) break
+    }
+    return(private_tid_df)
+  }) %>% do.call(rbind, .)
 
   return(private_df)
+}
+
+
+check_private_overlaps = function(private_df, n_privates, type) {
+  G_list = private_df$group %>% unique() %>% sort()
+  for (gid1 in G_list) {
+    for (gid2 in G_list) {
+      if (gid1 == gid2) next
+      prv_g1 = private_df %>% dplyr::filter(group==gid1, type==type) %>% dplyr::pull(idd)
+      prv_g2 = private_df %>% dplyr::filter(group==gid2, type==type) %>% dplyr::pull(idd)
+      if (n_privates==1 && length(intersect(prv_g1, prv_g2)) == 1) return(FALSE)
+      if (length(intersect(prv_g1, prv_g2)) > 1) return(FALSE)
+    }
+  }
+  return(TRUE)
 }
 
 
@@ -134,11 +162,6 @@ create_basilica_obj_simul = function(simul_df) {
                                 dplyr::pull(samples),
                               "clusters"=groups)
   )
-
-  # lapply(types, function(tid) {
-  #   centr = centroids[[tid]] %>% tibble::rownames_to_column(var="clusters") %>%
-  #     reshape2::melt(variable.name="sigs")
-  # })
 
   return(obj_simul)
 }
