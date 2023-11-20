@@ -29,6 +29,9 @@ gen_run_aux = function(N, G, seed, private, shared, n_steps=2000,
   if (is.null(x_ng)) {
     cli::cli_process_start(paste0("Fitting ", fname))
     counts_ng = get_input(simul_ng, matrix=TRUE)
+    reference_cat = list("SBS"=COSMIC_filt[shared$SBS,],
+                         "DBS"=COSMIC_dbs[shared$DBS,])
+    dn_signames = lapply(names(reference_cat), function(i) setdiff(get_signames(simul_ng), rownames(i)))
     max_K = max(sapply(get_signames(simul_ng), length)) - 1
     min_K = max(0, max_K - 2)
     x_ng.0 = fit(counts=counts_ng, k_list=min_K:max_K, cluster=G*2, n_steps=n_steps,

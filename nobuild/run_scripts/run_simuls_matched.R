@@ -43,6 +43,15 @@ comb = expand.grid(N_vals=N, G_vals=G) %>%
 
 comb_i = comb[i+1,]
 
+# a = gen_run_aux(N=comb_i[1,"N_vals"],
+#                 G=comb_i[1,"G_vals"],
+#                 seed=1,
+#                 private=private,
+#                 shared=shared,
+#                 n_steps=10,
+#                 path=NULL)
+# a$dataset %>% plot_exposures()
+
 # Run model #####
 lapply(seed_list, function(s) {
   gen_run_aux(N=comb_i[1,"N_vals"],
@@ -50,6 +59,8 @@ lapply(seed_list, function(s) {
               seed=s,
               private=private,
               shared=shared,
+              run_fits=TRUE,
+              run_name=run_id,
               path=fits_path)
 })
 
