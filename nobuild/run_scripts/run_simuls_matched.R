@@ -41,7 +41,7 @@ set.seed(1234)
 comb = expand.grid(N_vals=N, G_vals=G) %>%
   dplyr::arrange(N_vals)
 
-comb_i = comb[i+1,]
+comb_i = comb[i,]
 
 # a = gen_run_aux(N=comb_i[1,"N_vals"],
 #                 G=comb_i[1,"G_vals"],
@@ -50,7 +50,10 @@ comb_i = comb[i+1,]
 #                 shared=shared,
 #                 n_steps=10,
 #                 path=NULL)
-# a$dataset %>% plot_exposures()
+# a$dataset %>% plot_fit()
+# a$fit.0 %>% plot_fit()
+# a$fit.N %>% plot_fit()
+
 
 # Run model #####
 lapply(seed_list, function(s) {

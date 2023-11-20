@@ -1,5 +1,5 @@
 gen_run_aux = function(N, G, seed, private, shared, n_steps=2000,
-                       path=NULL, run_fits=FALSE, run_name="") {
+                       path=NULL, run_fits=FALSE, run_name="", filter_dn=FALSE) {
   fname = paste0("simul_fit.N", N, ".G", G, ".s", seed, ".", run_name, ".Rds")
 
   simul_ng = x_ng = NULL
@@ -39,14 +39,14 @@ gen_run_aux = function(N, G, seed, private, shared, n_steps=2000,
                                   "DBS"=COSMIC_dbs[shared$DBS,]),
                keep_sigs=unlist(shared),
                hyperparameters=list("penalty_scale"=0),
-               seed_list=c(10,33,455), filter_dn=TRUE, store_fits=TRUE,
+               seed_list=c(10,33,455), filter_dn=filter_dn, store_fits=TRUE,
                py=py)
     x_ng.N = fit(counts=counts_ng, k_list=min_K:max_K, cluster=G*2, n_steps=n_steps,
                  reference_cat=list("SBS"=COSMIC_filt[shared$SBS,],
                                     "DBS"=COSMIC_dbs[shared$DBS,]),
                  keep_sigs=unlist(shared),
                  hyperparameters=list("penalty_scale"=N),
-                 seed_list=c(10,33,455), filter_dn=TRUE, store_fits=TRUE,
+                 seed_list=c(10,33,455), filter_dn=filter_dn, store_fits=TRUE,
                  py=py)
     cli::cli_process_done()
   }
