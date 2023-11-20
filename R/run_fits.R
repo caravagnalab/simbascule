@@ -51,7 +51,7 @@ generate_and_run = function(comb_matrix,
                             regularizer = "cosine",
                             regul_denovo = TRUE,
 
-                            save_all_fits = FALSE,
+                            store_fits = FALSE,
                             seed_list = c(4,17,22),
 
                             CUDA = TRUE,
@@ -129,7 +129,7 @@ generate_and_run = function(comb_matrix,
                   regularizer = regularizer,
                   regul_denovo = regul_denovo,
 
-                  save_all_fits = save_all_fits,
+                  store_fits = store_fits,
                   seed_list = seed_list,
 
                   filtered_catalogue = TRUE,

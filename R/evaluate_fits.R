@@ -170,12 +170,42 @@ compare_single_fit = function(fitname, fits_path, data_path, fits_pattern,
 }
 
 
+make_plot_single_fit = function(fit1, titlee="fit1", min_exposure=0.,
+                                cls=NULL, variant_type="SBS",
+                                ref_catalogue=COSMIC_filt) {
+  if (is.null(cls)) cls = get_color_palette(fit1)
+
+  plot_umap = plot_umap_output(umap::umap(get_exposure(fit1)),
+                               groups=get_groups(fit1))
+
+  plot_counts = plot_mutations(fit1, reconstructed=T) + labs(title=paste0("Counts", titlee))
+
+  plot_expos_centr = plot_exposures(fit1 %>% filter_exposures(min_expos=min_exposure),
+                                    add_centroid=T, cls=cls) +
+    labs(title=paste0("Exposures and centroids", titlee))
+
+  plot_expos_real = plot_exposures_real(fit1, groups_true=fit2$groups,
+                                        titlee=paste0(titlee, " exposures"))
+
+  plot_sigs = plot_signatures(fit1, cls=cls, what=variant_type)
+
+  plot_ref = plot_similarity_reference(fit1, reference=ref_catalogue, context=FALSE)
+
+  return(list("expos_centr"=plot_expos_centr,
+              "expos_real"=plot_expos_real,
+              "signatures"=plot_sigs,
+              "counts"=plot_counts,
+              "umap"=plot_umap))
+}
+
+
+
 
 make_plots_compare = function(fit1, fit2, name1="fit1", name2="fit2",
-                              min_exposure=0., cls=NULL) {
+                              min_exposure=0., cls=NULL,
+                              variant_type="SBS", ref_catalogue=COSMIC_filt) {
   if (is.null(cls)) {
-    all_sigs = unique(c(get_signames(fit1), get_signames(fit2)))
-    cls = gen_palette(n=length(all_sigs)) %>% setNames(all_sigs)
+    cls = merge_colors_palette(fit1, fit2, ref_catalogue)
   }
 
   ttitle = paste0(" ", name1, " (top) and ", name2, " (bottom)")
@@ -187,8 +217,8 @@ make_plots_compare = function(fit1, fit2, name1="fit1", name2="fit2",
                        groups=get_groups(fit2))
     ) & theme(legend.position="bottom")
 
-  plot_counts = plot_mutations(fit1, reconstructed=T) %>%
-    patchwork::wrap_plots(plot_mutations(fit2, reconstructed=F), ncol=1) &
+  plot_counts = plot_mutations(fit1, reconstructed=T, what=variant_type) %>%
+    patchwork::wrap_plots(plot_mutations(fit2, reconstructed=F, what=variant_type), ncol=1) &
     patchwork::plot_annotation(title=paste0("Counts", ttitle))
 
   plot_expos_centr = plot_exposures(fit1 %>% filter_exposures(min_expos=min_exposure),
@@ -197,21 +227,18 @@ make_plots_compare = function(fit1, fit2, name1="fit1", name2="fit2",
                           ncol=1, guides="collect") &
     patchwork::plot_annotation(title=paste0("Exposures and centroids", ttitle))
 
-  # plot_centroids = plot_exposures(fit1 %>% filter_exposures(min_expos=min_exposure),
-  #                                 centroids=TRUE, cls=cls) %>%
-  #   patchwork::wrap_plots(plot_exposures(fit2, centroids=T, cls=cls),
-  #                         ncol=1, guides="collect") &
-  #   patchwork::plot_annotation(title=paste0("Centroids", ttitle))
+  plot_expos_real = plot_exposures_real(fit1, groups_true=fit2$groups,
+                      titlee=paste0(name1, " exposures"), cls=cls) %>%
+    patchwork::wrap_plots(plot_exposures_real(fit2, groups_true=fit1$groups,
+                                              titlee=paste0(name2, " exposures"), cls=cls),
+                          guides="collect", ncol=1)
 
-  plot_sigs = plot_signatures(fit1, catalogue=get_signatures(fit2), cls=cls)
-
-  # plot_expos_centr = patchwork::wrap_plots(plot_expos + theme(legend.position="none"),
-  #                                          plot_centroids,
-  #                                          widths=c(9,1), guides="collect") &
-  #   theme(legend.position="bottom") &
-  #   patchwork::plot_annotation(title=paste0("Exposures and centroids", ttitle))
+  plot_sigs = plot_signatures(fit1, cls=cls, what=variant_type) %>%
+    patchwork::wrap_plots(plot_signatures(fit2, cls=cls, what=variant_type)) &
+    patchwork::plot_annotation(title=paste0("Signatures", ttitle))
 
   return(list("expos_centr"=plot_expos_centr,
+              "expos_real"=plot_expos_real,
               "signatures"=plot_sigs,
               "counts"=plot_counts,
               "umap"=plot_umap))

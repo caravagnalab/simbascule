@@ -47,3 +47,12 @@ fig_id = paste(suffix_name,df_id,sep=".")
 ggsave(plot=figure, filename=paste0(save_path,"fig_simulations.",fig_id,".pdf"), height=8, width=12)
 
 
+## Plots single fit ####
+simul_i = readRDS(paste0(main_path, "datasets/synthetic_datasets_sbs_3107/simul.N150.G3.s5.1.Rds")) %>%
+  create_basilica_obj_simul()
+fit_i = readRDS(paste0(main_path, "fits/fits_dn.sbs.clust.sf_learning.dmm.1809/fit_clust.N150.G3.s5.1.Rds"))
+
+plot_fit(fit_i, simul_i)
+
+
+
