@@ -98,7 +98,8 @@ compare_sigs_inf_gt = function(sigs.fit, sigs.simul, cutoff=0.8) {
 
   total_sigs = rbind(sigs.fit[!rownames(sigs.fit) %in% common,],
                      sigs.simul[!rownames(sigs.simul) %in% common,])
-  cosine_matr = as.data.frame(lsa::cosine(t(total_sigs)))[unique_gt, unique_inf]
+  cosine_matr = as.data.frame(lsa::cosine(t(total_sigs)))[unique_gt, ] %>%
+    dplyr::select(dplyr::contains(unique_inf))
 
   if (length(unique_inf) == 1 && length(unique_gt) == 1) {
     cosine_matr = as.data.frame(cosine_matr)
