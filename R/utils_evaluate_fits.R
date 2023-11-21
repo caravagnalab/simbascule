@@ -1,7 +1,7 @@
 
-get_assigned_missing = function(x.fit, x.simul=NULL, reference_cat=NULL, cutoff=0.8) {
-  sigs.fit = get_signatures(x.fit)
-  if (!is.null(x.simul)) sigs.simul = get_signatures(x.simul)
+get_assigned_missing = function(x.fit, x.simul=NULL, reference_cat=NULL, type="", cutoff=0.8) {
+  sigs.fit = get_signatures(x.fit, matrix=T)[[type]]
+  if (!is.null(x.simul)) sigs.simul = get_signatures(x.simul, matrix=T)[[type]]
   else if (!is.null(reference_cat)) sigs.simul = reference_cat
 
   assigned = compare_sigs_inf_gt(sigs.fit, sigs.simul, cutoff=cutoff)
@@ -121,9 +121,8 @@ compare_sigs_inf_gt = function(sigs.fit, sigs.simul, cutoff=0.8) {
   # if (nrow(sigs.simul) > nrow(sigs.fit))
   if (any(duplicated(assign_similar$inf)))
     assign_similar = assign_similar %>% dplyr::group_by(inf) %>%
-      dplyr::filter(cosine == max(cosine)) %>% ungroup()
+      dplyr::filter(cosine == max(cosine)) %>% dplyr::ungroup()
 
-  # assigned = assign_similar$inf %>% setNames(assign_similar$gt)
   assigned = c(common, assign_similar$inf) %>% setNames(c(common, assign_similar$gt))
 
   return(assigned)
@@ -199,7 +198,8 @@ get_groups_rare = function(x.simul, rare_common=NULL) {
 
 
 compute_ari_nmi = function(x.simul, x.fit) {
-  groups_fit = x.fit$groups; groups_simul = x.simul$groups
+  groups_fit = get_cluster_assignments(x.fit)$clusters
+  groups_simul = get_cluster_assignments(x.simul)$clusters
   if (length(unique(groups_fit)) == 1 || length(unique(groups_simul)) == 1) {
     groups_fit = c(groups_fit, "imolabella")
     groups_simul = c(groups_simul, "imolabella")
