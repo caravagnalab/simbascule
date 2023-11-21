@@ -1,9 +1,10 @@
-gen_run_aux = function(N, G, seed, private, shared, n_steps=2000,
+gen_run_aux = function(N, G, seed, private, shared, reference_cat, n_steps=2000,
                        path=NULL, run_fits=FALSE, run_name="", filter_dn=FALSE) {
   fname = paste0("simul_fit.N", N, ".G", G, ".s", seed, ".", run_name, ".Rds")
 
   simul_ng = x_ng = NULL
   if (!is.null(path)) {
+    if (!dir.exists(path)) dir.create(path, recursive=TRUE)
     fname_fpath = paste0(path, fname)
 
     if (file.exists(fname_fpath)) simul_ng = readRDS(fname_fpath)$dataset
@@ -24,26 +25,26 @@ gen_run_aux = function(N, G, seed, private, shared, n_steps=2000,
       create_basilica_obj_simul()
   }
 
-  cat("Simulated dataset generated!")
+  cat("Simulated dataset generated!\n\n")
 
   if (is.null(x_ng)) {
     cli::cli_process_start(paste0("Fitting ", fname))
     counts_ng = get_input(simul_ng, matrix=TRUE)
-    reference_cat = list("SBS"=COSMIC_filt[shared$SBS,],
-                         "DBS"=COSMIC_dbs[shared$DBS,])
-    dn_signames = lapply(names(reference_cat), function(i) setdiff(get_signames(simul_ng), rownames(i)))
-    max_K = max(sapply(get_signames(simul_ng), length)) - 1
-    min_K = max(0, max_K - 2)
+    fixed_beta = list("SBS"=reference_cat[["SBS"]][shared$SBS,],
+                      "DBS"=reference_cat[["DBS"]][shared$DBS,])
+    dn_signames = lapply(names(fixed_beta), function(tid) setdiff(get_signames(simul_ng)[[tid]], rownames(fixed_beta[[tid]]))) %>%
+      setNames(names(fixed_beta))
+    min_K = max(min(sapply(dn_signames, length)) - 2, 0)
+    max_K = max(max(sapply(dn_signames, length)) + 2, min_K+1)
+    cat(paste0("min_K ", min_K, ", max_K ", max_K, "\n"))
     x_ng.0 = fit(counts=counts_ng, k_list=min_K:max_K, cluster=G*2, n_steps=n_steps,
-               reference_cat=list("SBS"=COSMIC_filt[shared$SBS,],
-                                  "DBS"=COSMIC_dbs[shared$DBS,]),
+               reference_cat=fixed_beta,
                keep_sigs=unlist(shared),
                hyperparameters=list("penalty_scale"=0),
                seed_list=c(10,33,455), filter_dn=filter_dn, store_fits=TRUE,
                py=py)
     x_ng.N = fit(counts=counts_ng, k_list=min_K:max_K, cluster=G*2, n_steps=n_steps,
-                 reference_cat=list("SBS"=COSMIC_filt[shared$SBS,],
-                                    "DBS"=COSMIC_dbs[shared$DBS,]),
+                 reference_cat=fixed_beta,
                  keep_sigs=unlist(shared),
                  hyperparameters=list("penalty_scale"=N),
                  seed_list=c(10,33,455), filter_dn=filter_dn, store_fits=TRUE,
