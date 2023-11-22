@@ -4,5 +4,6 @@
 .Rproj.user
 
 nobuild/simulations
+nobuild/posters*
 **/logs*
 
