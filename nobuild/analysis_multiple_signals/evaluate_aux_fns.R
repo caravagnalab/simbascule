@@ -13,6 +13,8 @@ eval_single_fit_matched = function(x.fit, x.simul, cutoff=0.8) {
   x.fit = x.fit %>% rename_dn_expos()
   lapply(get_types(x.fit), function(tid) {
     sigs.fit = get_signatures(x.fit, matrix=T)[[tid]]; sigs.simul = get_signatures(x.simul, matrix=T)[[tid]]
+    sigs_fixed.fit = get_fixed_signatures(x.fit, matrix=T)[[tid]]
+    sigs_dn.fit = get_denovo_signatures(x.fit, matrix=T)[[tid]]
 
     expos.fit = get_exposure(x.fit, matrix=T)[[tid]]; expos.simul = get_exposure(x.simul, matrix=T)[[tid]]
 
@@ -30,6 +32,13 @@ eval_single_fit_matched = function(x.fit, x.simul, cutoff=0.8) {
     cosine_expos = compute.cosine(expos.fit, expos.simul,
                                   assigned_missing=assigned_missing,
                                   what="expos")
+
+    cosine_fixed = list()
+    if (!is.null(sigs_dn.fit)) {
+      cosine_fixed = lapply(rownames(sigs_dn.fit), function(sid) {
+        cosine_sim = lsa::cosine(t(sigs.fit))[sid, rownames(sigs_fixed.fit)]
+      }) %>% setNames(rownames(sigs_dn.fit))
+    }
 
     ari_nmi = ari_nmi_km = ari_nmi_km_em = list(NA, NA)
     if (have_groups(x.fit)) {
@@ -55,6 +64,7 @@ eval_single_fit_matched = function(x.fit, x.simul, cutoff=0.8) {
 
       "cosine_sigs"=cosine_sigs,
       "cosine_expos"=cosine_expos,
+      "cosine_fixed"=list(cosine_fixed),
 
       "groups_found"=length(get_cluster_labels(x.fit)),
       "ari"=ari_nmi[[1]],
