@@ -83,6 +83,21 @@ eval_single_fit_matched = function(x.fit, x.simul, cutoff=0.8) {
 
 
 make_plots_stats = function(stats) {
+  stats_tmp = all_stats %>%
+    dplyr::select(N, G, seed, penalty, dplyr::contains("cosine_fixed")) %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(cosine_fixed_SBS=ifelse(length(cosine_fixed_SBS)>0,
+                                          list(unlist(cosine_fixed_SBS)),
+                                          cosine_fixed_SBS),
+                  cosine_fixed_DBS=ifelse(length(cosine_fixed_DBS)>0,
+                                          list(unlist(cosine_fixed_DBS)),
+                                          cosine_fixed_DBS))
+    # tidyr::unnest(cosine_fixed_SBS)
+
+  sim1 = make_boxplot(stats_tmp %>% tidyr::unnest(cosine_fixed_SBS), "cosine_fixed_SBS") + labs(title="cosine_fixed_SBS")
+  sim2 = make_boxplot(stats_tmp %>% tidyr::unnest(cosine_fixed_DBS), "cosine_fixed_DBS") + labs(title="cosine_fixed_DBS")
+  # sim = patchwork::wrap_plots(sim1, sim2, ncol=2)
+
   cosine_expos = make_boxplot(stats, "cosine_expos") + labs(title="cosine_expos")
   cosine_sigs = make_boxplot(stats, "cosine_sigs") + labs(title="cosine_sigs")
   mse_counts = make_boxplot(stats, "mse_counts") + labs(title="mse_counts")
@@ -99,7 +114,7 @@ make_plots_stats = function(stats) {
     theme_bw()
 
   return(
-    patchwork::wrap_plots(mse_counts, cosine_expos, cosine_sigs, k_ratio, ncol=2)
+    patchwork::wrap_plots(mse_counts, cosine_expos, cosine_sigs, k_ratio, sim1, sim2, ncol=3)
   )
 }
 
