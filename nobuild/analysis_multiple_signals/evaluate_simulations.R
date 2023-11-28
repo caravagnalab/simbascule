@@ -11,14 +11,14 @@ all_stats = lapply(files, function(fname) {
   stats_single_data(fname)
 }) %>% dplyr::bind_rows()
 
-saveRDS(all_stats, "~/Dropbox/shared/2022. Basilica/simulations/stats_", run_id, ".Rds")
+saveRDS(all_stats, paste0("~/Dropbox/shared/2022. Basilica/simulations/stats_", run_id, "2.Rds"))
 
 stats_plots = lapply(c("NoPenalty","PenaltyN"), function(penalty_id) {
   stats_p = all_stats %>% dplyr::filter(penalty==penalty_id)
   make_plots_stats(stats_p)
 }) %>% setNames(c("NoPenalty","PenaltyN"))
 
-pdf("~/Dropbox/shared/2022. Basilica/simulations/stats_", run_id, ".pdf", height=10, width=20)
+pdf(paste0("~/Dropbox/shared/2022. Basilica/simulations/stats_", run_id, "2.pdf"), height=10, width=25)
 patchwork::wrap_plots(stats_plots) & patchwork::plot_annotation(title="NoPenalty and PenaltyN")
 dev.off()
 

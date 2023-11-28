@@ -4,17 +4,27 @@ devtools::load_all("~/GitHub/simbasilica/")
 
 ## Simulated ####
 input.simul = readRDS("~/Dropbox/shared/2022. Basilica/datasets/input.N150_G2_simul.Rds")
+input.simul = readRDS("~/Dropbox/shared/2022. Basilica/simulations/fits/fits_dn.matched.2011/simul_fit.N150.G3.s9.matched.2011.Rds")$dataset
 input.simul %>% plot_fit()
 
 counts = get_input(input.simul, matrix=T)
-reference_cat = list("SBS"=COSMIC_filt[c("SBS1","SBS5"),])
+# reference_cat = list("SBS"=COSMIC_filt[c("SBS1","SBS5"),])
+reference_cat = list("SBS"=COSMIC_filt[c("SBS1","SBS5"),],
+                     "DBS"=COSMIC_dbs[c("DBS2","DBS5"),])
 x.simul = fit(counts=counts,
-              k_list=0:4, # n of denovo signatures
-              cluster=5,  # n of clusters
+              k_list=3, # n of denovo signatures
+              cluster=6,  # n of clusters
               reference_cat=reference_cat,
-              n_steps=2000, lr=0.005,
+              n_steps=1500, lr=0.005,
+              hyperparameters=list("scale_factor_centroid"=5000),
               seed_list=c(19,33,2),
               py=py)
+
+x.simul %>% get_initial_object() %>% plot_exposures()
+x.simul %>% get_initial_object() %>% plot_centroids()
+
+x.simul %>% plot_exposures()
+x.simul %>% plot_centroids()
 
 plot_fit(x.simul)
 plot_QC(x.simul)
