@@ -24,27 +24,28 @@ reference_cat = list("SBS"=COSMIC_filt[c("SBS1","SBS5"),],
 pars = expand.grid(list(scale_factor_alpha=c(1),
                         scale_factor_centroid=c(1),
                         pi_conc0=c(0.006, 0.6, 60)))
-n_clusters = 6; fits = c()
-fits = c(fits, lapply(1:nrow(pars), function(rowid) {
-  x.cl = fit_clustering(x.simul, cluster=n_clusters,
-                        n_steps=1000, lr=0.005,
-                        # scale_factor_centroid = 1 and scale_factor_alpha = 1000 -> good centroids, bad clustering
-                        # scale_factor_centroid = 1 and scale_factor_alpha = 1 -> good centroids, bad clustering
-                        hyperparameters=list(
-                          "pi_conc0"=pars[rowid, "pi_conc0"],
-                          "scale_factor_alpha"=pars[rowid, "scale_factor_alpha"],
-                          "scale_factor_centroid"=pars[rowid, "scale_factor_centroid"],
-                          "tau"=0
-                          ),
-                        store_parameters=FALSE,
-                        seed_list=c(33),
-                        py=py)
-  return(x.cl)
-}) %>% setNames(paste0("row",1:nrow(pars),"_G", n_clusters))
-)
+n_clusters = 1:6; fits = c()
+# fits = c(fits, lapply(1:nrow(pars), function(rowid) {
+#   x.cl = fit_clustering(x.simul, cluster=n_clusters,
+#                         n_steps=1000, lr=0.005,
+#                         # scale_factor_centroid = 1 and scale_factor_alpha = 1000 -> good centroids, bad clustering
+#                         # scale_factor_centroid = 1 and scale_factor_alpha = 1 -> good centroids, bad clustering
+#                         hyperparameters=list(
+#                           "pi_conc0"=pars[rowid, "pi_conc0"],
+#                           "scale_factor_alpha"=pars[rowid, "scale_factor_alpha"],
+#                           "scale_factor_centroid"=pars[rowid, "scale_factor_centroid"],
+#                           "tau"=0
+#                           ),
+#                         store_parameters=FALSE,
+#                         seed_list=c(33),
+#                         py=py)
+#   return(x.cl)
+# }) %>% setNames(paste0("row",1:nrow(pars),"_G", n_clusters))
+# )
 
 rowid = 2
 x.cl = fit_clustering(x.simul, cluster=n_clusters,
+                      nonparametric=FALSE,
                       n_steps=3000, lr=0.005,
                       hyperparameters=list(
                         # "pi_conc0"=pars[rowid, "pi_conc0"],
