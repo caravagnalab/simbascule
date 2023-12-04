@@ -8,10 +8,10 @@ input.simul = readRDS("~/Dropbox/shared/2022. Basilica/simulations/fits/fits_dn.
 x.simul = input.simul$fit.0
 x.simul$clustering = NULL
 
-# counts = get_input(input.simul, matrix=T)
-# # reference_cat = list("SBS"=COSMIC_filt[c("SBS1","SBS5"),])
-reference_cat = list("SBS"=COSMIC_filt[c("SBS1","SBS5"),],
-                     "DBS"=COSMIC_dbs[c("DBS2","DBS5"),])
+counts = get_input(input.simul$dataset, matrix=T, types="SBS")
+reference_cat = list("SBS"=COSMIC_filt[c("SBS1","SBS5"),])
+# reference_cat = list("SBS"=COSMIC_filt[c("SBS1","SBS5"),],
+#                      "DBS"=COSMIC_dbs[c("DBS2","DBS5"),])
 # x.simul = fit(counts=counts,
 #               k_list=3, # n of denovo signatures
 #               # cluster=6,  # n of clusters
@@ -44,9 +44,9 @@ n_clusters = 1:6; fits = c()
 # )
 
 rowid = 2
-x.cl = fit_clustering(x.simul, cluster=n_clusters,
+x.cl = fit_clustering(x.simul, cluster=1:4,
                       nonparametric=FALSE,
-                      n_steps=3000, lr=0.005,
+                      n_steps=3000, lr=1e-5, # optim_gamma=1e-10,
                       hyperparameters=list(
                         # "pi_conc0"=pars[rowid, "pi_conc0"],
                         "pi_conc0"=0.6,
@@ -55,16 +55,30 @@ x.cl = fit_clustering(x.simul, cluster=n_clusters,
                         "tau"=0
                       ),
                       store_parameters=FALSE,
+                      store_fits=TRUE,
                       seed_list=c(33),
                       py=py)
 
 x.cl %>% plot_fit()
 x.cl %>% plot_gradient_norms()
+x.cl %>% plot_scores()
+
+get_alternative_run(x.cl, G=2, seed=list("clustering"=33, "nmf"=get_seed(x.cl)[["nmf"]])) %>%
+  plot_mixture_weights()
+get_alternative_run(x.cl, G=2, seed=list("clustering"=33, "nmf"=get_seed(x.cl)[["nmf"]])) %>%
+  plot_posterior_probs()
+get_alternative_run(x.cl, G=3, seed=list("clustering"=33, "nmf"=get_seed(x.cl)[["nmf"]])) %>%
+  plot_exposures()
+get_alternative_run(x.cl, G=3, seed=list("clustering"=33, "nmf"=get_seed(x.cl)[["nmf"]])) %>%
+  plot_mixture_weights()
+
 
 x.cl %>% get_initial_object() %>% plot_mixture_weights() %>%
   patchwork::wrap_plots(x.cl %>% plot_mixture_weights(), ncol=1)
 x.cl %>% get_initial_object() %>% plot_centroids() %>%
   patchwork::wrap_plots(x.cl %>% plot_centroids(), ncol=1)
+
+x.cl %>% get_initial_object() %>% plot_fit()
 
 pis = lapply(names(fits), function(fitname) {
   rowid = strsplit(fitname, split="_")[[1]][1] %>% stringr::str_replace_all("row","") %>% as.integer()
