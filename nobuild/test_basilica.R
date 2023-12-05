@@ -8,10 +8,8 @@ input.simul = readRDS("~/Dropbox/shared/2022. Basilica/simulations/fits/fits_dn.
 x.simul = input.simul$fit.0
 x.simul$clustering = NULL
 
-counts = get_input(input.simul$dataset, matrix=T, types="SBS")
-reference_cat = list("SBS"=COSMIC_filt[c("SBS1","SBS5"),])
-# reference_cat = list("SBS"=COSMIC_filt[c("SBS1","SBS5"),],
-#                      "DBS"=COSMIC_dbs[c("DBS2","DBS5"),])
+# counts = get_input(input.simul$dataset, matrix=T, types="SBS")
+# reference_cat = list("SBS"=COSMIC_filt[c("SBS1","SBS5"),])
 # x.simul = fit(counts=counts,
 #               k_list=3, # n of denovo signatures
 #               # cluster=6,  # n of clusters
@@ -44,16 +42,16 @@ n_clusters = 1:6; fits = c()
 # )
 
 rowid = 2
-x.cl = fit_clustering(x.simul, cluster=1:4,
+x.cl = fit_clustering(x.simul, cluster=1:5,
                       nonparametric=FALSE,
-                      n_steps=3000, lr=1e-5, # optim_gamma=1e-10,
-                      hyperparameters=list(
-                        # "pi_conc0"=pars[rowid, "pi_conc0"],
-                        "pi_conc0"=0.6,
-                        "scale_factor_alpha"=pars[rowid, "scale_factor_alpha"],
-                        "scale_factor_centroid"=pars[rowid, "scale_factor_centroid"],
-                        "tau"=0
-                      ),
+                      n_steps=1000, lr=0.005, # optim_gamma=1e-10,
+                      # hyperparameters=list(
+                      #   # "pi_conc0"=pars[rowid, "pi_conc0"],
+                      #   "pi_conc0"=0.6,
+                      #   "scale_factor_alpha"=pars[rowid, "scale_factor_alpha"],
+                      #   "scale_factor_centroid"=pars[rowid, "scale_factor_centroid"],
+                      #   "tau"=0
+                      # ),
                       store_parameters=FALSE,
                       store_fits=TRUE,
                       seed_list=c(33),
@@ -62,15 +60,18 @@ x.cl = fit_clustering(x.simul, cluster=1:4,
 x.cl %>% plot_fit()
 x.cl %>% plot_gradient_norms()
 x.cl %>% plot_scores()
+x.cl %>% plot_mixture_weights()
+x.cl %>% plot_exposures()
+x.cl %>% plot_posterior_probs()
 
-get_alternative_run(x.cl, G=2, seed=list("clustering"=33, "nmf"=get_seed(x.cl)[["nmf"]])) %>%
-  plot_mixture_weights()
-get_alternative_run(x.cl, G=2, seed=list("clustering"=33, "nmf"=get_seed(x.cl)[["nmf"]])) %>%
-  plot_posterior_probs()
-get_alternative_run(x.cl, G=3, seed=list("clustering"=33, "nmf"=get_seed(x.cl)[["nmf"]])) %>%
-  plot_exposures()
-get_alternative_run(x.cl, G=3, seed=list("clustering"=33, "nmf"=get_seed(x.cl)[["nmf"]])) %>%
-  plot_mixture_weights()
+alt_run = get_alternative_run(x.cl, G=3, seed=list("clustering"=33, "nmf"=get_seed(x.cl)[["nmf"]]))
+alt_run %>% get_initial_object() %>% plot_centroids() %>%
+  patchwork::wrap_plots(plot_centroids(alt_run)) %>% patchwork::wrap_plots(
+    alt_run %>% get_initial_object() %>% plot_exposures() %>%
+      patchwork::wrap_plots(plot_exposures(alt_run)), ncol=2
+  )
+alt_run %>% plot_mixture_weights()
+
 
 
 x.cl %>% get_initial_object() %>% plot_mixture_weights() %>%
