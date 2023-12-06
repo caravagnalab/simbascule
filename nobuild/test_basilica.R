@@ -44,7 +44,7 @@ n_clusters = 1:6; fits = c()
 rowid = 2
 x.cl = fit_clustering(x.simul, cluster=1:5,
                       nonparametric=FALSE,
-                      n_steps=1000, lr=0.005, # optim_gamma=1e-10,
+                      n_steps=3000, lr=0.005, # optim_gamma=1e-10,
                       # hyperparameters=list(
                       #   # "pi_conc0"=pars[rowid, "pi_conc0"],
                       #   "pi_conc0"=0.6,
@@ -62,6 +62,7 @@ x.cl %>% plot_gradient_norms()
 x.cl %>% plot_scores()
 x.cl %>% plot_mixture_weights()
 x.cl %>% plot_exposures()
+x.cl %>% plot_centroids()
 x.cl %>% plot_posterior_probs()
 
 alt_run = get_alternative_run(x.cl, G=3, seed=list("clustering"=33, "nmf"=get_seed(x.cl)[["nmf"]]))
@@ -71,6 +72,7 @@ alt_run %>% get_initial_object() %>% plot_centroids() %>%
       patchwork::wrap_plots(plot_exposures(alt_run)), ncol=2
   )
 alt_run %>% plot_mixture_weights()
+alt_run %>% plot_posterior_probs()
 
 
 
