@@ -43,8 +43,9 @@ n_clusters = 1:6; fits = c()
 
 rowid = 2
 x.cl = fit_clustering(x.simul, cluster=1:5,
-                      nonparametric=FALSE,
+                      nonparametric=TRUE,
                       n_steps=3000, lr=0.005, # optim_gamma=1e-10,
+                      hyperparameters=list("scale_factor_centroid"=1000),
                       store_parameters=FALSE,
                       store_fits=TRUE,
                       seed_list=c(33),
@@ -57,6 +58,8 @@ x.cl %>% plot_mixture_weights()
 x.cl %>% plot_exposures()
 x.cl %>% plot_centroids()
 x.cl %>% plot_posterior_probs()
+
+x.cl %>% get_initial_object() %>% plot_centroids()
 
 alt_run = get_alternative_run(x.cl, G=3, seed=list("clustering"=33, "nmf"=get_seed(x.cl)[["nmf"]]))
 alt_run %>% get_initial_object() %>% plot_centroids() %>%
