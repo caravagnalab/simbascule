@@ -45,13 +45,6 @@ rowid = 2
 x.cl = fit_clustering(x.simul, cluster=1:5,
                       nonparametric=FALSE,
                       n_steps=3000, lr=0.005, # optim_gamma=1e-10,
-                      # hyperparameters=list(
-                      #   # "pi_conc0"=pars[rowid, "pi_conc0"],
-                      #   "pi_conc0"=0.6,
-                      #   "scale_factor_alpha"=pars[rowid, "scale_factor_alpha"],
-                      #   "scale_factor_centroid"=pars[rowid, "scale_factor_centroid"],
-                      #   "tau"=0
-                      # ),
                       store_parameters=FALSE,
                       store_fits=TRUE,
                       seed_list=c(33),
