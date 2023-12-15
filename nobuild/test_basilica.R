@@ -1,4 +1,4 @@
-reticulate::use_condaenv("basilica-env-test")
+reticulate::use_condaenv("basilica-env")
 py = reticulate::import_from_path(module="pybasilica", path="~/GitHub/pybasilica/")
 devtools::load_all("~/GitHub/basilica")
 devtools::load_all("~/GitHub/simbasilica/")
@@ -22,64 +22,28 @@ x.simul$clustering = NULL
 
 pars = expand.grid(list(scale_factor_alpha=c(1),
                         scale_factor_centroid=c(1),
-                        pi_conc0=c(0.006, 0.6, 60)))
+                        pi_conc0=c(0.6)))
 n_clusters = 1:6; fits = c()
-# fits = c(fits, lapply(1:nrow(pars), function(rowid) {
-#   x.cl = fit_clustering(x.simul, cluster=n_clusters,
-#                         n_steps=1000, lr=0.005,
-#                         # scale_factor_centroid = 1 and scale_factor_alpha = 1000 -> good centroids, bad clustering
-#                         # scale_factor_centroid = 1 and scale_factor_alpha = 1 -> good centroids, bad clustering
-#                         hyperparameters=list(
-#                           "pi_conc0"=pars[rowid, "pi_conc0"],
-#                           "scale_factor_alpha"=pars[rowid, "scale_factor_alpha"],
-#                           "scale_factor_centroid"=pars[rowid, "scale_factor_centroid"],
-#                           "tau"=0
-#                           ),
-#                         store_parameters=FALSE,
-#                         seed_list=c(33),
-#                         py=py)
-#   return(x.cl)
-# }) %>% setNames(paste0("row",1:nrow(pars),"_G", n_clusters))
-# )
+fits = c(fits, lapply(1:nrow(pars), function(rowid) {
+  x.cl = fit_clustering(x.simul, cluster=n_clusters,
+                        n_steps=3000, lr=0.005,
+                        hyperparameters=list(
+                          "pi_conc0"=pars[rowid, "pi_conc0"],
+                          "scale_factor_alpha"=pars[rowid, "scale_factor_alpha"],
+                          "scale_factor_centroid"=pars[rowid, "scale_factor_centroid"],
+                          "tau"=0
+                          ),
+                        nonparametric=TRUE,
+                        store_parameters=FALSE,
+                        seed_list=c(33),
+                        py=py)
+  return(x.cl)
+}) %>% setNames(paste0("row",1:nrow(pars),"_G", max(n_clusters)))
+)
 
-rowid = 2
-x.cl = fit_clustering(x.simul, cluster=1:5,
-                      nonparametric=FALSE,
-                      n_steps=3000, lr=0.005, # optim_gamma=1e-10,
-                      hyperparameters=list("scale_factor_centroid"=100),
-                      store_parameters=FALSE,
-                      store_fits=TRUE,
-                      seed_list=c(33),
-                      py=py)
-
-x.cl %>% plot_fit()
-x.cl %>% plot_gradient_norms()
-x.cl %>% plot_scores()
-x.cl %>% plot_mixture_weights()
-x.cl %>% plot_exposures()
-x.cl %>% plot_centroids()
-x.cl %>% plot_posterior_probs()
-
-x.cl %>% get_initial_object() %>% plot_centroids() %>%
-  patchwork::wrap_plots(x.cl %>% plot_centroids())
-
-alt_run = get_alternative_run(x.cl, G=3, seed=list("clustering"=33, "nmf"=get_seed(x.cl)[["nmf"]]))
-alt_run %>% get_initial_object() %>% plot_centroids() %>%
-  patchwork::wrap_plots(plot_centroids(alt_run)) %>% patchwork::wrap_plots(
-    alt_run %>% get_initial_object() %>% plot_exposures() %>%
-      patchwork::wrap_plots(plot_exposures(alt_run)), ncol=2
-  )
-alt_run %>% plot_mixture_weights()
-alt_run %>% plot_posterior_probs()
-
-
-
-x.cl %>% get_initial_object() %>% plot_mixture_weights() %>%
-  patchwork::wrap_plots(x.cl %>% plot_mixture_weights(), ncol=1)
-x.cl %>% get_initial_object() %>% plot_centroids() %>%
-  patchwork::wrap_plots(x.cl %>% plot_centroids(), ncol=1)
-
-x.cl %>% get_initial_object() %>% plot_fit()
+fits$row1_G6$clustering$pyro$params$init_params$init_clusters %>% table
+fits$row1_G6$clustering$pyro$params$infered_params$scale_factor_matrix
+fits$row1_G6 %>% plot_gradient_norms()
 
 pis = lapply(names(fits), function(fitname) {
   rowid = strsplit(fitname, split="_")[[1]][1] %>% stringr::str_replace_all("row","") %>% as.integer()
@@ -87,7 +51,6 @@ pis = lapply(names(fits), function(fitname) {
   (plot_mixture_weights(fits[[fitname]] %>% get_initial_object()) + labs(title=titlee)) %>%
     patchwork::wrap_plots(fits[[fitname]] %>% plot_mixture_weights(), ncol=1, guides="collect")
 }) %>% patchwork::wrap_plots()
-
 
 centr = lapply(names(fits), function(fitname) {
   rowid = strsplit(fitname, split="_")[[1]][1] %>% stringr::str_replace_all("row","") %>% as.integer()
@@ -104,9 +67,9 @@ expos = lapply(names(fits), function(fitname) {
     patchwork::wrap_plots(fits[[fitname]] %>% plot_exposures(), ncol=1, guides="collect")
 }) %>% patchwork::wrap_plots() & theme(legend.position="none")
 
-plot_fit(fits$row2_G6)
-
-
+pis
+centr
+expos
 
 # x.cl %>% get_initial_object() %>% plot_mixture_weights() %>%
 #   patchwork::wrap_plots(x.cl %>% plot_mixture_weights(), ncol=1, guides="collect")
