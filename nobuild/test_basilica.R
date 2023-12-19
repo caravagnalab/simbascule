@@ -3,6 +3,8 @@ py = reticulate::import_from_path(module="pybasilica", path="~/GitHub/pybasilica
 devtools::load_all("~/GitHub/basilica")
 devtools::load_all("~/GitHub/simbasilica/")
 
+
+## Run fits on small test ####
 fits_dir = "~/Dropbox/shared/2022. Basilica/simulations/fits/fits_dn.matched.2011/"
 fitsname = list.files(fits_dir, pattern="s12.matched.2011.Rds")
 
@@ -77,7 +79,7 @@ dev.off()
 
 ## example ####
 # input.simul = readRDS("~/Dropbox/shared/2022. Basilica/simulations/fits/fits_dn.matched.2011/simul_fit.N150.G3.s9.matched.2011.Rds")
-input_simul = readRDS("~/Dropbox/shared/2022. Basilica/simulations/matched_signals/fits_cl_test/simul_fit.N1000.G6.s12.matched.2011.Rds")
+input_simul = readRDS("/Users/elenab/Dropbox/shared/2022. Basilica/simulations/matched_signals/fits_cl_test/simul_fit.N150.G3.s12.matched.2011.Rds")
 
 x.simul = input_simul$dataset
 x.cl = input_simul$fit.0.cl
