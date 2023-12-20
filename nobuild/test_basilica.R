@@ -10,17 +10,18 @@ fitsname = list.files(fits_dir, pattern="s12.matched.2011.Rds")
 
 
 ## fits ####
-# fits_cl = lapply(fitsname, function(fname) {
-#   G = strsplit(fname, "[.]")[[1]][3] %>% stringr::str_replace_all("G","") %>% as.integer()
-#   x.nmf = readRDS(paste0(fits_dir, fname))$fit.0
-#   x.cl = fit_clustering(x.nmf, cluster=G * 2,
-#                         n_steps=3000, lr=0.005,
-#                         nonparametric=TRUE,
-#                         store_parameters=FALSE,
-#                         seed_list=c(11,33,4392),
-#                         py=py)
-#   return(x.cl)
-#   }) %>% setNames(fitsname)
+fits_cl = lapply(fitsname, function(fname) {
+  G = strsplit(fname, "[.]")[[1]][3] %>% stringr::str_replace_all("G","") %>% as.integer()
+  x.nmf = readRDS(paste0(fits_dir, fname))$fit.0
+  x.cl = fit_clustering(x.nmf, cluster=G * 2,
+                        n_steps=3000, lr=0.005,
+                        nonparametric=TRUE,
+                        store_parameters=FALSE,
+                        store_fits=TRUE,
+                        seed_list=c(11,33,4392),
+                        py=py)
+  return(x.cl)
+  }) %>% setNames(fitsname)
 
 
 ## plots ####
@@ -79,13 +80,64 @@ dev.off()
 
 ## example ####
 # input.simul = readRDS("~/Dropbox/shared/2022. Basilica/simulations/fits/fits_dn.matched.2011/simul_fit.N150.G3.s9.matched.2011.Rds")
-input_simul = readRDS("/Users/elenab/Dropbox/shared/2022. Basilica/simulations/matched_signals/fits_cl_test/simul_fit.N150.G3.s12.matched.2011.Rds")
+input_simul = readRDS("/Users/elenab/Dropbox/shared/2022. Basilica/simulations/matched_signals/fits_cl_test/simul_fit.N150.G6.s12.matched.2011.Rds")
 
 x.simul = input_simul$dataset
-x.cl = input_simul$fit.0.cl
+x.cl = input_simul$fit.0.cl %>% filter_denovo() %>% convert_dn_names(x.simul)
+# x.cl$clustering = NULL
+
+x.cl %>% plot_exposures()
+
+counts = get_input(x.simul, matrix=T)
+reference = get_fixed_signatures(x.cl, matrix=T)
+
+x.cl_new = fit_clustering(x=x.cl, cluster=12, py=py)
+x.cl_new %>% plot_exposures()
 
 
 
+samples = get_input(x.cl, clusters="G2")$SBS$samples %>% unique()
+samples = samples[which(get_exposure(x.cl, matrix=T)[["SBS"]][samples, "SBS18"] > 0.2)]
+plot_exposures(x.cl, samples = samples, sample_name = T)
+plot_centroids(x.cl)
+
+centr = get_centroids(x.cl, matrix=T)
+dbs = get_signames(x.cl)$DBS
+
+exp1 = get_exposure(x.cl, matrix=T)$DBS["G4_3", ] %>% as.numeric()
+centrg2 = centr[c("G2"), paste0("1_",dbs)] %>% as.numeric()
+centrg3 = centr[c("G3"), paste0("1_",dbs)] %>% as.numeric()
+
+gtools::ddirichlet(exp1, centrg2)
+gtools::ddirichlet(exp1, centrg3)
+
+
+shifter = function(par) {
+  par = par[par >= 0.01]
+  return(par / sum(par))
+}
+
+exp1_b = shifter(exp1)
+centrg2_b = shifter(centrg2)
+centrg3_b = shifter(centrg3)
+
+gtools::ddirichlet(exp1_b, centrg2_b[1:3])
+gtools::ddirichlet(exp1_b, centrg3_b[1:3])
+
+
+get_pyro_stat(x.cl, what="clustering",statname="params")[[1]]$infered_params$post_probs[samples,]
+
+x.cl %>%
+  get_initial_object() %>%
+  plot_exposures() %>%
+  patchwork::wrap_plots(x.cl %>% plot_exposures(), guides="collect")
+
+x.cl %>%
+  get_initial_object() %>%
+  plot_centroids() %>%
+  patchwork::wrap_plots(x.cl %>% plot_centroids(), guides="collect")
+
+x.cl %>% plot_gradient_norms()
 
 
 ## Real data ####
