@@ -23,18 +23,17 @@ fits_cl = lapply(fitsname, function(fname) {
   return(x.cl)
   }) %>% setNames(fitsname)
 
+## save objects
+lapply(fitsname, function(fname) {
+  simul_obj = readRDS(paste0(fits_dir, fname))
+  simul_obj$fit.0.cl = fits_cl[[fname]]
+  saveRDS(object=simul_obj, file=paste0(save_path, fname))
+})
+
 
 ## plots ####
 save_path = "~/Dropbox/shared/2022. Basilica/simulations/matched_signals/fits_cl_test/"
 fitsname = list.files(save_path, pattern=".Rds") %>% gtools::mixedsort()
-
-## save objects
-# lapply(fitsname, function(fname) {
-#   simul_obj = readRDS(paste0(fits_dir, fname))
-#   simul_obj$fit.0.cl = fits_cl[[fname]]
-#   saveRDS(object=simul_obj, file=paste0(save_path, fname))
-# })
-
 
 lapply(fitsname, function(fname) {
   simul_fit = readRDS(paste0(save_path, fname))
@@ -45,7 +44,9 @@ lapply(fitsname, function(fname) {
   simul_fit$dataset$clustering[["pyro"]][["params"]][["infered_params"]][["pi"]] = true_pis
 
   fname_tmp = stringr::str_replace_all(fname, ".Rds", "")
-  pdf(paste0(save_path, stringr::str_replace_all(fname_tmp, "simul_fit", "plots"), ".pdf"),
+  pdf(paste0(save_path,
+             stringr::str_replace_all(fname_tmp, "simul_fit", "plots"),
+             ".pdf"),
       width=14, height=14)
   print(plot_fit(x) & patchwork::plot_annotation(title="Fit"))
   print(plot_fit(simul_fit$dataset) & patchwork::plot_annotation(title="Simulated"))
