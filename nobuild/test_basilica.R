@@ -6,16 +6,17 @@ devtools::load_all("~/GitHub/simbasilica/")
 
 ## Run fits on small test ####
 fits_dir = "~/Dropbox/shared/2022. Basilica/simulations/fits/fits_dn.matched.2011/"
+save_path = "~/Dropbox/shared/2022. Basilica/simulations/matched_signals/fits_cl_test/"
 fitsname = list.files(fits_dir, pattern="s12.matched.2011.Rds")
 
-
 ## fits ####
-fits_cl = lapply(fitsname, function(fname) {
+fits_cl_autoguide = lapply(fitsname, function(fname) {
   G = strsplit(fname, "[.]")[[1]][3] %>% stringr::str_replace_all("G","") %>% as.integer()
   x.nmf = readRDS(paste0(fits_dir, fname))$fit.0
   x.cl = fit_clustering(x.nmf, cluster=G * 2,
                         n_steps=3000, lr=0.005,
                         nonparametric=TRUE,
+                        autoguide = TRUE,
                         store_parameters=FALSE,
                         store_fits=TRUE,
                         seed_list=c(11,33,4392),
@@ -23,16 +24,40 @@ fits_cl = lapply(fitsname, function(fname) {
   return(x.cl)
   }) %>% setNames(fitsname)
 
+
+fits_cl_autoguide$simul_fit.N1000.G3.s12.matched.2011.Rds %>% plot_exposures()
+
+
+# fits_cl_manguide = lapply(fitsname, function(fname) {
+#   G = strsplit(fname, "[.]")[[1]][3] %>% stringr::str_replace_all("G","") %>% as.integer()
+#   x.nmf = readRDS(paste0(fits_dir, fname))$fit.0
+#   x.cl = fit_clustering(x.nmf, cluster=G * 2,
+#                         n_steps=3000, lr=0.005,
+#                         nonparametric=TRUE,
+#                         autoguide = FALSE,
+#                         store_parameters=FALSE,
+#                         store_fits=TRUE,
+#                         seed_list=c(11,33,4392),
+#                         py=py)
+#   return(x.cl)
+# }) %>% setNames(fitsname)
+
+
 ## save objects
 lapply(fitsname, function(fname) {
   simul_obj = readRDS(paste0(fits_dir, fname))
-  simul_obj$fit.0.cl = fits_cl[[fname]]
-  saveRDS(object=simul_obj, file=paste0(save_path, fname))
+  simul_obj$fit.0.cl = fits_cl_autoguide[[fname]]
+  saveRDS(object=simul_obj, file=paste0(save_path, "autoguide_", fname))
+})
+
+lapply(fitsname, function(fname) {
+  simul_obj = readRDS(paste0(fits_dir, fname))
+  simul_obj$fit.0.cl = fits_cl_manguide[[fname]]
+  saveRDS(object=simul_obj, file=paste0(save_path, "manguide_", fname))
 })
 
 
 ## plots ####
-save_path = "~/Dropbox/shared/2022. Basilica/simulations/matched_signals/fits_cl_test/"
 fitsname = list.files(save_path, pattern=".Rds") %>% gtools::mixedsort()
 
 lapply(fitsname, function(fname) {
@@ -80,50 +105,88 @@ dev.off()
 
 
 ## example ####
-# input.simul = readRDS("~/Dropbox/shared/2022. Basilica/simulations/fits/fits_dn.matched.2011/simul_fit.N150.G3.s9.matched.2011.Rds")
-input_simul = readRDS("/Users/elenab/Dropbox/shared/2022. Basilica/simulations/matched_signals/fits_cl_test/simul_fit.N150.G6.s12.matched.2011.Rds")
+reticulate::use_condaenv("basilica-env")
+py = reticulate::import_from_path(module="pybasilica", path="~/GitHub/pybasilica/")
+devtools::load_all("~/GitHub/basilica")
+devtools::load_all("~/GitHub/simbasilica/")
+
+input_simul = readRDS("/Users/elenab/Dropbox/shared/2022. Basilica/simulations/matched_signals/fits_cl_test/autoguide_simul_fit.N150.G3.s12.matched.2011.Rds")
 
 x.simul = input_simul$dataset
-x.cl = input_simul$fit.0.cl %>% filter_denovo() %>% convert_dn_names(x.simul)
+x.cl = input_simul$fit.0 # %>% filter_denovo() %>% convert_dn_names(x.simul)
 # x.cl$clustering = NULL
 
-x.cl %>% plot_exposures()
+x.cl.autoguide = fit_clustering(x=x.cl, cluster=6, lr=0.005,
+                                autoguide=TRUE,
+                                hyperparameters=list("z_tau"=10),
+                                nonparametric=TRUE, py=py,
+                                store_fits=TRUE,
+                                seed_list=c(11,33,382,48329))
+
+x.cl.manguide = fit_clustering(x=x.cl, cluster=6, lr=0.005,
+                                autoguide=FALSE,
+                                hyperparameters=list("z_tau"=10),
+                                nonparametric=TRUE, py=py,
+                                store_fits=TRUE,
+                                seed_list=c(11,33,382,48329))
+
+plot_exposures(x.cl.autoguide) %>% patchwork::wrap_plots(plot_exposures(x.cl.manguide))
+plot_centroids(x.cl.autoguide) %>% patchwork::wrap_plots(plot_centroids(x.cl.manguide))
+plot_mixture_weights(x.cl.autoguide) %>% patchwork::wrap_plots(plot_mixture_weights(x.cl.manguide))
+
+plot_gradient_norms(x.cl.autoguide)
+plot_gradient_norms(x.cl.manguide)
+
+plot_exposures(x.cl.autoguide, add_centroid = T)
+plot_posterior_probs(x.cl.autoguide)
+
+plot_scores(x.cl.autoguide)
+plot_scores(input_simul$fit.0.cl)
+
 
 counts = get_input(x.simul, matrix=T)
 reference = get_fixed_signatures(x.cl, matrix=T)
 
-x.cl_new = fit_clustering(x=x.cl, cluster=12, py=py)
-x.cl_new %>% plot_exposures()
 
+x = x.cl.autoguide
+samples = get_input(x, clusters="G1")$SBS$samples %>% unique()
+samples = samples[which(get_exposure(x, matrix=T)[["SBS"]][samples, "SBSD3"] > 0.2)]
+plot_exposures(x, samples = samples, sample_name = T, add_centroid=T)
+plot_posterior_probs(x, samples=samples)
 
+sid = "G1_11"
+centr = get_centroids(x, matrix=T)
+sbs = get_signames(x)$SBS
+dbs = get_signames(x)$DBS
 
-samples = get_input(x.cl, clusters="G2")$SBS$samples %>% unique()
-samples = samples[which(get_exposure(x.cl, matrix=T)[["SBS"]][samples, "SBS18"] > 0.2)]
-plot_exposures(x.cl, samples = samples, sample_name = T)
-plot_centroids(x.cl)
+exp1 = get_exposure(x, matrix=T)$SBS[sid, ] %>% as.numeric()
+centrg0 = centr[c("G0"), paste0("0_",sbs)] %>% as.numeric()
+centrg2 = centr[c("G1"), paste0("0_",sbs)] %>% as.numeric()
 
-centr = get_centroids(x.cl, matrix=T)
-dbs = get_signames(x.cl)$DBS
-
-exp1 = get_exposure(x.cl, matrix=T)$DBS["G4_3", ] %>% as.numeric()
-centrg2 = centr[c("G2"), paste0("1_",dbs)] %>% as.numeric()
-centrg3 = centr[c("G3"), paste0("1_",dbs)] %>% as.numeric()
-
+gtools::ddirichlet(exp1, centrg0)
 gtools::ddirichlet(exp1, centrg2)
-gtools::ddirichlet(exp1, centrg3)
 
+
+get_idxs = function(par) {
+  return(which(par >= 0.01))
+}
 
 shifter = function(par) {
-  par = par[par >= 0.01]
+  par[par < 0.01] = 1e-10
   return(par / sum(par))
 }
 
-exp1_b = shifter(exp1)
-centrg2_b = shifter(centrg2)
-centrg3_b = shifter(centrg3)
+idxs = get_idxs(exp1)
+exp1_b = exp1[idxs] / sum(exp1[idxs])
+centrg0_b = centrg0[idxs] / sum(centrg0[idxs])
+centrg2_b = centrg2[idxs] / sum(centrg2[idxs])
 
-gtools::ddirichlet(exp1_b, centrg2_b[1:3])
-gtools::ddirichlet(exp1_b, centrg3_b[1:3])
+gtools::ddirichlet(exp1_b, centrg0_b*100)
+gtools::ddirichlet(exp1_b, centrg2_b*100)
+
+
+gtools::ddirichlet(shifter(exp1), shifter(centrg0)*100)
+gtools::ddirichlet(shifter(exp1), shifter(centrg2)*100)
 
 
 get_pyro_stat(x.cl, what="clustering",statname="params")[[1]]$infered_params$post_probs[samples,]
