@@ -11,6 +11,7 @@ make_boxplot = function(all_stats, colname) {
 
 eval_single_fit_matched = function(x.fit, x.simul, cutoff=0.8) {
   x.fit = x.fit %>% rename_dn_expos()
+  assigned_missing_all = get_assigned_missing(x.fit=x.fit, x.simul=x.simul, cutoff=cutoff)
   lapply(get_types(x.fit), function(tid) {
     sigs.fit = get_signatures(x.fit, matrix=T)[[tid]]; sigs.simul = get_signatures(x.simul, matrix=T)[[tid]]
     sigs_fixed.fit = get_fixed_signatures(x.fit, matrix=T)[[tid]]
@@ -18,7 +19,7 @@ eval_single_fit_matched = function(x.fit, x.simul, cutoff=0.8) {
 
     expos.fit = get_exposure(x.fit, matrix=T)[[tid]]; expos.simul = get_exposure(x.simul, matrix=T)[[tid]]
 
-    assigned_missing = get_assigned_missing(x.fit=x.fit, x.simul=x.simul, type=tid, cutoff=cutoff)
+    assigned_missing = assigned_missing_all[[tid]]
     assigned = assigned_missing$assigned_tp
     unassigned = c(assigned_missing$missing_fn, assigned_missing$added_fp)
 
@@ -83,7 +84,7 @@ eval_single_fit_matched = function(x.fit, x.simul, cutoff=0.8) {
 
 
 make_plots_stats = function(stats) {
-  stats_tmp = all_stats %>%
+  stats_tmp = stats %>%
     dplyr::select(N, G, seed, penalty, dplyr::contains("cosine_fixed")) %>%
     dplyr::rowwise() %>%
     dplyr::mutate(cosine_fixed_SBS=ifelse(length(cosine_fixed_SBS)>0,
@@ -98,9 +99,12 @@ make_plots_stats = function(stats) {
   sim2 = make_boxplot(stats_tmp %>% tidyr::unnest(cosine_fixed_DBS), "cosine_fixed_DBS") + labs(title="cosine_fixed_DBS")
   # sim = patchwork::wrap_plots(sim1, sim2, ncol=2)
 
+  ari = nmi = NULL
   cosine_expos = make_boxplot(stats, "cosine_expos") + labs(title="cosine_expos")
   cosine_sigs = make_boxplot(stats, "cosine_sigs") + labs(title="cosine_sigs")
   mse_counts = make_boxplot(stats, "mse_counts") + labs(title="mse_counts")
+  try( {ari = make_boxplot(stats, "ari") + labs(title="ari")} )
+  try( {nmi = make_boxplot(stats, "nmi") + labs(title="nmi")} )
 
   k_ratio = stats %>% dplyr::select(N, G, seed, dplyr::contains("K_")) %>%
     reshape2::melt(id=c("N","G","seed"), variable.name="type") %>%
@@ -113,6 +117,10 @@ make_plots_stats = function(stats) {
     labs(title="K_ratio") +
     theme_bw()
 
+  if (!is.null(ari))
+    return(patchwork::wrap_plots(mse_counts, cosine_expos, cosine_sigs,
+                                 k_ratio, sim1, sim2, ari, nmi, ncol=4))
+
   return(
     patchwork::wrap_plots(mse_counts, cosine_expos, cosine_sigs, k_ratio, sim1, sim2, ncol=3)
   )
@@ -120,22 +128,22 @@ make_plots_stats = function(stats) {
 
 
 
-stats_single_data = function(fname) {
+stats_single_data = function(fname, names_fits=list("NoPenalty"="fit.0", "PenaltyN"="fit.N")) {
   cat(paste0(fname, "\n"))
   simul_fit = readRDS(fname)
   x.simul = simul_fit$dataset
-  x.fit.0 = simul_fit$fit.0
-  x.fit.N = simul_fit$fit.N
+  x.fit.1 = simul_fit[[names_fits[[1]]]] %>% merge_clusters()
+  x.fit.2 = simul_fit[[names_fits[[2]]]] %>% merge_clusters()
 
   idd = strsplit(fname, "/")[[1]]; idd = idd[[length(idd)]]
 
-  stats_fit0 = stats_fitN = data.frame()
+  stats_fit1 = stats_fit2 = data.frame()
 
-  try(expr = {stats_fit0 = eval_single_fit_matched(x.fit.0, x.simul) %>%
-    dplyr::bind_cols() %>% dplyr::mutate(penalty="NoPenalty")})
+  try(expr = {stats_fit1 = eval_single_fit_matched(x.fit.1, x.simul) %>%
+    dplyr::bind_cols() %>% dplyr::mutate(penalty=names(names_fits)[1])})
 
-  try(expr = {stats_fitN = eval_single_fit_matched(x.fit.N, x.simul) %>%
-    dplyr::bind_cols() %>% dplyr::mutate(penalty="PenaltyN")})
+  try(expr = {stats_fit2 = eval_single_fit_matched(x.fit.2, x.simul) %>%
+    dplyr::bind_cols() %>% dplyr::mutate(penalty=names(names_fits)[2])})
 
   return(
     tibble::tibble(fname=fname,
@@ -147,7 +155,7 @@ stats_single_data = function(fname) {
                      as.numeric(),
                    "idd"=idd) %>%
       dplyr::select(N, G, seed, idd, dplyr::everything()) %>%
-      dplyr::bind_cols(rbind(stats_fit0, stats_fitN))
+      dplyr::bind_cols(rbind(stats_fit1, stats_fit2))
   )
 }
 
