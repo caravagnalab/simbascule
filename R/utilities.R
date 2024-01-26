@@ -57,8 +57,8 @@ compute.cosine = function(m_true, m_inf, assigned_missing, what, subset_cols=NUL
     if (any(rownames(m_inf) != rownames(m_true))) rownames(m_true) = rownames(m_inf)
 
     if (keep_missing) {
-      m_true[, assigned_missing$added_fp] = 0
-      m_inf[, assigned_missing$missing_fn] = 0
+      m_true[, assigned_missing$added_fp] = 1e-10
+      m_inf[, assigned_missing$missing_fn] = 1e-10
       m_true = m_true %>% dplyr::select(names(assigned_missing$assigned_tp),
                                         assigned_missing$added_fp,
                                         assigned_missing$missing_fn)
