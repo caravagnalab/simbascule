@@ -1,6 +1,6 @@
 # simbasilica
 
-R package to generate synthetic data from the Basilica generative model.
+R package to generate synthetic data from the [basilica](https://github.com/caravagnalab/basilica) generative model.
 
 The synthetic validation is performed on 270 cohorts of patients:
   * Number of patients: 150, 500, 1000
