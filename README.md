@@ -1,16 +1,14 @@
 # simbasilica
-Generating and Running synthetic data
 
+R package to generate synthetic data from the Basilica generative model.
 
-Simulated date in the package (each comibnation has 30 datasets):
+The synthetic validation is performed on 246 cohorts of patients:
+  * Number of patients: 150, 500, 1000
+  * Number of groups: 1, 3, 6
+  * 30 datasets for each configuration
+  
 
-* 6 cohorts, number of patiets = [10,50,100,500,1000,5000], 3 de-novo + 5 from reference (Salvatore)
-  * Simulatation, no refence catalogue (all de novo) vs reference catalogue
-  * Compare against sparseSig and SigProfiler
+Each dataset has been fitted with Basilica:
+  * Datasets with sample sizes 150 and 500 -> CPU
+  * Datasets with sample size 1000 -> GPU 
 
-* 6 cohorts, number of patiets = [10,50,100,500,1000,5000], 2 de-novo + 4 from reference + 1 de-novo < 5% and 1 from refence < 5% (Azad)
-  * Simulatation, no refence catalogue (all de novo) vs reference catalogue
-  * Compare against sparseSig and SigProfiler
-
-* 6 cohorts, number of patiets = 1000, [1,5,10,20] de-novo + [0,5] from reference (Salvatore)
-* 6 cohorts, number of patiets = 1000, [0,2] de-novo + [1,5,10,20] from reference (Azad)
