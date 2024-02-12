@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --time=30:00:00
 #SBATCH --nodes=1
-#SBATCH --array=1-6
+#SBATCH --array=5-6
 #SBATCH --partition=cpuq
 #SBATCH --job-name=1.matched
 #SBATCH --mem=20GB

@@ -34,6 +34,7 @@ dir.create(save_path)
 
 
 for (fname in fits_names) {
+  if (file.exists(paste0(save_path, fname))) next
   G = strsplit(fname, "[.]")[[1]][3] %>% stringr::str_replace_all("G","") %>% as.integer()
 
   simul_fit = readRDS(paste0(fits_path, fname))

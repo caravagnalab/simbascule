@@ -66,16 +66,16 @@ reference_cat = list("SBS"=COSMIC_sbs_filt[catalogue_sbs,],
 
 x.real.0 = fit(counts=counts,
                k_list=0:25,
-               cluster=10,
+               cluster=15,
                reference_cat=reference_cat,
-               n_steps=10, lr=0.005,
-               seed_list=c(19),
+               n_steps=3000, lr=0.005,
+               seed_list=c(19,255,18321,331),
                hyperparameters=list("penalty_scale"=0,
                                     "alpha_conc"=alpha_conc),
                store_fits=TRUE,
-               py=py, CUDA=TRUE)
+               py=py, CUDA=TRUE, autoguide=TRUE)
 
-saveRDS(x.real.0, file=paste0("~/signatures/real_data/matched.2011/fits_1412/fit_wcat_penalty0.", organ_type, ".Rds"))
+saveRDS(x.real.0, file=paste0("~/signatures/real_data/matched.2011/fits_1102/fit_wcat_penalty0.", organ_type, ".Rds"))
 
 # x.real.lN = fit(counts=counts,
 #                 k_list=0:20,
