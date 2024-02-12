@@ -1,25 +1,22 @@
 gen_run_aux = function(N, G, seed, private, shared, reference_cat, n_steps=2000,
-                       path=NULL, run_fits=FALSE, run_name="", filter_dn=FALSE) {
+                       path=NULL, data_path=NULL, run_fits=FALSE, run_name="", filter_dn=FALSE) {
   fname = paste0("simul_fit.N", N, ".G", G, ".s", seed, ".", run_name, ".Rds")
-  fname_fpath = paste0(path, fname)
 
   simul_ng = x_ng.0 = x_ng.N = NULL
-  if (!is.null(path)) {
-    if (!dir.exists(path)) dir.create(path, recursive=TRUE)
+  if (!is.null(data_path)) {
+    # if (!dir.exists(path)) dir.create(path, recursive=TRUE)
 
-    print(fname_fpath)
-
+    fname_fpath = paste0(data_path, fname)
     if (file.exists(fname_fpath)) simul_ng = readRDS(fname_fpath)$dataset
     if (file.exists(fname_fpath)) {
-      print(names(fname_fpath))
       x_ng.0 = readRDS(fname_fpath)$fit.0
       x_ng.N = readRDS(fname_fpath)$fit.N
     }
   }
 
-  if (!is.null(simul_ng) & !is.null(x_ng.0) & !is.null(x_ng.N)) 
+  if (!is.null(simul_ng) & !is.null(x_ng.0) & !is.null(x_ng.N))
     return(list("dataset"=simul_ng, "fit.0"=x_ng.0, "fit.N"=x_ng.N))
-  
+
   if (is.null(simul_ng)) {
     seed_list = list("SBS"=seed,
                      "DBS"=seed*2)
@@ -53,18 +50,19 @@ gen_run_aux = function(N, G, seed, private, shared, reference_cat, n_steps=2000,
                hyperparameters=list("penalty_scale"=0),
                seed_list=c(10,33,455), filter_dn=filter_dn, store_fits=TRUE,
                py=py)
-  if (is.null(x_ng.N) & run_fits)
-    x_ng.N = fit(counts=counts_ng, k_list=min_K:max_K, cluster=G*2, n_steps=n_steps,
-                 reference_cat=fixed_beta,
-                 keep_sigs=unlist(shared),
-                 hyperparameters=list("penalty_scale"=N),
-                 seed_list=c(10,33,455), filter_dn=filter_dn, store_fits=TRUE,
-                 py=py)
+  # if (is.null(x_ng.N) & run_fits)
+  #   x_ng.N = fit(counts=counts_ng, k_list=min_K:max_K, cluster=G*2, n_steps=n_steps,
+  #                reference_cat=fixed_beta,
+  #                keep_sigs=unlist(shared),
+  #                hyperparameters=list("penalty_scale"=N),
+  #                seed_list=c(10,33,455), filter_dn=filter_dn, store_fits=TRUE,
+  #                py=py)
 
   cli::cli_process_done()
 
   final_list = list("dataset"=simul_ng, "fit.0"=x_ng.0, "fit.N"=x_ng.N)
 
+  if (!is.null(path) & !dir.exists(path)) dir.create(path, recursive=TRUE)
   if (!is.null(path)) saveRDS(final_list, paste0(path, fname))
   return(final_list)
 }
