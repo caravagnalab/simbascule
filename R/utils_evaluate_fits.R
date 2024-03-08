@@ -203,9 +203,9 @@ get_groups_rare = function(x.simul, rare_common=NULL) {
 }
 
 
-compute_ari_nmi = function(x.simul, x.fit) {
-  groups_fit = get_cluster_assignments(x.fit)$clusters
-  groups_simul = get_cluster_assignments(x.simul)$clusters
+compute_ari_nmi = function(groups_simul, groups_fit) {
+  # groups_fit = get_cluster_assignments(x.fit)$clusters
+  # groups_simul = get_cluster_assignments(x.simul)$clusters
   if (length(unique(groups_fit)) == 1 || length(unique(groups_simul)) == 1) {
     groups_fit = c(groups_fit, "imolabella")
     groups_simul = c(groups_simul, "imolabella")
@@ -235,6 +235,40 @@ run_kmeans = function(x.fit) {
   x.fit$groups = km$cluster[rownames(x.fit$input$counts)] %>% setNames(NULL)
 
   return(x.fit)
+}
+
+
+
+run_kmeans_multiple_signals = function(x.fit) {
+  max_g = x.fit$clustering$pyro$params$init_params$pi %>% length()
+  expos = get_exposure(x.fit, matrix=T) %>% dplyr::bind_cols()
+
+  # avg_sil = function(clusters) {
+  #   ss = cluster::silhouette(clusters, dist(expos))
+  #   mean(ss[, 3])
+  # }
+
+  scores = lapply(1:max_g, function(K) {
+
+    if (K == 1) {
+      centroids = colMeans(expos) %>% as.matrix() %>% t()
+      labels = rep(1, nrow(expos))
+    } else {
+      km = kmeans(expos, centers=K, nstart=10)
+      centroids = km$centers
+      labels = km$cluster
+    }
+
+    lapply(unique(labels), function(k) {
+      data_k = expos[which(labels==k),]
+      lapply(rownames(data_k), function(i) dist(rbind(data_k[i,], centroids[k,]))^2 %>% sum()) %>% unlist()
+      }) %>% unlist() %>% sum()
+
+    # avg_sil(km$cluster)
+  }) %>% setNames(1:max_g) %>% unlist()
+
+  km = kmeans(expos, centers=as.integer(names(which.max(scores))), nstart=10)
+  return(tibble::tibble(samples=names(km$cluster), clusters=km$cluster))
 }
 
 
