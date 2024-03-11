@@ -243,31 +243,10 @@ run_kmeans_multiple_signals = function(x.fit) {
   max_g = x.fit$clustering$pyro$params$init_params$pi %>% length()
   expos = get_exposure(x.fit, matrix=T) %>% dplyr::bind_cols()
 
-  # avg_sil = function(clusters) {
-  #   ss = cluster::silhouette(clusters, dist(expos))
-  #   mean(ss[, 3])
-  # }
+  gap_stats = cluster::clusGap(expos, FUNcluster=kmeans, K.max=max_g, nstart=25)
+  best_K = cluster::maxSE(gap_stats$Tab[, "gap"], gap_stats$Tab[, "SE.sim"], method="Tibs2001SEmax")
 
-  scores = lapply(1:max_g, function(K) {
-
-    if (K == 1) {
-      centroids = colMeans(expos) %>% as.matrix() %>% t()
-      labels = rep(1, nrow(expos))
-    } else {
-      km = kmeans(expos, centers=K, nstart=10)
-      centroids = km$centers
-      labels = km$cluster
-    }
-
-    lapply(unique(labels), function(k) {
-      data_k = expos[which(labels==k),]
-      lapply(rownames(data_k), function(i) dist(rbind(data_k[i,], centroids[k,]))^2 %>% sum()) %>% unlist()
-      }) %>% unlist() %>% sum()
-
-    # avg_sil(km$cluster)
-  }) %>% setNames(1:max_g) %>% unlist()
-
-  km = kmeans(expos, centers=as.integer(names(which.max(scores))), nstart=10)
+  km = kmeans(expos, centers=best_K, nstart=25)
   return(tibble::tibble(samples=names(km$cluster), clusters=km$cluster))
 }
 
