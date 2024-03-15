@@ -57,7 +57,7 @@ convert_sigs_names = function(x.fit, x.simul=NULL, reference_cat=NULL, cutoff=0.
   assigned_missing$assigned_tp = assigned_missing$assigned_tp %>% sort
 
   signames_ref = get_fixed_signames(x.fit)
-  signames_dn = get_dn_signames(x.fit)
+  signames_dn = get_denovo_signames(x.fit)
   which_ref = assigned_missing$assigned_tp %in% signames_ref
   which_dn = assigned_missing$assigned_tp %in% signames_dn
 
