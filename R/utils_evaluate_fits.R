@@ -1,10 +1,10 @@
-
+# reference_cat -> list with names=types, values=catalogues
 get_assigned_missing = function(x.fit, x.simul=NULL, reference_cat=NULL, cutoff=0.8) {
   types = get_types(x.fit)
   lapply(types, function(tid) {
     sigs.fit = get_signatures(x.fit, matrix=T)[[tid]]
     if (!is.null(x.simul)) sigs.simul = get_signatures(x.simul, matrix=T)[[tid]]
-    else if (!is.null(reference_cat)) sigs.simul = reference_cat
+    else if (!is.null(reference_cat)) sigs.simul = reference_cat[[tid]]
 
     assigned = compare_sigs_inf_gt(sigs.fit, sigs.simul, cutoff=cutoff)
     missing = setdiff(rownames(sigs.simul), names(assigned))
