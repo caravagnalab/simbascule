@@ -271,41 +271,41 @@ get_simul_fit = function(stats_df, condition, return_fit=T) {
 
 
 
-get_new_best = function(x.fit, score_name="bic") {
-  best = recompute_bic(x.fit, score_name=score_name) %>%
-    dplyr::filter(.data[[score_name]]==min(.data[[score_name]]))
-
-  new_best = get_fit_by_id(x=x.fit, idd=paste(best$K, best$groups, sep="."))
-  return(new_best)
-}
-
-
-recompute_bic = function(x.fit, score_name="bic") {
-  new_scores = get_K_scores(x.fit) %>%
-    dplyr::filter(score_id %in% c(score_name, "reg_llik")) %>%
-    tidyr::pivot_wider(names_from="score_id", values_from="score") %>%
-
-    dplyr::group_by(K, groups) %>%
-    dplyr::slice(which.min(.data[[score_name]])) %>%
-
-    dplyr::rowwise() %>%
-    dplyr::mutate(
-      new_score=compute_score(x.fit=get_fit_by_id(x.fit,
-                                                  idd=paste(K, groups, sep=".")),
-                              llik=reg_llik,
-                              score_name=score_name)) %>%
-    dplyr::ungroup()
-
-  return(new_scores)
-}
+# get_new_best = function(x.fit, score_name="bic") {
+#   best = recompute_bic(x.fit, score_name=score_name) %>%
+#     dplyr::filter(.data[[score_name]]==min(.data[[score_name]]))
+#
+#   new_best = get_fit_by_id(x=x.fit, idd=paste(best$K, best$groups, sep="."))
+#   return(new_best)
+# }
 
 
-compute_score = function(x.fit, llik, score_name="bic") {
-  n_pars = compute_n_pars(x.fit)
+# recompute_bic = function(x.fit, score_name="bic") {
+#   new_scores = get_K_scores(x.fit) %>%
+#     dplyr::filter(score_id %in% c(score_name, "reg_llik")) %>%
+#     tidyr::pivot_wider(names_from="score_id", values_from="score") %>%
+#
+#     dplyr::group_by(K, groups) %>%
+#     dplyr::slice(which.min(.data[[score_name]])) %>%
+#
+#     dplyr::rowwise() %>%
+#     dplyr::mutate(
+#       new_score=compute_score(x.fit=get_fit_by_id(x.fit,
+#                                                   idd=paste(K, groups, sep=".")),
+#                               llik=reg_llik,
+#                               score_name=score_name)) %>%
+#     dplyr::ungroup()
+#
+#   return(new_scores)
+# }
 
-  # k * torch.log(torch.tensor(n, dtype=torch.float64)) - (2 * _log_like)
-  if (score_name=="bic") return(n_pars * log(x.fit$n_samples) - 2*llik)
-}
+
+# compute_score = function(x.fit, llik, score_name="bic") {
+#   n_pars = compute_n_pars(x.fit)
+#
+#   # k * torch.log(torch.tensor(n, dtype=torch.float64)) - (2 * _log_like)
+#   if (score_name=="bic") return(n_pars * log(x.fit$n_samples) - 2*llik)
+# }
 
 
 compute_n_pars = function(x.fit) {
