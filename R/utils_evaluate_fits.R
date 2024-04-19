@@ -1,18 +1,18 @@
-# reference_cat -> list with names=types, values=catalogues
-get_assigned_missing = function(x.fit, x.simul=NULL, reference_cat=NULL, cutoff=0.8) {
-  types = get_types(x.fit)
-  lapply(types, function(tid) {
-    sigs.fit = get_signatures(x.fit, matrix=T)[[tid]]
-    if (!is.null(x.simul)) sigs.simul = get_signatures(x.simul, matrix=T)[[tid]]
-    else if (!is.null(reference_cat)) sigs.simul = reference_cat[[tid]]
-
-    assigned = compare_sigs_inf_gt(sigs.fit, sigs.simul, cutoff=cutoff)
-    missing = setdiff(rownames(sigs.simul), names(assigned))
-    added = setdiff(rownames(sigs.fit), assigned)
-
-    return(list("assigned_tp"=assigned, "missing_fn"=missing, "added_fp"=added))
-  }) %>% setNames(types)
-}
+# # reference_cat -> list with names=types, values=catalogues
+# get_assigned_missing = function(x.fit, x.simul=NULL, reference_cat=NULL, cutoff=0.8) {
+#   types = get_types(x.fit)
+#   lapply(types, function(tid) {
+#     sigs.fit = get_signatures(x.fit, matrix=T)[[tid]]
+#     if (!is.null(x.simul)) sigs.simul = get_signatures(x.simul, matrix=T)[[tid]]
+#     else if (!is.null(reference_cat)) sigs.simul = reference_cat[[tid]]
+#
+#     assigned = compare_sigs_inf_gt(sigs.fit, sigs.simul, cutoff=cutoff)
+#     missing = setdiff(rownames(sigs.simul), names(assigned))
+#     added = setdiff(rownames(sigs.fit), assigned)
+#
+#     return(list("assigned_tp"=assigned, "missing_fn"=missing, "added_fp"=added))
+#   }) %>% setNames(types)
+# }
 
 
 rename_expos = function(exposures, old_names) {
@@ -93,46 +93,46 @@ convert_sigs_names = function(x.fit, x.simul=NULL, reference_cat=NULL, cutoff=0.
 }
 
 
-compare_sigs_inf_gt = function(sigs.fit, sigs.simul, cutoff=0.8) {
-  common = intersect(rownames(sigs.fit), rownames(sigs.simul))
-  unique_inf = setdiff(rownames(sigs.fit), common)
-  unique_gt = setdiff(rownames(sigs.simul), common)
-
-  if (length(unique_inf) == 0 || length(unique_gt) == 0)
-    return(common %>% setNames(common))
-
-  total_sigs = rbind(sigs.fit[!rownames(sigs.fit) %in% common,],
-                     sigs.simul[!rownames(sigs.simul) %in% common,])
-  cosine_matr = as.data.frame(lsa::cosine(t(total_sigs)))[unique_gt, ]
-  cosine_matr = cosine_matr[, colnames(cosine_matr) %in% unique_inf]
-
-  if (length(unique_inf) == 1 && length(unique_gt) == 1) {
-    cosine_matr = as.data.frame(cosine_matr)
-    rownames(cosine_matr) = unique_gt
-    colnames(cosine_matr) = unique_inf
-  }
-
-  assign_similar = cosine_matr %>% as.data.frame() %>%
-    tibble::rownames_to_column(var="gt") %>%
-    reshape2::melt(id="gt", variable.name="inf", value.name="cosine") %>%
-    dplyr::filter(cosine >= cutoff)
-
-  if (nrow(assign_similar) == 0) return(common %>% setNames(common))
-
-  assign_similar = assign_similar %>%
-    dplyr::group_by(gt) %>%
-    dplyr::mutate(inf=as.character(inf)) %>%
-    dplyr::filter(cosine == max(cosine)) %>% dplyr::arrange(gt)
-
-  # if (nrow(sigs.simul) > nrow(sigs.fit))
-  if (any(duplicated(assign_similar$inf)))
-    assign_similar = assign_similar %>% dplyr::group_by(inf) %>%
-      dplyr::filter(cosine == max(cosine)) %>% dplyr::ungroup()
-
-  assigned = c(common, assign_similar$inf) %>% setNames(c(common, assign_similar$gt))
-
-  return(assigned)
-}
+# compare_sigs_inf_gt = function(sigs.fit, sigs.simul, cutoff=0.8) {
+#   common = intersect(rownames(sigs.fit), rownames(sigs.simul))
+#   unique_inf = setdiff(rownames(sigs.fit), common)
+#   unique_gt = setdiff(rownames(sigs.simul), common)
+#
+#   if (length(unique_inf) == 0 || length(unique_gt) == 0)
+#     return(common %>% setNames(common))
+#
+#   total_sigs = rbind(sigs.fit[!rownames(sigs.fit) %in% common,],
+#                      sigs.simul[!rownames(sigs.simul) %in% common,])
+#   cosine_matr = as.data.frame(lsa::cosine(t(total_sigs)))[unique_gt, ]
+#   cosine_matr = cosine_matr[, colnames(cosine_matr) %in% unique_inf]
+#
+#   if (length(unique_inf) == 1 && length(unique_gt) == 1) {
+#     cosine_matr = as.data.frame(cosine_matr)
+#     rownames(cosine_matr) = unique_gt
+#     colnames(cosine_matr) = unique_inf
+#   }
+#
+#   assign_similar = cosine_matr %>% as.data.frame() %>%
+#     tibble::rownames_to_column(var="gt") %>%
+#     reshape2::melt(id="gt", variable.name="inf", value.name="cosine") %>%
+#     dplyr::filter(cosine >= cutoff)
+#
+#   if (nrow(assign_similar) == 0) return(common %>% setNames(common))
+#
+#   assign_similar = assign_similar %>%
+#     dplyr::group_by(gt) %>%
+#     dplyr::mutate(inf=as.character(inf)) %>%
+#     dplyr::filter(cosine == max(cosine)) %>% dplyr::arrange(gt)
+#
+#   # if (nrow(sigs.simul) > nrow(sigs.fit))
+#   if (any(duplicated(assign_similar$inf)))
+#     assign_similar = assign_similar %>% dplyr::group_by(inf) %>%
+#       dplyr::filter(cosine == max(cosine)) %>% dplyr::ungroup()
+#
+#   assigned = c(common, assign_similar$inf) %>% setNames(c(common, assign_similar$gt))
+#
+#   return(assigned)
+# }
 
 
 rare_common_sigs = function(x.simul) {
