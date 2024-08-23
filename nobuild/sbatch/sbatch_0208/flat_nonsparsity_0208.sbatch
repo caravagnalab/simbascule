@@ -5,7 +5,7 @@
 #SBATCH --partition=cpuq
 #SBATCH --job-name=flat_nonspars
 #SBATCH --mem=20GB
-#SBATCH --output=/home/elena.buscaroli/GitHub/simbasilica/nobuild/sbatch/logs_ht/flat_nonspars-%A-%a.log
+#SBATCH --output=/home/elena.buscaroli/GitHub/simbascule/nobuild/sbatch/logs_ht/flat_nonspars-%A-%a.log
 
 echo '----------------------------'
 echo ' JOB ID: '$SLURM_ARRAY_JOB_ID
@@ -21,9 +21,9 @@ echo '----------------------------'
 module load R/4.2.3
 
 export PATH=~/miniconda3/bin:$PATH
-conda activate basilica-env
+conda activate bascule-env
 
-Rscript /home/elena.buscaroli/GitHub/simbasilica/nobuild/run_scripts/run_new_simuls.R \
+Rscript /home/elena.buscaroli/GitHub/simbascule/nobuild/run_scripts/run_new_simuls.R \
   $SLURM_ARRAY_TASK_ID \
   nonparametric \
   nonsparsity \

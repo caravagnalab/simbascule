@@ -18,27 +18,23 @@ generate_and_run(
   n_muts_range = 100:5000,
   shared_sbs = c("SBS1", "SBS5"),
   reference_catalogue = COSMIC_filt,
+  subset_reference = c("SBS1", "SBS5"),
   keep_sigs = c("SBS1", "SBS5"),
   hyperparameters = NULL,
   lr = 0.005,
-  n_steps = 2000,
-  nonparametric = FALSE,
+  n_steps = 3000,
+  nonparametric = TRUE,
   enforce_sparsity = TRUE,
   reg_weight = 0,
   regularizer = "cosine",
-  new_hier = FALSE,
   regul_denovo = TRUE,
-  initializ_seed = FALSE,
-  do_initial_fit = TRUE,
-  initializ_pars_fit = TRUE,
-  save_runs_seed = TRUE,
-  save_all_fits = FALSE,
+  store_fits = FALSE,
   seed_list = c(4, 17, 22),
   CUDA = TRUE,
-  do.fits = TRUE,
-  verbose = FALSE,
+  do.fits = FALSE,
   cohort = "",
   check_present = TRUE,
+  check_linear_comb = FALSE,
   inference_type = c("flat", "hier", "clust"),
   ...
 )
@@ -64,8 +60,6 @@ generate_and_run(
 
 \item{do.fits}{Logical as whether to run the fits}
 
-\item{verbose}{Logical as whether show the progression}
-
 \item{shared}{Signatures shared across groups}
 
 \item{private}{Signatures private to one group}
@@ -75,6 +69,8 @@ generate_and_run(
 \item{mut_range}{Number of mutation range for each patient}
 
 \item{input_catalogue}{Input catalogue to use for the fit}
+
+\item{verbose}{Logical as whether show the progression}
 
 \item{new_model}{Logical as whether to run the new model}
 }

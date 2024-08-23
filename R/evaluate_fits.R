@@ -103,7 +103,7 @@ compare_single_fit = function(fitname, fits_path, data_path, fits_pattern,
   idd = stringr::str_replace_all(fitname, pattern=paste0(fits_pattern,"|.Rds"), replacement="")
   simulname = paste0(data_pattern, idd, ".Rds")
 
-  x.simul = readRDS(paste0(data_path, simulname)) %>% create_basilica_obj_simul()
+  x.simul = readRDS(paste0(data_path, simulname)) %>% create_bascule_obj_simul()
 
   x.fit.nolc = readRDS(paste0(fits_path, fitname)) %>%
     convert_sigs_names(x.simul, cutoff=cutoff) %>%
@@ -257,7 +257,7 @@ get_simul_fit = function(stats_df, condition, return_fit=T) {
   fpath = filtered %>% dplyr::pull(fits_path)
   spath = filtered %>% dplyr::pull(data_path)
   x.fit = readRDS(paste0(fpath, filtered$fits_pattern, ".", filtered$idd, ".Rds"))
-  x.simul = readRDS(paste0(data_path, "simul.", filtered$idd, ".Rds")) %>% create_basilica_obj_simul()
+  x.simul = readRDS(paste0(data_path, "simul.", filtered$idd, ".Rds")) %>% create_bascule_obj_simul()
 
   return(
     list("filtered"=filtered,

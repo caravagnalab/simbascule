@@ -16,12 +16,12 @@ cat(paste0("\nSaving in directory: ", fits_path, "\n\n"))
 
 cli::cli_process_start("Loading packages")
 
-source("~/GitHub/simbasilica/nobuild/run_scripts/fn_run.R")
-reticulate::use_virtualenv("~/fast/virtualenv/basilica-env/", required=TRUE)
-py = reticulate::import_from_path(module="pybasilica", path=paste0(main_path,"pybasilica/"))
+source("~/GitHub/simbascule/nobuild/run_scripts/fn_run.R")
+reticulate::use_virtualenv("~/fast/virtualenv/bascule-env/", required=TRUE)
+py = reticulate::import_from_path(module="pybascule", path=paste0(main_path,"pybascule/"))
 
-devtools::load_all(paste0(main_path, "basilica"))
-devtools::load_all(paste0(main_path, "simbasilica"))
+devtools::load_all(paste0(main_path, "bascule"))
+devtools::load_all(paste0(main_path, "simbascule"))
 
 library(lsa)
 

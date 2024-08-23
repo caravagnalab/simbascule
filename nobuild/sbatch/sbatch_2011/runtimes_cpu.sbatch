@@ -7,11 +7,11 @@
 #SBATCH --array=1-9
 #SBATCH --mem=50G
 #SBATCH --job-name=runtimes
-#SBATCH --output=~/GitHub/simbasilica/nobuild/sbatch/logs/runtimes-%A-%a.log
+#SBATCH --output=~/GitHub/simbascule/nobuild/sbatch/logs/runtimes-%A-%a.log
 
 module load R/4.2.3
 
-Rscript ~/GitHub/simbasilica/nobuild/run_scripts/run_execution_time.R \
+Rscript ~/GitHub/simbascule/nobuild/run_scripts/run_execution_time.R \
   $SLURM_ARRAY_TASK_ID \
   runtimes
 

@@ -20,9 +20,9 @@ make_figure = function(stats_df, suffix_name="") {
                   which_fit=stringr::str_replace_all(which_fit,suffix_name,""),
                   which_fit=dplyr::case_when(
                     which_fit == "km2" ~ "KMeans with K selection",
-                    which_fit == "" ~ "Basilica fit",
+                    which_fit == "" ~ "Bascule fit",
                   )) %>%
-    dplyr::mutate(which_fit=factor(which_fit, levels=c("Basilica fit","Initial KMeans",
+    dplyr::mutate(which_fit=factor(which_fit, levels=c("Bascule fit","Initial KMeans",
                                                        "KMeans with K selection"))) %>%
     plot_mse_cosine(colname="nmi", fill="which_fit", ylim=c(0,1), facet="run_id") +
     ylab("NMI") + labs(title="") + theme(legend.position="bottom") +
@@ -236,7 +236,7 @@ plot_mse_cosine = function(stats_df, colname, facet="", fill="run_id",
 # make_plots = function(fname, data_path, fits_path, save_path=NULL,
 #                       title_id="", idd_name="") {
 #   simul1 = readRDS(paste0(data_path, "simul.", fname, ".Rds")) %>%
-#     create_basilica_obj_simul()
+#     create_bascule_obj_simul()
 #
 #   fit1 = readRDS(paste0(fits_path, "fit.", fname, idd_name, ".Rds")) %>%
 #     convert_sigs_names(x.simul=simul1, cutoff=0.8) %>%

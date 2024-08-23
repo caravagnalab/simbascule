@@ -29,7 +29,7 @@ get_true_sigs = function(base_path, mod_names=F, long=T) {
 }
 
 
-create_basilica_obj_real_data = function(base_path, counts, groupids) {
+create_bascule_obj_real_data = function(base_path, counts, groupids) {
   sampleids = counts %>% rownames()
 
   true_expos = get_true_expos(base_path=base_path, long=T) %>%
@@ -85,7 +85,7 @@ create_basilica_obj_real_data = function(base_path, counts, groupids) {
                        values_from="exposure", values_fill=0) %>%
     tibble::column_to_rownames("samples")
 
-  real_data = list(); class(real_data) = "basilica_obj"
+  real_data = list(); class(real_data) = "bascule_obj"
   real_data$input$counts = counts
   real_data$groups = groupids
   real_data$fit$x = real_data$input$counts
@@ -98,7 +98,7 @@ create_basilica_obj_real_data = function(base_path, counts, groupids) {
 
 
 
-create_basilica_obj_sigprofiler = function(fitname, counts=NULL) {
+create_bascule_obj_sigprofiler = function(fitname, counts=NULL) {
   sigs = read.csv(paste0(fitname, "/SBS96/Suggested_Solution/COSMIC_SBS96_Decomposed_Solution/Signatures/COSMIC_SBS96_Signatures.txt"), sep="\t", row.names = 1) %>%
     t() %>% as.data.frame()
 
@@ -106,7 +106,7 @@ create_basilica_obj_sigprofiler = function(fitname, counts=NULL) {
     as.data.frame()
   expos = expos / rowSums(expos)
 
-  obj = list(); class(obj) = "basilica_obj"
+  obj = list(); class(obj) = "bascule_obj"
 
   obj$input$counts = counts
   obj$fit$x = counts

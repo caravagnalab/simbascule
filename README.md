@@ -1,6 +1,6 @@
-# simbasilica
+# simbascule
 
-R package to generate synthetic data from the [basilica](https://github.com/caravagnalab/basilica) generative model.
+R package to generate synthetic data from the [bascule](https://github.com/caravagnalab/bascule) generative model.
 
 The synthetic validation is performed on 270 cohorts of patients:
   * Number of patients: 150, 500, 1000
@@ -8,7 +8,7 @@ The synthetic validation is performed on 270 cohorts of patients:
   * 30 datasets for each configuration
   
 
-Each dataset has been fitted with Basilica:
+Each dataset has been fitted with Bascule:
   * Datasets with sample sizes 150 and 500 -> CPU
   * Datasets with sample size 1000 -> GPU 
 

@@ -23,7 +23,7 @@ module load cuda11.1/toolkit/11.1.1
 module load R/4.2.3
 
 export PATH=~/miniconda3/bin:$PATH
-conda activate basilica-env
+conda activate bascule-env
 
-Rscript /home/elena.buscaroli/GitHub/simbasilica/nobuild/run_scripts/run_real_data.R \
+Rscript /home/elena.buscaroli/GitHub/simbascule/nobuild/run_scripts/run_real_data.R \
   $SLURM_ARRAY_TASK_ID

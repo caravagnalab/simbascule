@@ -28,7 +28,7 @@ gen_run_aux = function(N, G, seed, private, shared, reference_cat, n_steps=2000,
                                                    alpha_sigma=0.15,
                                                    py=py,
                                                    seed=seed_list) %>%
-      create_basilica_obj_simul()
+      create_bascule_obj_simul()
   }
 
   cat("Simulated dataset generated!\n\n")
