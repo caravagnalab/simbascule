@@ -1,6 +1,7 @@
 gen_run_aux = function(N, G, seed, private, shared, reference_cat, n_steps=2000,
                        path=NULL, data_path=NULL, run_fits=FALSE, run_name="", filter_dn=FALSE) {
   fname = paste0("simul_fit.N", N, ".G", G, ".s", seed, ".", run_name, ".Rds")
+  if (!is.null(path) & file.exists(paste0(path, fname))) return()
 
   simul_ng = x_ng.0 = x_ng.N = NULL
   if (!is.null(data_path)) {

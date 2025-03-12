@@ -3,11 +3,12 @@ cat(paste("\nArguments:", paste(args, collapse=", "), "\n"))
 
 i = as.integer(args[1])
 run_id = args[2]
+processor = args[3]
 
 cat(paste("i =", i, "\n"))
 
 main_path = "~/GitHub/"
-fits_path = "~/fast/signatures/runtimes/"
+fits_path = paste0("~/fast/signatures/runtimes/", processor, "/")
 data_path = "/orfeo/scratch/area/evillegas/mutational_signatures/simulations/fits_dn_matched_2011/"
 
 cat(paste0("\nSaving in directory: ", fits_path, "\n\n"))
@@ -17,7 +18,7 @@ cat(paste0("\nSaving in directory: ", fits_path, "\n\n"))
 cli::cli_process_start("Loading packages")
 
 source("~/GitHub/simbasilica/nobuild/run_scripts/fn_run.R")
-reticulate::use_virtualenv("~/fast/virtualenv/basilica-env/", required=TRUE)
+reticulate::use_condaenv("basilica-env")
 py = reticulate::import_from_path(module="pybasilica", path=paste0(main_path,"pybasilica/"))
 
 devtools::load_all(paste0(main_path, "basilica"))
@@ -59,8 +60,7 @@ tryCatch(
                   run_fits=TRUE,
                   run_name=run_id,
                   path=fits_path,
-                  data_path=data_path,
-                  CUDA=TRUE)
+                  data_path=data_path)
     })
   }, error=function(e) print(reticulate::py_last_error())
 )
