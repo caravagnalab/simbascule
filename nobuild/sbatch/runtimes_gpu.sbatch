@@ -10,7 +10,7 @@
 module load R/4.2.3
 module load cuda
 
-Rscript ~/GitHub/simbasilica/nobuild/run_scripts/run_execution_time.R \
+Rscript ~/GitHub/simbascule/nobuild/run_scripts/run_execution_time.R \
   $SLURM_ARRAY_TASK_ID \
   runtimes \
   gpu

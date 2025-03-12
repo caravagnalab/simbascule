@@ -3,10 +3,10 @@ cat(paste("\nArguments:", paste(args, collapse=", "), "\n"))
 
 i = as.integer(args[1])
 
-devtools::load_all("~/GitHub/simbasilica/")
-reticulate::use_condaenv(condaenv="basilica-env")
-py = reticulate::import_from_path(module="pybasilica", path="~/GitHub/pybasilica/")
-devtools::load_all("~/GitHub/basilica/")
+devtools::load_all("~/GitHub/simbascule/")
+reticulate::use_condaenv(condaenv="bascule-env")
+py = reticulate::import_from_path(module="pybascule", path="~/GitHub/pybascule/")
+devtools::load_all("~/GitHub/bascule/")
 
 data_path = "~/signatures/"
 

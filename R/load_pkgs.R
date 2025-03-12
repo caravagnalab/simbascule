@@ -1,19 +1,19 @@
-load_basilica = function(path="~/GitHub/basilica") {
+load_bascule = function(path="~/GitHub/bascule") {
   devtools::load_all(path)
 }
 
-load_simbasilica = function(path="~/GitHub/simbasilica") {
+load_simbascule = function(path="~/GitHub/simbascule") {
   devtools::load_all(path)
 }
 
-import_py = function(envname="basilica-env", path="~/GitHub/pybasilica/") {
+import_py = function(envname="bascule-env", path="~/GitHub/pybascule/") {
   reticulate::use_condaenv(envname)
-  py <<- reticulate::import_from_path("pybasilica", path)
+  py <<- reticulate::import_from_path("pybascule", path)
 }
 
 load_deps = function(base_path="~/GitHub/") {
-  import_py(path=paste0(base_path, "pybasilica"))
-  load_basilica(path=paste0(base_path, "basilica"))
-  load_simbasilica(path=paste0(base_path, "simbasilica"))
+  import_py(path=paste0(base_path, "pybascule"))
+  load_bascule(path=paste0(base_path, "bascule"))
+  load_simbascule(path=paste0(base_path, "simbascule"))
   library(ggplot2)
 }

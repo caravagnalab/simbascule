@@ -29,19 +29,19 @@
 #'     num_data
 #' ) {
 #'
-#'   reference_denovo <- simbasilica:::split.reference(reference=reference, ratio=ratio, seed=seed)
+#'   reference_denovo <- simbascule:::split.reference(reference=reference, ratio=ratio, seed=seed)
 #'
 #'   reference_catalogue <- reference_denovo$reference
 #'   denovo_catalogue <- reference_denovo$denovo
 #'
-#'   reference_cosine <- simbasilica:::cosine.matrix(reference_catalogue, reference_catalogue)
-#'   denovo_cosine <- simbasilica:::cosine.matrix(denovo_catalogue, denovo_catalogue)
+#'   reference_cosine <- simbascule:::cosine.matrix(reference_catalogue, reference_catalogue)
+#'   denovo_cosine <- simbascule:::cosine.matrix(denovo_catalogue, denovo_catalogue)
 #'
 #'   data <- NULL
 #'
 #'   if (is.null(seed)) {
 #'     for (i in 1:num_data) {
-#'       xx <- simbasilica:::generate.data(
+#'       xx <- simbascule:::generate.data(
 #'         reference_catalogue = reference_catalogue,
 #'         denovo_catalogue = denovo_catalogue,
 #'         reference_cosine = reference_cosine,
@@ -57,7 +57,7 @@
 #'     }
 #'   } else {
 #'     for (i in 1:num_data) {
-#'       xx <- simbasilica:::generate.data(
+#'       xx <- simbascule:::generate.data(
 #'         reference_catalogue = reference_catalogue,
 #'         denovo_catalogue = denovo_catalogue,
 #'         reference_cosine = reference_cosine,
@@ -132,7 +132,7 @@
 #'   }
 #'
 #'   # apply exposure limit (<0.05) to one fixed and one de-novo signature
-#'   # alpha <- simbasilica:::edit.exposure(alpha = alpha)
+#'   # alpha <- simbascule:::edit.exposure(alpha = alpha)
 #'
 #'   cat("ALPHA DONE\n")
 #'
@@ -284,7 +284,7 @@
 #'     cat('                 Data No.', i, '\n') # TEST
 #'     cat('============================================\n') # TEST
 #'
-#'     xx <- simbasilica:::run.data(
+#'     xx <- simbascule:::run.data(
 #'       data=x[i, ],
 #'       k=k,
 #'       cohort = paste0(cohort, "-", i),
@@ -347,11 +347,11 @@
 #'   if (use_input) {
 #'     input_catalogue <- data$ref_cat[[1]]
 #'   } else {
-#'     input_catalogue = NULL #basilica::COSMIC_catalogue["SBS1", ]
+#'     input_catalogue = NULL #bascule::COSMIC_catalogue["SBS1", ]
 #'   }
 #'
 #'   # RUN START ------------------------------------------------------------------
-#'   obj <- basilica::fit(
+#'   obj <- bascule::fit(
 #'     x=x,
 #'     k,
 #'     reference_catalogue = reference,
@@ -761,7 +761,7 @@
 #'   expected_fixed <- x$exp_fixed[[1]]
 #'   #inferred_fixed <- x$inf_fixed[[1]]
 #'   inferred_fixed <- x$fit[[1]]$catalogue_signatures
-#'   a <- simbasilica:::fixed.accuracy(reference, input, expected_fixed, inferred_fixed)
+#'   a <- simbascule:::fixed.accuracy(reference, input, expected_fixed, inferred_fixed)
 #'   TP <- a$TP
 #'   FP <- a$FP
 #'   TN <- a$TN
@@ -772,15 +772,15 @@
 #'   #alpha <- x$inf_exposure[[1]]
 #'   alpha <- x$fit[[1]]$exposure
 #'   beta <- rbind(x$fit[[1]]$catalogue_signatures, x$fit[[1]]$denovo_signatures)
-#'   mr <- simbasilica:::reconstruct.count(m, alpha, beta)
-#'   mae <- simbasilica:::compute.mae(m, mr)
-#'   mse <- simbasilica:::compute.mse(m, mr)
+#'   mr <- simbascule:::reconstruct.count(m, alpha, beta)
+#'   mae <- simbascule:::compute.mae(m, mr)
+#'   mse <- simbascule:::compute.mse(m, mr)
 #'   #--------------------------
-#'   b <- simbasilica:::denovo.similarity(x$exp_denovo[[1]], x$fit[[1]]$denovo_signatures)
+#'   b <- simbascule:::denovo.similarity(x$exp_denovo[[1]], x$fit[[1]]$denovo_signatures)
 #'   denovo_similarity <- b$similarity_average  # numeric
 #'   denovo_match <- b$match_df                 # data.frame
 #'   #--------------------------
-#'   denovo_ratio <- simbasilica:::denovo.ratio(x$exp_denovo[[1]], x$fit[[1]]$denovo_signatures)
+#'   denovo_ratio <- simbascule:::denovo.ratio(x$exp_denovo[[1]], x$fit[[1]]$denovo_signatures)
 #'   #--------------------------
 #'
 #'   # CREATE TIBBLE ----------------------------

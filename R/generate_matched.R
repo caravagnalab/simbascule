@@ -138,9 +138,9 @@ check_private_overlaps = function(private_df, n_privates, type) {
 }
 
 
-create_basilica_obj_simul = function(simul_df) {
+create_bascule_obj_simul = function(simul_df) {
   types = simul_df$types
-  obj_simul = list(); class(obj_simul) = "basilica_obj"
+  obj_simul = list(); class(obj_simul) = "bascule_obj"
 
   obj_simul$prv_sigs = simul_df$private_sigs
 
