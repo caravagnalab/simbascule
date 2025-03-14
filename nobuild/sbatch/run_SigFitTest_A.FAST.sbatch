@@ -6,7 +6,7 @@
 #SBATCH --job-name=sigfittest
 #SBATCH --mem=20GB
 #SBATCH --partition boost_usr_prod
-#SBATCH --output=/leonardo_scratch/fast/uTS25_Caravagn/ebuscaro/GitHub/simbascule/nobuild/sbatch/logs/SigFitTest_A-%A-%a.log
+#SBATCH --output=/leonardo_scratch/fast/uTS25_Caravagn/ebuscaro/GitHub/simbascule/nobuild/sbatch/logs.FAST/SigFitTest_A-%A-%a.log
 
 echo '----------------------------'
 echo ' JOB ID: '$SLURM_ARRAY_JOB_ID
@@ -19,7 +19,7 @@ echo ' TOTAL NUMBER OF TASKS: '$SLURM_ARRAY_TASK_COUNT
 echo '----------------------------'
 
 
-module load anaconda3
+module load anaconda3/
 
 source activate bascule-env
 
@@ -27,6 +27,6 @@ module load spack
 module load r
 
 
-Rscript /leonardo_scratch/fast/uTS25_Caravagn/ebuscaro/GitHub/simbascule/nobuild/run_scripts/run_simuls_SigFitTest.R \
+Rscript /leonardo_scratch/fast/uTS25_Caravagn/ebuscaro/GitHub/simbascule/nobuild/run_scripts/run_simuls_SigFitTest.FAST.R \
   $SLURM_ARRAY_TASK_ID 0
 

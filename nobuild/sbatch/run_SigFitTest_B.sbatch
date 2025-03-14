@@ -2,11 +2,11 @@
 #SBATCH --time=02:00:00
 #SBATCH --nodes=1
 #SBATCH --array=0-620
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=4
 #SBATCH --job-name=sigfittest
 #SBATCH --mem=20GB
-#SBATCH --partition EPYC
-#SBATCH --output=/orfeo/cephfs/scratch/cdslab/ebusca00/GitHub/simbascule/nobuild/sbatch/logs/SigFitTest_B-%A-%a.log
+#SBATCH --partition boost_usr_prod
+#SBATCH --output=/leonardo_scratch/fast/uTS25_Caravagn/ebuscaro/GitHub/simbascule/nobuild/sbatch/logs/SigFitTest_B-%A-%a.log
 
 echo '----------------------------'
 echo ' JOB ID: '$SLURM_ARRAY_JOB_ID
@@ -18,11 +18,13 @@ echo ' MAX TASK ID: '$SLURM_ARRAY_TASK_MAX
 echo ' TOTAL NUMBER OF TASKS: '$SLURM_ARRAY_TASK_COUNT
 echo '----------------------------'
 
-module load R/4.4.1
+module load anaconda3
 
-export PATH=~/miniconda3/bin:$PATH
-conda activate basilica-env
+source activate bascule-env
 
-Rscript /orfeo/cephfs/scratch/cdslab/ebusca00/GitHub/simbascule/nobuild/run_scripts/run_simuls_SigFitTest.R \
+module load spack
+module load r
+
+Rscript /leonardo_scratch/fast/uTS25_Caravagn/ebuscaro/GitHub/simbascule/nobuild/run_scripts/run_simuls_SigFitTest.R \
   $SLURM_ARRAY_TASK_ID 1000
 

@@ -14,7 +14,7 @@ cat(paste("i =", i, "\n"))
 main_path = "~/GitHub/"
 dest_path = "~/fast/signatures/"
 data_path = paste0(dest_path, "/data.", run_id, "/")
-fits_path = paste0(dest_path, "/fits_dn.", run_id, "/")
+fits_path = paste0(dest_path, "/fits_dn.", run_id, ".FAST/")
 cosmic_path = list(
   "WGS"= paste0(dest_path, "/input/COSMIC_v3.3.1_SBS_GRCh38.txt"),
   "WES" = paste0(dest_path, "/input/COSMIC_v3_SBS_GRCh38-WES.txt")
@@ -62,7 +62,8 @@ reference_cat = list("SBS"=NULL)
 cli::cli_process_done()
 
 
-cli::cli_process_start("\nBASCULE fit of\n{file_i}\n")
+cli::cli_process_start("\nBASCULE fit\n")
+cat(paste("\nFile",  file_i, "\n"))
 
 # Run model #####
 tryCatch(

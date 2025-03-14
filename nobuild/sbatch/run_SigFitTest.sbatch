@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --time=02:00:00
 #SBATCH --nodes=1
-#SBATCH --array=1-999
+#SBATCH --array=1-1620
 #SBATCH --cpus-per-task=4
 #SBATCH --job-name=sigfittest
 #SBATCH --mem=20GB
 #SBATCH --partition boost_usr_prod
-#SBATCH --output=/leonardo_scratch/fast/uTS25_Caravagn/ebuscaro/GitHub/simbascule/nobuild/sbatch/logs/SigFitTest_A-%A-%a.log
+#SBATCH --output=/leonardo_scratch/fast/uTS25_Caravagn/ebuscaro/GitHub/simbascule/nobuild/sbatch/logs/SigFitTest-%A-%a.log
 
 echo '----------------------------'
 echo ' JOB ID: '$SLURM_ARRAY_JOB_ID
