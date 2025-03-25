@@ -12,7 +12,12 @@ run_id = "SigFitTest"
 cat(paste("i =", i, "\n"))
 
 main_path = "~/GitHub/"
-dest_path = "~/fast/signatures/"
+
+## Leonardo location
+# dest_path = "~/fast/signatures/"
+
+## Demetra location
+dest_path = "~/share/signatures/"
 data_path = paste0(dest_path, "/data.", run_id, "/")
 fits_path = paste0(dest_path, "/fits_dn.", run_id, ".FAST/")
 cosmic_path = list(
@@ -44,6 +49,8 @@ cli::cli_process_done()
 cli::cli_process_start("Loading file and reference catalogs")
 
 file_i = list.files(data_path, full.names=TRUE)[i]
+
+cat(paste0("\nFit for file ", file_i, "\n"))
 
 # shared = list("SBS"=c("SBS1","SBS5"))
 

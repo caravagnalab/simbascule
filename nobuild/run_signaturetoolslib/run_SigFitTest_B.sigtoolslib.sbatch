@@ -5,8 +5,8 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --job-name=sigfittest
 #SBATCH --mem=20GB
-#SBATCH --partition Main
-#SBATCH --output=/share/cdslab/elenab/GitHub/simbascule/nobuild/sbatch/logs.FAST/SigFitTest_B-%A-%a.log
+#SBATCH --partition Main,lovelace
+#SBATCH --output=/share/cdslab/elenab/GitHub/simbascule/nobuild/run_signaturetoolslib/logs/SigFitTest_B-%A-%a.log
 
 ## Leonardo params
 # --partition boost_usr_prod
@@ -37,6 +37,6 @@ conda activate bascule-env
 # Rscript /leonardo_scratch/fast/uTS25_Caravagn/ebuscaro/GitHub/simbascule/nobuild/run_scripts/run_simuls_SigFitTest.FAST.R \
 
 ## Demetra script
-Rscript /share/cdslab/elenab/GitHub/simbascule/nobuild/run_scripts/run_simuls_SigFitTest.FAST.R \
-  $SLURM_ARRAY_TASK_ID 1000
+Rscript /share/cdslab/elenab/GitHub/simbascule/nobuild/run_signaturetoolslib/run_sigtoolslib_SigFitTest.R \
+  $SLURM_ARRAY_TASK_ID 1000 SigFitTest
 

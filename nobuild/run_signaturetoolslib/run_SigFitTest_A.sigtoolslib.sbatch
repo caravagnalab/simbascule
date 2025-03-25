@@ -1,17 +1,12 @@
 #!/bin/bash
-#SBATCH --time=03:00:00
+#SBATCH --time=02:00:00
 #SBATCH --nodes=1
-#SBATCH --array=0-620
+#SBATCH --array=1-999
 #SBATCH --cpus-per-task=4
 #SBATCH --job-name=sigfittest
 #SBATCH --mem=20GB
-#SBATCH --partition Main
-#SBATCH --output=/share/cdslab/elenab/GitHub/simbascule/nobuild/sbatch/logs.FAST/SigFitTest_B-%A-%a.log
-
-## Leonardo params
-# --partition boost_usr_prod
-# --output=/leonardo_scratch/fast/uTS25_Caravagn/ebuscaro/GitHub/simbascule/nobuild/sbatch/logs.FAST/SigFitTest_B-%A-%a.log
-# serial partition: lrd_all_serial; --gres=tmpfs:1g
+#SBATCH --partition Main,lovelace
+#SBATCH --output=/share/cdslab/elenab/GitHub/simbascule/nobuild/run_signaturetoolslib/logs/SigFitTest_A-%A-%a.log
 
 echo '----------------------------'
 echo ' JOB ID: '$SLURM_ARRAY_JOB_ID
@@ -22,6 +17,7 @@ echo ' MIN TASK ID: '$SLURM_ARRAY_TASK_MIN
 echo ' MAX TASK ID: '$SLURM_ARRAY_TASK_MAX
 echo ' TOTAL NUMBER OF TASKS: '$SLURM_ARRAY_TASK_COUNT
 echo '----------------------------'
+
 
 ## Leonardo modules
 # module load anaconda3/
@@ -37,6 +33,6 @@ conda activate bascule-env
 # Rscript /leonardo_scratch/fast/uTS25_Caravagn/ebuscaro/GitHub/simbascule/nobuild/run_scripts/run_simuls_SigFitTest.FAST.R \
 
 ## Demetra script
-Rscript /share/cdslab/elenab/GitHub/simbascule/nobuild/run_scripts/run_simuls_SigFitTest.FAST.R \
-  $SLURM_ARRAY_TASK_ID 1000
+Rscript /share/cdslab/elenab/GitHub/simbascule/nobuild/run_signaturetoolslib/run_sigtoolslib_SigFitTest.R \
+  $SLURM_ARRAY_TASK_ID 0 SigFitTest
 
