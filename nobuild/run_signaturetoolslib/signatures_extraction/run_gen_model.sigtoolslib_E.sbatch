@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --time=02:00:00
+#SBATCH --time=10:00:00
 #SBATCH --nodes=1
 #SBATCH --array=1-254
 #SBATCH --cpus-per-task=4
-#SBATCH --job-name=generative
-#SBATCH --mem=20GB
-#SBATCH --partition Main,lovelace
-#SBATCH --output=/share/cdslab/elenab/GitHub/simbascule/nobuild/run_signaturetoolslib/logs/generative-%A-%a.log
+#SBATCH --job-name=gen_stl
+#SBATCH --mem=10GB
+#SBATCH --partition EPYC
+#SBATCH --output=/orfeo/scratch/cdslab/ebusca00/GitHub/simbascule/nobuild/run_signaturetoolslib/signatures_extraction/logs/gen_stl-%A-%a.log
 
 echo '----------------------------'
 echo ' JOB ID: '$SLURM_ARRAY_JOB_ID
@@ -25,14 +25,21 @@ echo '----------------------------'
 # module load spack
 # module load r
 
-## Demetra modules
-module load r/4.4.0-gcc-13.2.0-hymdfgk
-conda activate bascule-env
+# ## Demetra modules
+# module load r/4.4.0-gcc-13.2.0-hymdfgk
+# conda activate bascule-env
+
+## Orfeo modules
+module load R/4.4.1
 
 ## Leonardo script
 # Rscript /leonardo_scratch/fast/uTS25_Caravagn/ebuscaro/GitHub/simbascule/nobuild/run_scripts/run_simuls_SigFitTest.FAST.R \
 
-## Demetra script
-Rscript /share/cdslab/elenab/GitHub/simbascule/nobuild/run_signaturetoolslib/run_sigtoolslib_SigFitTest.R \
+# ## Demetra script
+# Rscript /share/cdslab/elenab/GitHub/simbascule/nobuild/run_signaturetoolslib/run_sigtoolslib.R \
+#   $SLURM_ARRAY_TASK_ID 0 generative_model
+
+## Orfeo script
+Rscript ~/GitHub/simbascule/nobuild/run_signaturetoolslib/signatures_extraction/run_sigtoolslib_extraction.R \
   $SLURM_ARRAY_TASK_ID 0 generative_model
 

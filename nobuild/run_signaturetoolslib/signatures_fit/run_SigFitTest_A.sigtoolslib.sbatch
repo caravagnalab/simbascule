@@ -33,6 +33,6 @@ conda activate bascule-env
 # Rscript /leonardo_scratch/fast/uTS25_Caravagn/ebuscaro/GitHub/simbascule/nobuild/run_scripts/run_simuls_SigFitTest.FAST.R \
 
 ## Demetra script
-Rscript /share/cdslab/elenab/GitHub/simbascule/nobuild/run_signaturetoolslib/run_sigtoolslib_SigFitTest.R \
+Rscript /share/cdslab/elenab/GitHub/simbascule/nobuild/run_signaturetoolslib/run_sigtoolslib.R \
   $SLURM_ARRAY_TASK_ID 0 SigFitTest
 
